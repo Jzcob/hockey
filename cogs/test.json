@@ -1,0 +1,36 @@
+{ 
+    "_id": "",
+    "info": {
+        "name": "",
+        "tag": "",
+        "joined": "",
+        "applied": false,
+        "currently_banned": false
+    },
+    "levels": {
+        "level": 0,
+        "xp": 0
+    },
+    "economy": {
+        "wallet": 0,
+        "bank": 0
+    },
+    "punishments": {
+        "bans": [],
+        "timeouts": [],
+        "warns": [],
+        "notes": []
+    },
+    "roles": {
+        "green" : false,
+        "red": false,
+        "blue": false,
+        "yellow": false,
+        "ninja": false,
+        "orange": false,
+        "teal": false,
+        "purple": false,
+        "white": false
+
+    }
+}

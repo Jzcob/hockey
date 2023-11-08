@@ -1,0 +1,40 @@
+import discord
+from discord import app_commands
+from discord.ext import commands
+import requests
+from datetime import datetime
+import json
+import config
+
+class announcement(commands.Cog):
+    def __init__(self, bot): 
+        self.bot = bot
+    
+    @commands.Cog.listener()
+    async def on_ready(self):
+        print(f"LOADED: `announcement.py`")
+    
+    @app_commands.command(name="announce", description="Sends an announcement to every server the bot is in!")
+    async def announcement(self, interaction: discord.Interaction, title: str, description: str):
+        try:
+            if interaction.user.id == 920797181034778655:
+                guilds = self.bot.guilds
+                for guild in guilds:
+                    try:
+                        embed = discord.Embed(title=title, description=description, color=config.color)
+                        embed.set_author(icon_url=interaction.user.avatar.url, name="NHL Bot Announcement")
+                        try:
+                            await guild.public_updates_channel.send(embed=embed)
+                        except:
+                            await guild.system_channel.send(embed=embed)
+                    except:
+                        pass
+                return await interaction.response.send_message("Sent announcement!", ephemeral=True)
+            else:
+                return await interaction.response.send_message("You are not the bot owner!", ephemeral=True)
+        except Exception as e:
+            error_channel = self.bot.get_channel(config.error_channel)
+            return await error_channel.send(f"Something went wrong! `{e}`")
+
+async def setup(bot):
+    await bot.add_cog(announcement(bot), guilds=[discord.Object(id=config.hockey_discord_server)])
