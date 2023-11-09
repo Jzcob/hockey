@@ -52,16 +52,17 @@ async def servers(ctx):
             print(guilds)
             try:
                 for guild in guilds:
-                    embed = discord.Embed(description=f"Name: {guild.name}\n" +
-                                        f"Owner: {guild.owner.name} ID: {guild.owner_id}\n" +
-                                        f"Members: {guild.member_count}\n" +
-                                        f"Created: {guild.created_at}\n" +
-                                        f"Verification Level: {guild.verification_level}", color=0x00ff00)
                     try:
+                        embed = discord.Embed(description=f"Name: {guild.name}\n" +
+                                            f"Owner: {guild.owner.name} ID: {guild.owner_id}\n" +
+                                            f"Members: {guild.member_count}\n" +
+                                            f"Created: {guild.created_at}\n" +
+                                            f"Verification Level: {guild.verification_level}", color=0x00ff00)
                         embed.set_thumbnail(url=f"{guild.icon}")
+                        await ctx.send(embed=embed)
                     except:
-                        pass
-                    await ctx.send(embed=embed)
+                        await ctx.send("Error getting server information")
+                    
             except Exception as e:
                 print(e)
                 embed = discord.Embed(title="Error", description=f"Something went wrong. `{e}`", color=0xff0000)
