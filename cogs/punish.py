@@ -159,7 +159,7 @@ class punish(commands.Cog):
             await error_channel.send(f"Error in `timeout` command:\n{e}")
     
     @app_commands.command(name="ban", description="Bans a user!")
-    @app_commands.checks.has_any_role(admin, manager, owner)
+    @app_commands.checks.has_any_role(mod, admin, manager, owner)
     async def ban(self, interaction: discord.Interaction, member: discord.Member, reason: str, evidence: discord.Attachment):
         try:
             if member.is_banned() is True:
@@ -203,7 +203,7 @@ class punish(commands.Cog):
 ########################### REMOVE PUNISHMENT COMMANDS ###########################################################
 ##################################################################################################################            
     @app_commands.command(name="cancel-timeout", description="Cancel a user's timeout!")
-    @app_commands.checks.has_any_role(mod, admin, manager, owner)
+    @app_commands.checks.has_any_role(admin, manager, owner)
     async def cancel_timeout(self, interaction: discord.Interaction, member: discord.Member):
         if member.is_timed_out() is False:
             return await interaction.response.send_message(f"{member.mention} is not timed out!", ephemeral=True)
@@ -231,7 +231,6 @@ class punish(commands.Cog):
             warnList.pop(warn)
             warn += 1
             mycol.update_one({"_id": member.id}, {"$set": {"punishments.warns": warnList}})
-            await member.send(f"Your warn #{warn} has been removed in `{interaction.guild.name}` by {interaction.user.name}!")
             await interaction.response.send_message(f"Removed warn #{warn} from {member.mention}'s punishment history!")
             await mod_logs.send(f"Removed warn #{warn} from {member.mention}'s punishment history!")
         except Exception as e:
@@ -255,7 +254,6 @@ class punish(commands.Cog):
             timeoutList.pop(timeout)
             timeout += 1
             mycol.update_one({"_id": member.id}, {"$set": {"punishments.timeouts": timeoutList}})
-            await member.send(f"Your timeout #{timeout} has been removed in `{interaction.guild.name}` by {interaction.user.name}!")
             await interaction.response.send_message(f"Removed timeout #{timeout} from {member.mention}'s punishment history!")
             await mod_logs.send(f"Removed timeout #{timeout} from {member.mention}'s punishment history!")
         except Exception as e:
@@ -279,7 +277,6 @@ class punish(commands.Cog):
             banList.pop(ban)
             ban += 1
             mycol.update_one({"_id": member.id}, {"$set": {"punishments.bans": banList}})
-            await member.send(f"Your ban #{ban} has been removed in `{interaction.guild.name}` by {interaction.user.name}!")
             await interaction.response.send_message(f"Removed ban #{ban} from {member.mention}'s punishment history!")
             await mod_logs.send(f"Removed ban #{ban} from {member.mention}'s punishment history!")
         except Exception as e:
@@ -290,6 +287,7 @@ class punish(commands.Cog):
 ############################### PUNISHMENT COMMANDS ##############################################################
 #################################################################################################################
     @app_commands.command(name="punishments", description="View a user's punishments!")
+    @app_commands.checks.has_any_role(staff)
     async def punishments(self, interaction: discord.Interaction, member: discord.Member):
         try:
             playerDB = mycol.find_one({"_id": member.id})
@@ -401,6 +399,7 @@ class punish(commands.Cog):
 
 
     @app_commands.command(name="test-user", description="Test user command")
+    @app_commands.checks.has_any_role(owner)
     async def test_user(self, interaction: discord.Interaction, member: discord.Member):
         def is_staff(member):
             return discord.utils.get(member.roles, name="Staff") is not None

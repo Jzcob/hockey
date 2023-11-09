@@ -55,6 +55,7 @@ class game(commands.Cog):
             embed.add_field(name="Server", value=interaction.guild.name)
             embed.add_field(name="Channel", value=interaction.channel.mention)
             embed.set_footer(text=datetime.now().strftime("%m/%d/%Y, %H:%M:%S"))
+            await interaction.followup.send("Error getting game! Message has been sent to Bot Developers", ephemeral=True)
             return await error_channel.send(content="<@920797181034778655>",embed=embed)
     
 

@@ -98,6 +98,7 @@ class schedule(commands.Cog):
                             await interaction.followup.send(embed=embed, ephemeral=True)
                 except Exception as e:
                     error_channel = self.bot.get_channel(config.error_channel)
+                    await interaction.followup.send("Error getting schedule! Message has been sent to Bot Developers", ephemeral=True)
                     await error_channel.send(f"Something went wrong! `{e}`", ephemeral=True)
             elif length.value == "week":
                 startDate = datetime.today()
@@ -153,6 +154,7 @@ class schedule(commands.Cog):
             embed.add_field(name="User", value=interaction.user.mention, inline=True)
             embed.add_field(name="Server", value=interaction.guild.name, inline=True)
             embed.add_field(name="Channel", value=interaction.channel.name, inline=True)
+            await interaction.followup.send("Error getting schedule! Message has been sent to Bot Developers", ephemeral=True)
             return await error_channel.send(content="<@920797181034778655>", embed=embed)
 
 async def setup(bot):
