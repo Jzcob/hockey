@@ -464,7 +464,7 @@ class punish(commands.Cog):
                     embed.add_field(name="`/remove-warn <member> <warning number>`", value="Removes a warning for a member of the discord server.", inline=False)
                     embed.add_field(name="`/remove-timeout <member> <timeout number>`", value="Removes a timeout for a member of the discord server.", inline=False)
                     embed.add_field(name="`/remove-ban <member> <ban number>`", value="Removes a ban for a member of the discord server.", inline=False)
-                    embed.add_field(name="`/fix-punishment <member> <type> <punishment> <reason>", description="Fixes a punishment for a member of the discord server.", inline=False)
+                    embed.add_field(name="`/fix-punishment <member> <type> <punishment> <reason>", value="Fixes a punishment for a member of the discord server.", inline=False)
                     embed.add_field(name="`/purge <amount> (member)`", value="Purges a certain amount of messages.", inline=False)
                     embed.add_field(name="`/punishments <member>`", value="Shows the punishments of a member.", inline=False)
                     embed.add_field(name="`/set-warns <member> <amount>`", value="Sets the amount of warns for a member.", inline=False)
