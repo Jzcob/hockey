@@ -464,7 +464,7 @@ class punish(commands.Cog):
                     embed.add_field(name="`/remove-warn <member> <warning number>`", value="Removes a warning for a member of the discord server.", inline=False)
                     embed.add_field(name="`/remove-timeout <member> <timeout number>`", value="Removes a timeout for a member of the discord server.", inline=False)
                     embed.add_field(name="`/remove-ban <member> <ban number>`", value="Removes a ban for a member of the discord server.", inline=False)
-                    embed.add_field(name="`/fix-punishment <member> <type> <punishment> <reason>", value="Fixes a punishment for a member of the discord server.", inline=False)
+                    embed.add_field(name="`/fix-punishment <member> <type> <punishment> <reason>`", value="Fixes a punishment for a member of the discord server.", inline=False)
                     embed.add_field(name="`/purge <amount> (member)`", value="Purges a certain amount of messages.", inline=False)
                     embed.add_field(name="`/punishments <member>`", value="Shows the punishments of a member.", inline=False)
                     embed.add_field(name="`/set-warns <member> <amount>`", value="Sets the amount of warns for a member.", inline=False)
@@ -483,11 +483,11 @@ class punish(commands.Cog):
                 await interaction.response.send_message("Role not found!", ephemeral=True)
         except Exception as e:
             error_channel = self.bot.get_channel(config.error_channel)
-            embed = discord.Embed(title="Error with `/help`", description=f"```{e}```", color=config.color)
+            embed = discord.Embed(title="Error with `/staff-help`", description=f"```{e}```", color=config.color)
             embed.add_field(name="User", value=f"{interaction.user.mention}", inline=False)
             embed.add_field(name="Server", value=f"{interaction.guild.name}", inline=False)
             embed.add_field(name="Channel", value=f"{interaction.channel.name}", inline=False)
-            await interaction.response.send_message("Error with `/help`! Message has been sent to Jacob, but feel free to ping him in <#1168943619886035066> I give you permission. :)\n Tell him to look at #bot-errors", ephemeral=True)
+            await interaction.response.send_message("Error with `/staff-help`! Message has been sent to Jacob, but feel free to ping him in <#1168943619886035066> I give you permission. :)\n Tell him to look at #bot-errors", ephemeral=True)
             await error_channel.send(embed=embed)
 
 async def setup(bot):
