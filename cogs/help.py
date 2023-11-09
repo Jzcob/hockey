@@ -64,12 +64,13 @@ class Help(commands.Cog):
     
     @app_commands.command(name="staff-help", description="Shows the help menu!")
     @app_commands.checks.has_any_role("Staff")
+    @app_commands.describe(role="The role you want to see the help menu for!")
     @app_commands.choices(role=[
-        app_commands.OptionChoice(name="Helper", value="helper"),
-        app_commands.OptionChoice(name="Moderator", value="moderator"),
-        app_commands.OptionChoice(name="Administrator", value="administrator"),
-        app_commands.OptionChoice(name="Manager", value="manager")
-    ], description="The role you want to see the help menu for!")
+        app_commands.Choice(name="Helper", value="helper"),
+        app_commands.Choice(name="Moderator", value="moderator"),
+        app_commands.Choice(name="Administrator", value="administrator"),
+        app_commands.Choice(name="Manager", value="manager")
+    ])
     async def staffHelp(self, interaction: discord.Interaction, role: discord.app_commands.Choice[str]):
         try:
             member = interaction.user

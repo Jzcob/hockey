@@ -49,7 +49,6 @@ async def servers(ctx):
     if ctx.author.id in config.bot_authors:
         if ctx.channel.type == discord.ChannelType.private or ctx.channel.id in config.allowed_channels:   
             guilds = bot.guilds
-            print(guilds)
             try:
                 for guild in guilds:
                     try:
