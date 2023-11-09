@@ -65,7 +65,6 @@ class punish(commands.Cog):
             userEmbed.add_field(name="Time", value=f"{dt_string}", inline=False)
             userEmbed.set_image(url=f"{evidence.url}")
             userEmbed.set_footer(text="If you feel this was a mistake, please contact a staff member by making a ticket.")
-            print(warnList)
             mycol.update_one({"_id": member.id}, {"$set": {"punishments.warns": warnList}})
             await interaction.response.send_message(embed=embed)
             try:
@@ -375,7 +374,6 @@ class punish(commands.Cog):
                 return await interaction.response.send_message(f"Invalid note number! {member.mention} only has {len(noteList)} notes!", ephemeral=True)
             note -= 1
             noteList.pop(note)
-            print(noteList)
             mycol.update_one({"_id": member.id}, {"$set": {"punishments.notes": noteList}})
             await interaction.response.send_message(f"Removed note #{note} from {member.mention}'s punishment history!")
             await mod_logs.send(f"Removed note #{note} from {member.mention}'s punishment history!")
