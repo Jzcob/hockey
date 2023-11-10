@@ -91,7 +91,8 @@ class standings(commands.Cog):
                 await interaction.followup.send(embed=embed, ephemeral=True)
             except Exception as e:
                 error_channel = self.bot.get_channel(config.error_channel)
-                await interaction.followup.send("Error getting standings! Message has been sent to Bot Developers", ephemeral=True)
+                await interaction.followup.send("Error getting schedule! THERE IS CURRENTLY AN ERROR WITH THE NHL API ALL HOCKEY BOTS DO NOT WORK!!!", ephemeral=True)
+                #await interaction.followup.send("Error getting standings! Message has been sent to Bot Developers", ephemeral=True)
                 embed = discord.Embed(title="Error with `/standings`", description=f"```{e}```", color=config.color)
         else:
             try:

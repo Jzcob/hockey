@@ -65,7 +65,8 @@ class today(commands.Cog):
             except Exception as e:
                 error_channel = self.bot.get_channel(config.error_channel)
                 await error_channel.send(f"Error getting schedule! `{e}`")
-                return await interaction.followup.send("Error getting schedule! Message has been sent to Bot Developers", ephemeral=True)
+                await interaction.followup.send("Error getting schedule! THERE IS CURRENTLY AN ERROR WITH THE NHL API ALL HOCKEY BOTS DO NOT WORK!!!", ephemeral=True)
+                #return await interaction.followup.send("Error getting schedule! Message has been sent to Bot Developers", ephemeral=True)
         else:
             teamID = config.checkForTeam(team)
             if teamID == None:
