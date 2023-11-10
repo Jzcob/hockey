@@ -154,7 +154,8 @@ class schedule(commands.Cog):
             embed.add_field(name="User", value=interaction.user.mention, inline=True)
             embed.add_field(name="Server", value=interaction.guild.name, inline=True)
             embed.add_field(name="Channel", value=interaction.channel.name, inline=True)
-            await interaction.followup.send("Error getting schedule! Message has been sent to Bot Developers", ephemeral=True)
+            await interaction.followup.send("Error getting schedule! THERE IS CURRENTLY AN ERROR WITH THE NHL API ALL HOCKEY BOTS DO NOT WORK!!!", ephemeral=True)
+            #await interaction.followup.send("Error getting schedule! Message has been sent to Bot Developers", ephemeral=True)
             return await error_channel.send(content="<@920797181034778655>", embed=embed)
 
 async def setup(bot):

@@ -50,7 +50,8 @@ class team(commands.Cog):
             await interaction.response.send_message(embed=embed, ephemeral=True)
         except Exception as e:
             error_channel = self.bot.get_channel(config.error_channel)
-            await interaction.response.send_message("Error getting team! Message has been sent to Bot Developers", ephemeral=True)
+            await interaction.followup.send("Error getting schedule! THERE IS CURRENTLY AN ERROR WITH THE NHL API ALL HOCKEY BOTS DO NOT WORK!!!", ephemeral=True)
+            #await interaction.response.send_message("Error getting team! Message has been sent to Bot Developers", ephemeral=True)
             embed = discord.Embed(title="Error", description=f"```{e}```", color=config.color)
             embed.set_author(icon_url=interaction.user.avatar.url, name="NHL Bot Error")
             embed.add_field(name="Team", value=team)

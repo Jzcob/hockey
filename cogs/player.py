@@ -98,7 +98,8 @@ class player(commands.Cog):
             embed.add_field(name="Server", value=interaction.guild.name)
             embed.add_field(name="Channel", value=interaction.channel.mention)
             embed.set_footer(text=datetime.now().strftime("%m/%d/%Y, %H:%M:%S"))
-            await interaction.followup.send("Error getting player! Message has been sent to Bot Developers", ephemeral=True)
+            await interaction.followup.send("Error getting schedule! THERE IS CURRENTLY AN ERROR WITH THE NHL API ALL HOCKEY BOTS DO NOT WORK!!!", ephemeral=True)
+            #await interaction.followup.send("Error getting player! Message has been sent to Bot Developers", ephemeral=True)
             await error_channel.send(f"Something went wrong `{e}`")
 
 async def setup(bot):

@@ -45,7 +45,8 @@ class GuessTheTeam(commands.Cog):
             embed.add_field(name="User", value=f"{interaction.user.mention}", inline=False)
             embed.add_field(name="Server", value=f"{interaction.guild.name}", inline=False)
             embed.add_field(name="Channel", value=f"{interaction.channel.name}", inline=False)
-            await interaction.followup.send("Error with `/guess-the-team`! Message has been sent to Bot Developers", ephemeral=True)
+            await interaction.followup.send("Error getting schedule! THERE IS CURRENTLY AN ERROR WITH THE NHL API ALL HOCKEY BOTS DO NOT WORK!!!", ephemeral=True)
+            #await interaction.followup.send("Error with `/guess-the-team`! Message has been sent to Bot Developers", ephemeral=True)
             await error_channel.send(embed=embed)
 
 async def setup(bot):
