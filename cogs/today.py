@@ -31,7 +31,6 @@ class today(commands.Cog):
             embed.set_footer(text=f"NHL API | https://api-web.nhle.com/api/v1/schedule/{today}")
             for i in range(len(games)):
                 game = data["gameWeek"][0]["games"][i]
-                print(game)
                 gameState = game["gameState"]
                 gameID = game['id']
                 url2 = f"https://api-web.nhle.com/v1/gamecenter/{gameID}/boxscore"
