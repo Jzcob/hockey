@@ -47,16 +47,12 @@ class today(commands.Cog):
                     elif gameState == "FINAL" or gameState == "OFF":
                         homeScore = game2['boxscore']['linescore']['totals']['home']
                         awayScore = game2['boxscore']['linescore']['totals']['away']
-                        homeShots = game2['boxscore']['shotsByPeriod'][-1]['home']
-                        awayShots = game2['boxscore']['shotsByPeriod'][-1]['away']
                         home = game2["homeTeam"]["name"]["default"]
                         away = game2["awayTeam"]["name"]["default"]
                         embed.add_field(name=f"Final!", value=f"\n{away} @ {home}\nScore: {awayScore} | {homeScore}\nShots: {awayShots} | {homeShots}", inline=False)
                     elif gameState == "LIVE":
                         homeScore = game2['boxscore']['linescore']['totals']['home']
                         awayScore = game2['boxscore']['linescore']['totals']['away']
-                        homeShots = game2['boxscore']['shotsByPeriod'][-1]['home']
-                        awayShots = game2['boxscore']['shotsByPeriod'][-1]['away']
                         clock = game2['clock']['timeRemaining']
                         clockRunning = game2['clock']['running']
                         clockIntermission = game2['clock']['inIntermission']
