@@ -17,7 +17,6 @@ class today(commands.Cog):
     
     @app_commands.command(name="today", description="Get today's schedule!")
     async def team(self, interaction: discord.Interaction):
-        #https://api-web.nhle.com/v1/schedule/2023-11-07
         today = datetime.today().strftime('%Y-%m-%d')
         url = f"https://api-web.nhle.com/v1/schedule/{today}"
         await interaction.response.defer()
@@ -45,7 +44,7 @@ class today(commands.Cog):
                         home = game2["homeTeam"]["name"]["default"]
                         away = game2["awayTeam"]["name"]["default"]
                         embed.add_field(name=f"{startTime}", value=f"{away} @ {home}\nGame is scheduled!", inline=False)
-                    elif gameState == "FINAL":
+                    elif gameState == "FINAL" or gameState == "OFF":
                         homeScore = game2['boxscore']['linescore']['totals']['home']
                         awayScore = game2['boxscore']['linescore']['totals']['away']
                         homeShots = game2['boxscore']['shotsByPeriod'][-1]['home']
