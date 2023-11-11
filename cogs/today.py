@@ -77,8 +77,8 @@ class today(commands.Cog):
             
             return await msg.edit(embed=embed)
         except Exception as e:
-            print(e)
-            return await interaction.response.send_message(f"Something went wrong. `{e}`")
+            error_channel = self.bot.get_channel(config.error_channel)
+            await error_channel.send(f"Error getting schedule! `{e}`")
 
 
 async def setup(bot):
