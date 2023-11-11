@@ -49,7 +49,7 @@ class today(commands.Cog):
                         awayScore = game2['boxscore']['linescore']['totals']['away']
                         home = game2["homeTeam"]["name"]["default"]
                         away = game2["awayTeam"]["name"]["default"]
-                        embed.add_field(name=f"Final!", value=f"\n{away} @ {home}\nScore: {awayScore} | {homeScore}\nShots: {awayShots} | {homeShots}", inline=False)
+                        embed.add_field(name=f"Final!", value=f"\n{away} @ {home}\nScore: {awayScore} | {homeScore}\n", inline=False)
                     elif gameState == "LIVE":
                         homeScore = game2['boxscore']['linescore']['totals']['home']
                         awayScore = game2['boxscore']['linescore']['totals']['away']
@@ -59,9 +59,9 @@ class today(commands.Cog):
                         home = game2["homeTeam"]["name"]["default"]
                         away = game2["awayTeam"]["name"]["default"]
                         if clockRunning == True:
-                            embed.add_field(name=f"LIVE", value=f"{away} @ {home}\nScore: {awayScore} | {homeScore}\nShots: {awayShots} | {homeShots}\nTime: {clock}", inline=False)
+                            embed.add_field(name=f"LIVE", value=f"{away} @ {home}\nScore: {awayScore} | {homeScore}\nTime: {clock}", inline=False)
                         if clockIntermission == True:
-                            embed.add_field(name=f"Intermission!", value=f"{away} @ {home}\nScore: {awayScore} | {homeScore}\nShots: {awayShots} | {homeShots}", inline=False)
+                            embed.add_field(name=f"Intermission!", value=f"{away} @ {home}\nScore: {awayScore} | {homeScore}", inline=False)
                     else:
                         home = game2["homeTeam"]["name"]["default"]
                         away = game2["awayTeam"]["name"]["default"]
