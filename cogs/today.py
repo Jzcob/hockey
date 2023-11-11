@@ -37,10 +37,8 @@ class today(commands.Cog):
                 r2 = requests.get(url2)
                 game2 = r2.json()
                 startTime = game["startTimeUTC"]
-
                 startTime = datetime.strptime(startTime, '%Y-%m-%dT%H:%M:%SZ')
-                startTime -= timedelta(hours=4)
-                startTime = datetime.strptime(startTime, '%Y-%m-%dT%H:%M:%SZ')
+                startTime = startTime - timedelta(hours=5)
                 startTime = startTime.strftime('%I:%M %p')
                 try:
                     if gameState == "FUT":
