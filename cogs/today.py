@@ -5,6 +5,7 @@ import requests
 from datetime import datetime
 import config
 from datetime import datetime
+from datetime import timedelta
 
 class today(commands.Cog):
     def __init__(self, bot):
@@ -37,6 +38,9 @@ class today(commands.Cog):
                 r2 = requests.get(url2)
                 game2 = r2.json()
                 startTime = game["startTimeUTC"]
+
+                startTime = datetime.strptime(startTime, '%Y-%m-%dT%H:%M:%SZ')
+                startTime -= timedelta(hours=4)
                 startTime = datetime.strptime(startTime, '%Y-%m-%dT%H:%M:%SZ')
                 startTime = startTime.strftime('%I:%M %p')
                 try:
