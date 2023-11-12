@@ -95,6 +95,9 @@ async def on_guild_join(guild):
                                         f"Created: {guild.created_at}\n" +
                                         f"Verification Level: {guild.verification_level}", color=0x00ff00)
     embed.set_thumbnail(url=f"{guild.icon}")
+    
+    vc = bot.get_channel(1173304351872253952)
+    await vc.edit(name=f"Servers: {len(bot.guilds)}")
     await bot.get_channel(1168939285274177627).send(embed=embed)
 
 asyncio.run(main())
