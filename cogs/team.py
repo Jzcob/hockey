@@ -1,57 +1,101 @@
 import discord
-from discord import app_commands
 from discord.ext import commands
+from discord import app_commands
 import requests
-import json
+from datetime import datetime, timedelta
 import config
 
 class team(commands.Cog):
-    def __init__(self, bot): 
+    def __init__(self, bot):
         self.bot = bot
     
     @commands.Cog.listener()
     async def on_ready(self):
         print(f"LOADED: `team.py`")
     
-    @app_commands.command(name="team", description="Gets the information of a team!")
-    async def team(self, interaction : discord.Interaction, team: str):
-        #teams url "https://statsapi.web.nhl.com/api/v1/teams"
-        #https://statsapi.web.nhl.com/api/v1/teams/6
+    @app_commands.command(name="team", description="Get the schedule for the week for a team! (e.g. BOS, NYR, etc.)")
+    async def team(self, interaction: discord.Interaction, abbreviation: str):
         try:
-
-            teamID = config.checkForTeam(team)
-            if teamID == None:
-                await interaction.response.send_message("Team not found!")
+            await interaction.response.defer()
+            msg = await interaction.original_response()
+            teams = {
+                "ANA": "Anaheim Ducks",
+                "ARI": "Arizona Coyotes",
+                "BOS": "Boston Bruins",
+                "BUF": "Buffalo Sabres",
+                "CGY": "Calgary Flames",
+                "CAR": "Carolina Hurricanes",
+                "CHI": "Chicago Blackhawks",
+                "COL": "Colorado Avalanche",
+                "CBJ": "Columbus Blue Jackets",
+                "DAL": "Dallas Stars",
+                "DET": "Detroit Red Wings",
+                "EDM": "Edmonton Oilers",
+                "FLA": "Florida Panthers",
+                "LAK": "Los Angeles Kings",
+                "MIN": "Minnesota Wild",
+                "MTL": "Montreal Canadiens",
+                "NSH": "Nashville Predators",
+                "NJD": "New Jersey Devils",
+                "NYI": "New York Islanders",
+                "NYR": "New York Rangers",
+                "OTT": "Ottawa Senators",
+                "PHI": "Philadelphia Flyers",
+                "PIT": "Pittsburgh Penguins",
+                "SJS": "San Jose Sharks",
+                "STL": "St. Louis Blues",
+                "TBL": "Tampa Bay Lightning",
+                "TOR": "Toronto Maple Leafs",
+                "VAN": "Vancouver Canucks",
+                "VGK": "Vegas Golden Knights",
+                "WSH": "Washington Capitals",
+                "WPG": "Winnipeg Jets"
+            }
+            if abbreviation.upper() in teams:
+                team = abbreviation.upper()
+                team = teams[team]
+            else:    
+                await interaction.response.send_message("Please enter a valid team abbreviation. e.g. `/team BOS`", ephemeral=True)
                 return
-            
-            teamURL = f"https://statsapi.web.nhl.com/api/v1/teams/{teamID}"
-            teamGet = requests.get(teamURL)
-            teamFullName = teamGet.json()['teams'][0]['name']
-            teamNickname = teamGet.json()['teams'][0]['teamName']
-            teamAbbreviation = teamGet.json()['teams'][0]['abbreviation']
-            teamDivision = teamGet.json()['teams'][0]['division']['name']
-            teamConference = teamGet.json()['teams'][0]['conference']['name']
-            teamVenue = teamGet.json()['teams'][0]['venue']['name']
-            teamLocation = teamGet.json()['teams'][0]['locationName']
-            teamFirstYear = teamGet.json()['teams'][0]['firstYearOfPlay']
-            teamOfficialSite = teamGet.json()['teams'][0]['officialSiteUrl']
-
-            embed = discord.Embed(title=f"{teamFullName}", description=f"{teamNickname}", color=config.color, url=f"{teamOfficialSite}")
-            embed.set_thumbnail(url="https://cdn.discordapp.com/attachments/1156254139966292099/1156254690573557920/61487dbbd329bb0004dbd335.png?ex=65144d98&is=6512fc18&hm=a2d4ae15d46d52bdf2e15ee6feea5042323d96b706ba03586b477b262f7af48b&")
-            embed.set_author(icon_url=interaction.user.avatar.url, name="NHL Team Information")
-            embed.add_field(name="Abbreviation", value=f"{teamAbbreviation}", inline=True)
-            embed.add_field(name="Division", value=f"{teamDivision}", inline=True)
-            embed.add_field(name="Conference", value=f"{teamConference}", inline=True)
-            embed.add_field(name="Venue", value=f"{teamVenue}", inline=True)
-            embed.add_field(name="Location", value=f"{teamLocation}", inline=True)
-            embed.add_field(name="First Year of Play", value=f"{teamFirstYear}", inline=True)
-            embed.set_footer(text=f"Team ID: {teamID}")
-
-            await interaction.response.send_message(embed=embed, ephemeral=True)
+            today = datetime.today().strftime('%Y-%m-%d')
+            url = f"https://api-web.nhle.com/v1/standings/{today}"
+            r = requests.get(url)
+            data = r.json()
+            for i in range(len(data['standings'])):
+                tN = data['standings'][i]['teamName']['default']
+                try:
+                    if tN == team:
+                        wins = data['standings'][i]['wins']
+                        losses = data['standings'][i]['losses']
+                        otLosses = data['standings'][i]['otLosses']
+                        points = data['standings'][i]['points']
+                        teamName = data['standings'][i]['teamName']['default']
+                        teamAbbreviation = data['standings'][i]['teamAbbrev']['default']
+                        confrence = data['standings'][i]['conferenceName']
+                        division = data['standings'][i]['divisionName']
+                        goalsFor = data['standings'][i]['goalFor']
+                        goalsAgainst = data['standings'][i]['goalAgainst']
+                        gamesPlayed = data['standings'][i]['gamesPlayed']
+                        goalDifference = data['standings'][i]['goalDifferential']
+                        streakCode = data['standings'][i]['streak']['streakCode']
+                        streakNumber = data['standings'][i]['streak']['streakNumber']
+                        embed = discord.Embed(title=f"{teamName} ({teamAbbreviation})", description=f"**{confrence} confrence & {division} division**", color=config.color)
+                        embed.add_field(name="Wins", value=wins)
+                        embed.add_field(name="Losses", value=losses)
+                        embed.add_field(name="OT Losses", value=otLosses)
+                        embed.add_field(name="Goals For", value=goalsFor)
+                        embed.add_field(name="Goals Against", value=goalsAgainst)
+                        embed.add_field(name="Goal Differencial", value=goalDifference)
+                        embed.add_field(name="Games Played", value=gamesPlayed)
+                        embed.add_field(name="Points", value=points)
+                        embed.add_field(name="Streak", value=f"{streakCode} {streakNumber}")
+                        embed.set_footer(text=f"API: https://statsapi.web.nhl.com/api/v1/standings/{today}")
+                except Exception as e:
+                    print(e)
+            await msg.edit(embed=embed)
         except Exception as e:
             error_channel = self.bot.get_channel(config.error_channel)
-            await interaction.followup.send("Error getting schedule! THERE IS CURRENTLY AN ERROR WITH THE NHL API ALL HOCKEY BOTS DO NOT WORK!!!", ephemeral=True)
-            #await interaction.response.send_message("Error getting team! Message has been sent to Bot Developers", ephemeral=True)
+            await interaction.response.send_message("Error getting team! Message has been sent to Bot Developers", ephemeral=True)
             embed = discord.Embed(title="Error with `/team`", description=f"```{e}```", color=config.color)
             embed.set_author(icon_url=interaction.user.avatar.url, name="NHL Bot Error")
             embed.add_field(name="Team", value=team)
