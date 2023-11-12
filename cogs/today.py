@@ -4,8 +4,9 @@ from discord.ext import commands
 import requests
 from datetime import datetime
 import config
-from datetime import datetime
-from datetime import timedelta
+from datetime import datetime, timedelta
+import pytz
+
 
 class today(commands.Cog):
     def __init__(self, bot):
@@ -17,12 +18,18 @@ class today(commands.Cog):
     
     @app_commands.command(name="today", description="Get today's schedule!")
     async def team(self, interaction: discord.Interaction):
-        today = datetime.today().strftime('%Y-%m-%d')
-        url = f"https://api-web.nhle.com/v1/schedule/{today}"
-        await interaction.response.defer()
-        msg = await interaction.original_response()
-        r = requests.get(url)
-        data = r.json()
+        try:
+            newYork = pytz.timezone('America/New_York')
+            dt = datetime.now(newYork)
+            today = dt.strftime('%Y-%m-%d')
+            url = f"https://api-web.nhle.com/v1/schedule/{today}"
+            await interaction.response.defer()
+            msg = await interaction.original_response()
+            r = requests.get(url)
+            global data
+            data = r.json()
+        except Exception as e:
+            print(e)
         try:
             games = data["gameWeek"][0]["games"]
             embed = discord.Embed(title=f"Today's Games", color=config.color)
@@ -74,7 +81,7 @@ class today(commands.Cog):
             return await msg.edit(embed=embed)
         except Exception as e:
             error_channel = self.bot.get_channel(config.error_channel)
-            await error_channel.send(f"Error getting schedule! `{e}`")
+            await error_channel.send(f"Error in `/today`:\n `{e}`")
 
 
 async def setup(bot):
