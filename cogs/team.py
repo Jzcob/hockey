@@ -77,8 +77,8 @@ class team(commands.Cog):
                         goalsAgainst = data['standings'][i]['goalAgainst']
                         gamesPlayed = data['standings'][i]['gamesPlayed']
                         goalDifference = data['standings'][i]['goalDifferential']
-                        streakCode = data['standings'][i]['streak']['streakCode']
-                        streakNumber = data['standings'][i]['streak']['streakNumber']
+                        streakCode = data['standings'][i]['streakCode']
+                        streakNumber = data['standings'][i]['streakCount']
                         embed = discord.Embed(title=f"{teamName} ({teamAbbreviation})", description=f"**{confrence} confrence & {division} division**", color=config.color)
                         embed.add_field(name="Wins", value=wins)
                         embed.add_field(name="Losses", value=losses)
