@@ -19,7 +19,7 @@ class today(commands.Cog):
     @app_commands.command(name="today", description="Get today's schedule!")
     async def team(self, interaction: discord.Interaction):
         try:
-            newYork = pytz.timezone('America/New_York')
+            newYork = pytz.timezone('US/Hawaii')
             dt = datetime.now(newYork)
             today = dt.strftime('%Y-%m-%d')
             url = f"https://api-web.nhle.com/v1/schedule/{today}"

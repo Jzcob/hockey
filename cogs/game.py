@@ -48,7 +48,7 @@ class game(commands.Cog):
                             return await interaction.followup.send(embed=embed, ephemeral=True)
         except Exception as e:
             error_channel = self.bot.get_channel(config.error_channel)
-            embed = discord.Embed(title="Error", description=f"```{e}```", color=config.color)
+            embed = discord.Embed(title="Error with `/game`", description=f"```{e}```", color=config.color)
             embed.set_author(icon_url=interaction.user.avatar.url, name="NHL Bot Error")
             embed.add_field(name="Team", value=team)
             embed.add_field(name="User", value=interaction.user.mention)
@@ -57,7 +57,7 @@ class game(commands.Cog):
             embed.set_footer(text=datetime.now().strftime("%m/%d/%Y, %H:%M:%S"))
             await interaction.followup.send("Error getting schedule! THERE IS CURRENTLY AN ERROR WITH THE NHL API ALL HOCKEY BOTS DO NOT WORK!!!", ephemeral=True)
             #await interaction.followup.send("Error getting game! Message has been sent to Bot Developers", ephemeral=True)
-            return await error_channel.send(content="<@920797181034778655>",embed=embed)
+            return await error_channel.send(embed=embed)
     
 
 async def setup(bot):
