@@ -68,7 +68,7 @@ class standings(commands.Cog):
                     pacific.append(pacificString)
             embed = discord.Embed(title="Standings", color=config.color)
             embed.set_thumbnail(url="https://www-league.nhlstatic.com/images/logos/league-dark/133-flat.svg")
-            embed.set_footer(text=f"NHL API | https://api-web.nhle.com/api/v1/standings/{today}")
+            embed.set_footer(text=f"NHL API | https://api-web.nhle.com/v1/standings/{today}")
             embed.add_field(name="Atlantic", value="\n".join(atlantic), inline=False)
             embed.add_field(name="Metropolitan", value="\n".join(metropolitan), inline=False)
             embed.add_field(name="Central", value="\n".join(central), inline=False)

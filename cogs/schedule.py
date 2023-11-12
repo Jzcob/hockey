@@ -1,161 +1,92 @@
 import discord
-from discord import app_commands
 from discord.ext import commands
+from discord import app_commands
 import requests
 from datetime import datetime, timedelta
-import time
-import json
 import config
 
 class schedule(commands.Cog):
-    def __init__(self, bot): 
+    def __init__(self, bot):
         self.bot = bot
     
     @commands.Cog.listener()
     async def on_ready(self):
         print(f"LOADED: `schedule.py`")
     
+    @app_commands.command(name="schedule", description="Get the schedule for the week for a team! (e.g. BOS, NYR, etc.)")
+    async def schedule(self, interaction: discord.Interaction, abbreviation: str):
+        teams = {
+            "ANA": "Anaheim Ducks",
+            "ARI": "Arizona Coyotes",
+            "BOS": "Boston Bruins",
+            "BUF": "Buffalo Sabres",
+            "CGY": "Calgary Flames",
+            "CAR": "Carolina Hurricanes",
+            "CHI": "Chicago Blackhawks",
+            "COL": "Colorado Avalanche",
+            "CBJ": "Columbus Blue Jackets",
+            "DAL": "Dallas Stars",
+            "DET": "Detroit Red Wings",
+            "EDM": "Edmonton Oilers",
+            "FLA": "Florida Panthers",
+            "LAK": "Los Angeles Kings",
+            "MIN": "Minnesota Wild",
+            "MTL": "Montreal Canadiens",
+            "NSH": "Nashville Predators",
+            "NJD": "New Jersey Devils",
+            "NYI": "New York Islanders",
+            "NYR": "New York Rangers",
+            "OTT": "Ottawa Senators",
+            "PHI": "Philadelphia Flyers",
+            "PIT": "Pittsburgh Penguins",
+            "SJS": "San Jose Sharks",
+            "STL": "St. Louis Blues",
+            "TBL": "Tampa Bay Lightning",
+            "TOR": "Toronto Maple Leafs",
+            "VAN": "Vancouver Canucks",
+            "VGK": "Vegas Golden Knights",
+            "WSH": "Washington Capitals",
+            "WPG": "Winnipeg Jets"
+        }
+        if abbreviation.upper() in teams:
+            team = abbreviation.upper()
+            team = teams[team]
 
-    @app_commands.command(name="schedule", description="Gets the schedule of a team!")
-    @app_commands.choices(length=[
-        discord.app_commands.Choice(name="Today", value="today"),
-        discord.app_commands.Choice(name="Tomorrow", value="tomorrow"),
-        discord.app_commands.Choice(name="1 Week", value="week"),
-    ])
-    async def schedule(self, interaction: discord.Interaction, length: discord.app_commands.Choice[str],  team: str):
-        teamID = config.checkForTeam(team)
-        if teamID == None:
-            return await interaction.response.send_message("Team not found!", ephemeral=True)
-        await interaction.response.send_message("Searching for game...", ephemeral=True)
+        else:
+            await interaction.response.send_message("Invalid team abbreviation. Please try again. e.g. `/schedule BOS`", ephemeral=True)
+            return
         try:
-            if length.value == "today":
-                date = datetime.today().strftime('%Y-%m-%d')
-                scheduleURL = f"https://statsapi.web.nhl.com/api/v1/schedule?teamId={teamID}&date={date}"
-                scheduleGet = requests.get(scheduleURL)
-                scheduleTotalGames = scheduleGet.json()['totalGames']
-                if scheduleTotalGames == 0:
-                    return await interaction.followup.send("No games found!", ephemeral=True)
-                for i in range(scheduleTotalGames):
-                    games = scheduleGet.json()['dates'][i]['games']
-                    for game in games:
-                        gameID = game['gamePK']
-                        gameBoxScoreURL = f"https://statsapi.web.nhl.com/api/v1/game/{gameID}/boxscore"
-                        gameBoxScoreGet = requests.get(gameBoxScoreURL)
-                        home = gameBoxScoreGet.json()['teams']['home']['team']['name']
-                        homeScore = gameBoxScoreGet.json()['teams']['home']['teamStats']['teamSkaterStats']['goals']
-                        homeShots = gameBoxScoreGet.json()['teams']['home']['teamStats']['teamSkaterStats']['shots']
-                        homeWins = scheduleGet.json()['dates'][i]['games'][0]['teams']['home']['leagueRecord']['wins']
-                        homeLosses = scheduleGet.json()['dates'][i]['games'][0]['teams']['home']['leagueRecord']['losses']
-                        homeOT = scheduleGet.json()['dates'][i]['games'][0]['teams']['home']['leagueRecord']['ot']
-                        homeRecord = f"{homeWins}-{homeLosses}-{homeOT}"
-                        away = gameBoxScoreGet.json()['teams']['away']['team']['name']
-                        awayScore = gameBoxScoreGet.json()['teams']['away']['teamStats']['teamSkaterStats']['goals']
-                        awayShots = gameBoxScoreGet.json()['teams']['away']['teamStats']['teamSkaterStats']['shots']
-                        awayWins = scheduleGet.json()['dates'][i]['games'][0]['teams']['away']['leagueRecord']['wins']
-                        awayLosses = scheduleGet.json()['dates'][i]['games'][0]['teams']['away']['leagueRecord']['losses']
-                        awayOT = scheduleGet.json()['dates'][i]['games'][0]['teams']['away']['leagueRecord']['ot']
-                        awayRecord = f"{awayWins}-{awayLosses}-{awayOT}"
-                        embed = discord.Embed(title=f"{away} @ {home}", description=f"Score: {awayScore} - {homeScore}\nShots: {awayShots} - {homeShots}", color=config.color)
-                        embed.add_field(name=f"{away}", value=f"Record: {awayRecord}", inline=True)
-                        embed.add_field(name=f"{home}", value=f"Record: {homeRecord}", inline=True)
-                        embed.set_author(icon_url=interaction.user.avatar.url, name="NHL Game")
-                        embed.set_footer(text=f"Game ID: {gameID}")
-                        return await interaction.followup.send(embed=embed, ephemeral=True)
-            elif length.value == "tomorrow":
-                try:
-                    date = datetime.today() + timedelta(days=1)
-                    date = date.strftime('%Y-%m-%d')
-                    scheduleURL = f"https://statsapi.web.nhl.com/api/v1/schedule?teamId={teamID}&date={date}"
-                    scheduleGet = requests.get(scheduleURL)
-                    scheduleTotalGames = scheduleGet.json()['totalGames']
-                    if scheduleTotalGames == 0:
-                        return await interaction.followup.send("No games found!", ephemeral=True)
-                    for i in range(scheduleTotalGames):
-                        games = scheduleGet.json()['dates'][i]['games']
-                        for game in games:
-                            gameID = scheduleGet.json()['dates'][i]['games'][0]['gamePk']
-                            gameBoxScoreURL = f"https://statsapi.web.nhl.com/api/v1/game/{gameID}/boxscore"
-                            gameBoxScoreGet = requests.get(gameBoxScoreURL)
-                            home = gameBoxScoreGet.json()['teams']['home']['team']['name']
-                            homeWins = scheduleGet.json()['dates'][i]['games'][0]['teams']['home']['leagueRecord']['wins']
-                            homeLosses = scheduleGet.json()['dates'][i]['games'][0]['teams']['home']['leagueRecord']['losses']
-                            homeOT = scheduleGet.json()['dates'][i]['games'][0]['teams']['home']['leagueRecord']['ot']
-                            homeRecord = f"{homeWins}-{homeLosses}-{homeOT}"
-                            away = gameBoxScoreGet.json()['teams']['away']['team']['name']
-                            awayWins = scheduleGet.json()['dates'][i]['games'][0]['teams']['away']['leagueRecord']['wins']
-                            awayLosses = scheduleGet.json()['dates'][i]['games'][0]['teams']['away']['leagueRecord']['losses']
-                            awayOT = scheduleGet.json()['dates'][i]['games'][0]['teams']['away']['leagueRecord']['ot']
-                            awayRecord = f"{awayWins}-{awayLosses}-{awayOT}"
-                            gameDate = scheduleGet.json()['dates'][i]['games'][0]['gameDate']
-                            gameDate = datetime.strptime(gameDate, "%Y-%m-%dT%H:%M:%SZ")
-                            newDate = gameDate - timedelta(hours=4)
-                            gameDate = newDate.timestamp()
-                            embed = discord.Embed(title=f"{away} @ {home}", description=f"Game Date: <t:{int(gameDate)}>", color=config.color)
-                            embed.add_field(name=f"{away}", value=f"Record: {awayRecord}", inline=True)
-                            embed.add_field(name=f"{home}", value=f"Record: {homeRecord}", inline=True)
-                            embed.set_author(icon_url=interaction.user.avatar.url, name="NHL Game")
-                            embed.set_footer(text=f"Game ID: {gameID}")
-                            await interaction.followup.send(embed=embed, ephemeral=True)
-                except Exception as e:
-                    error_channel = self.bot.get_channel(config.error_channel)
-                    await interaction.followup.send("Error getting schedule! Message has been sent to Bot Developers", ephemeral=True)
-                    await error_channel.send(f"Something went wrong! `{e}`", ephemeral=True)
-            elif length.value == "week":
-                startDate = datetime.today()
-                startDate = startDate.strftime('%Y-%m-%d')
-                endDate = datetime.today() + timedelta(days=7)
-                endDate = endDate.strftime('%Y-%m-%d')
-                scheduleURL = f"https://statsapi.web.nhl.com/api/v1/schedule?teamId={teamID}&startDate={startDate}&endDate={endDate}"
-                scheduleGet = requests.get(scheduleURL)
-                scheduleTotalGames = scheduleGet.json()['totalGames']
-                x = 0
-                embed = discord.Embed(title=f"Schedule for the week", color=config.color)
-                embed.set_author(icon_url=interaction.user.avatar.url, name="NHL Game")
-                if scheduleTotalGames == 0:
-                    return await interaction.followup.send("No games found!", ephemeral=True)
-                for i in range(scheduleTotalGames):
-                    games = scheduleGet.json()['dates'][i]['games']
-                    try:
-                        for game in games:
-                            try:
-                                gameID = scheduleGet.json()['dates'][i]['games'][x]['gamePk']
-                            except Exception as e:
-                                error_channel = self.bot.get_channel(config.error_channel)
-                                embed = discord.Embed(title="Error with `/schedule`", description=f"Something went wrong! `{e}`", color=config.color)
-                            gameBoxScoreURL = f"https://statsapi.web.nhl.com/api/v1/game/{gameID}/boxscore"
-                            gameBoxScoreGet = requests.get(gameBoxScoreURL)
-                            home = gameBoxScoreGet.json()['teams']['home']['team']['name']
-                            homeWins = scheduleGet.json()['dates'][i]['games'][0]['teams']['home']['leagueRecord']['wins']
-                            homeLosses = scheduleGet.json()['dates'][i]['games'][0]['teams']['home']['leagueRecord']['losses']
-                            homeOT = scheduleGet.json()['dates'][i]['games'][0]['teams']['home']['leagueRecord']['ot']
-                            homeRecord = f"{homeWins}-{homeLosses}-{homeOT}"
-                            away = gameBoxScoreGet.json()['teams']['away']['team']['name']
-                            awayWins = scheduleGet.json()['dates'][i]['games'][0]['teams']['away']['leagueRecord']['wins']
-                            awayLosses = scheduleGet.json()['dates'][i]['games'][0]['teams']['away']['leagueRecord']['losses']
-                            awayOT = scheduleGet.json()['dates'][i]['games'][0]['teams']['away']['leagueRecord']['ot']
-                            awayRecord = f"{awayWins}-{awayLosses}-{awayOT}"
-                            gameDate = scheduleGet.json()['dates'][i]['games'][x]['gameDate']
-                            gameDate = datetime.strptime(gameDate, "%Y-%m-%dT%H:%M:%SZ")
-                            gameDate = gameDate.timestamp()
-                            embed.add_field(name=f"{away} @ {home}", value=f"Game Date: <t:{int(gameDate)}> \n\n Away Record: {awayRecord}\nHome Record: {homeRecord}\nGame ID: {gameID}", inline=False)
-                            x += 1
-                    except Exception as e:
-                        error_channel = self.bot.get_channel(config.error_channel)
-                        embed = discord.Embed(title="Error with `/schedule`", description=f"Something went wrong! `{e}`", color=config.color)
-                    x = 0
-                await interaction.followup.send(embed=embed, ephemeral=True)
+            url = f'https://api-web.nhle.com/v1/club-schedule/{abbreviation}/week/now'
+            r = requests.get(url)
+            data = r.json()
+            await interaction.response.defer()
+            msg = await interaction.original_response()
+            games = data['games']
+            embed = discord.Embed(title=f"{team} Schedule", color=0x000000)
+            for i in range(len(games)):
+                gameID = data['games'][i]['id']
+                url2 = f"https://api-web.nhle.com/v1/gamecenter/{gameID}/boxscore"
+                r2 = requests.get(url2)
+                game2 = r2.json()
+                home = game2["homeTeam"]["name"]["default"]
+                away = game2["awayTeam"]["name"]["default"]
+                startTime = games[i]['startTimeUTC']
+                startTime = datetime.strptime(startTime, '%Y-%m-%dT%H:%M:%SZ')
+                startTime = startTime.strftime('%I:%M %p')
+                embed.add_field(name=f"{startTime}", value=f"{away} @ {home}\nGame is scheduled!", inline=False)
+            embed.set_thumbnail(url="https://www-league.nhlstatic.com/images/logos/league-dark/133-flat.svg")
+            embed.set_footer(text=f"NHL API | https://api-web.nhle.com/v1/club-schedule/{abbreviation}/week/now")
+            await msg.edit(embed=embed)
         except Exception as e:
             error_channel = self.bot.get_channel(config.error_channel)
             embed = discord.Embed(title="Error with `/schedule`", description=f"Something went wrong! `{e}`", color=config.color)
             embed.set_author(icon_url=interaction.user.avatar.url, name="NHL Game")
             embed.add_field(name="Team", value=team, inline=True)
-            embed.add_field(name="Length", value=length.value, inline=True)
             embed.set_footer(text=f"Game ID: {gameID}")
             embed.add_field(name="User", value=interaction.user.mention, inline=True)
             embed.add_field(name="Server", value=interaction.guild.name, inline=True)
             embed.add_field(name="Channel", value=interaction.channel.name, inline=True)
-            await interaction.followup.send("Error getting schedule! THERE IS CURRENTLY AN ERROR WITH THE NHL API ALL HOCKEY BOTS DO NOT WORK!!!", ephemeral=True)
-            #await interaction.followup.send("Error getting schedule! Message has been sent to Bot Developers", ephemeral=True)
+            await interaction.followup.send("Error getting schedule! Message has been sent to Bot Developers", ephemeral=True)
             return await error_channel.send(embed=embed)
 
 async def setup(bot):

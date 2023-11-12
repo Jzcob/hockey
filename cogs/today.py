@@ -34,7 +34,7 @@ class today(commands.Cog):
             games = data["gameWeek"][0]["games"]
             embed = discord.Embed(title=f"Today's Games", color=config.color)
             embed.set_thumbnail(url="https://www-league.nhlstatic.com/images/logos/league-dark/133-flat.svg")
-            embed.set_footer(text=f"NHL API | https://api-web.nhle.com/api/v1/schedule/{today}")
+            embed.set_footer(text=f"NHL API | https://api-web.nhle.com/v1/schedule/{today}")
             for i in range(len(games)):
                 game = data["gameWeek"][0]["games"][i]
                 gameState = game["gameState"]
