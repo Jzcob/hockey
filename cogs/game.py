@@ -90,11 +90,7 @@ class game(commands.Cog):
             awayShots = 0
             networks = ""
             embed = discord.Embed(title=f"{away} @ {home}", description=f"{awayScore} - {homeScore}", color=config.color)
-            for i in range(len(tvBroadcasts)):
-                network = tvBroadcasts[i]['network']
-                countryCode = tvBroadcasts[i]['countryCode']
-                networks += f"{network} ({countryCode})\n"
-            embed.add_field(name="TV Broadcast", value=f"{networks}", inline=False)
+            
             for i in range(len(shotsByPeriod)):
                 homeShots += shotsByPeriod[i]['home']
                 awayShots += shotsByPeriod[i]['away']
@@ -107,6 +103,11 @@ class game(commands.Cog):
             if clockIntermission == True:
                 embed.add_field(name="Clock", value=f"Intermission", inline=False)
             embed.set_footer(text="Data provided by NHL API")
+            for i in range(len(tvBroadcasts)):
+                network = tvBroadcasts[i]['network']
+                countryCode = tvBroadcasts[i]['countryCode']
+                networks += f"{network} ({countryCode})\n"
+            embed.add_field(name="TV Broadcast", value=f"{networks}", inline=False)
             embed.add_field(name="Venue", value=venue, inline=False)
             embed.add_field(name="Game ID", value=gameID, inline=False)
             await msg.edit(embed=embed)
