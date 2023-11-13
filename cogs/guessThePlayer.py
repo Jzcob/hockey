@@ -16,7 +16,7 @@ class guessThePlayer(commands.Cog):
         print(f"LOADED: `guessThePlayer.py`")
     
 
-    @app_commands.command(name="guess-the-player", description="Guess the player!")
+    """@app_commands.command(name="guess-the-player", description="Guess the player!")
     async def guessThePlayer(self, interaction : discord.Interaction):
         try:
             await interaction.response.send_message("Generating for player..")
@@ -95,7 +95,7 @@ class guessThePlayer(commands.Cog):
             embed.add_field(name="Channel", value=f"{interaction.channel.name}", inline=False)
             await interaction.followup.send("Error getting schedule! THERE IS CURRENTLY AN ERROR WITH THE NHL API ALL HOCKEY BOTS DO NOT WORK!!!", ephemeral=True)
             #await interaction.followup.send("Error with `/guess-the-player`! Message has been sent to Bot Developers", ephemeral=True)
-            await error_channel.send(embed=embed)
+            await error_channel.send(embed=embed)"""
 
 async def setup(bot):
     await bot.add_cog(guessThePlayer(bot))

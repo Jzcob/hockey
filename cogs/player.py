@@ -14,7 +14,7 @@ class player(commands.Cog):
     async def on_ready(self):
         print(f"LOADED: `player.py`")
     
-    @app_commands.command(name="player", description="Gets the information of a team!")
+    """@app_commands.command(name="player", description="Gets the information of a team!")
     async def player(self, interaction : discord.Interaction, name: str):
         try: 
             teamsURL = "https://statsapi.web.nhl.com/api/v1/teams"
@@ -100,7 +100,7 @@ class player(commands.Cog):
             embed.set_footer(text=datetime.now().strftime("%m/%d/%Y, %H:%M:%S"))
             await interaction.followup.send("Error getting schedule! THERE IS CURRENTLY AN ERROR WITH THE NHL API ALL HOCKEY BOTS DO NOT WORK!!!", ephemeral=True)
             #await interaction.followup.send("Error getting player! Message has been sent to Bot Developers", ephemeral=True)
-            await error_channel.send(f"Something went wrong `{e}`")
+            await error_channel.send(f"Something went wrong `{e}`")"""
 
 async def setup(bot):
     await bot.add_cog(player(bot))
