@@ -4,6 +4,7 @@ from discord import app_commands
 import requests
 from datetime import datetime, timedelta
 import config
+import pytz
 
 class game(commands.Cog):
     def __init__(self, bot):
@@ -57,7 +58,9 @@ class game(commands.Cog):
             else:    
                 await interaction.response.send_message("Please enter a valid team abbreviation. e.g. `/game BOS`", ephemeral=True)
                 return
-            today = datetime.today().strftime('%Y-%m-%d')
+            hawaii = pytz.timezone('US/Hawaii')
+            dt = datetime.now(hawaii)
+            today = dt.strftime('%Y-%m-%d')
             url = f'https://api-web.nhle.com/v1/club-schedule/{abbreviation}/week/now'
             response = requests.get(url)
             data = response.json()
