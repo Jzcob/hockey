@@ -4,6 +4,7 @@ from discord import app_commands
 import requests
 from datetime import datetime, timedelta
 import config
+import time
 
 class schedule(commands.Cog):
     def __init__(self, bot):
@@ -72,8 +73,11 @@ class schedule(commands.Cog):
                 away = game2["awayTeam"]["name"]["default"]
                 startTime = games[i]['startTimeUTC']
                 startTime = datetime.strptime(startTime, '%Y-%m-%dT%H:%M:%SZ')
-                startTime = startTime.strftime('%I:%M %p')
-                embed.add_field(name=f"{startTime}", value=f"{away} @ {home}", inline=False)
+                start_timestamp = int(startTime.timestamp())
+                
+                
+
+                embed.add_field(name=f"<t:{start_timestamp}:f>", value=f"{away} @ {home}", inline=False)
             embed.set_thumbnail(url="https://www-league.nhlstatic.com/images/logos/league-dark/133-flat.svg")
             embed.set_footer(text=f"NHL API | https://api-web.nhle.com/v1/club-schedule/{abbreviation}/week/now")
             await msg.edit(embed=embed)
