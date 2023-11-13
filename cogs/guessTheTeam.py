@@ -5,11 +5,11 @@ import random
 import asyncio
 import config
 
-class guessTheTeam(commands.Cog):
+class GuessTheTeam(commands.Cog):
     def __init__(self, bot):
         self.bot = bot
     
-    @commands.command()
+    @commands.Cog.listener()
     async def on_ready(self):
         print("LOADED: `guessTheTeam.py`")
     
@@ -73,4 +73,4 @@ class guessTheTeam(commands.Cog):
             await error_channel.send(embed=embed)
 
 async def setup(bot):
-    await bot.add_cog(guessTheTeam(bot))
+    await bot.add_cog(GuessTheTeam(bot))
