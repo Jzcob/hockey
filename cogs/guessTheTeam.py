@@ -73,4 +73,4 @@ class guessTheTeam(commands.Cog):
             await error_channel.send(embed=embed)
 
 async def setup(bot):
-    await bot.add_cog(GuessTheTeam(bot))
+    await bot.add_cog(guessTheTeam(bot))
