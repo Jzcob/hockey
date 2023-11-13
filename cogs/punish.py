@@ -299,13 +299,13 @@ class punish(commands.Cog):
             notelist = playerDB['punishments']["notes"]
             embed = discord.Embed(title=f"{member}'s Punishments", color=config.color)
             for warn in warnList:
-                embed.add_field(name=f"Warn #{warnList.index(warn) + 1}", value=f"**Reason:** {warn['reason']}\n**Staff:** {warn['staff']}\n**Date:** {warn['date']}", inline=False)
+                embed.add_field(name=f"Warn #{warnList.index(warn) + 1}", value=f"**Reason:** {warn['reason']}\n**Staff:** <@{warn['staff']}>\n**Date:** {warn['date']}", inline=False)
             for timeout in timeoutList:
-                embed.add_field(name=f"Timeout #{timeoutList.index(timeout) + 1}", value=f"**Reason:** {timeout['reason']}\n**Staff:** {timeout['staff']}\n**Date:** {timeout['date']}\n**Duration:** {timeout['duration']}", inline=False)
+                embed.add_field(name=f"Timeout #{timeoutList.index(timeout) + 1}", value=f"**Reason:** {timeout['reason']}\n**Staff:** <@{timeout['staff']}>\n**Date:** {timeout['date']}\n**Duration:** {timeout['duration']}", inline=False)
             for ban in banList:
-                embed.add_field(name=f"Ban #{banList.index(ban) + 1}", value=f"**Reason:** {ban['reason']}\n**Staff:** {ban['staff']}\n**Date:** {ban['date']}", inline=False)
+                embed.add_field(name=f"Ban #{banList.index(ban) + 1}", value=f"**Reason:** {ban['reason']}\n**Staff:** <@{ban['staff']}>\n**Date:** {ban['date']}", inline=False)
             for note in notelist:
-                embed.add_field(name=f"Note #{notelist.index(note) + 1}", value=f"**Note:** {note['note']}\n**Staff:** {note['staff']}\n**Date:** {note['date']}", inline=False)
+                embed.add_field(name=f"Note #{notelist.index(note) + 1}", value=f"**Note:** {note['note']}\n**Staff:** <@{note['staff']}>\n**Date:** {note['date']}", inline=False)
             await interaction.response.send_message(embed=embed)
         except Exception as e:
             error_channel = self.bot.get_channel(config.error_channel)
