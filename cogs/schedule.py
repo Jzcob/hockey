@@ -77,7 +77,7 @@ class schedule(commands.Cog):
                 
                 
 
-                embed.add_field(name=f"<t:{start_timestamp}:f>", value=f"{away} @ {home}", inline=False)
+                embed.add_field(name=f"<t:{start_timestamp}:F>", value=f"{away} @ {home}", inline=False)
             embed.set_thumbnail(url="https://www-league.nhlstatic.com/images/logos/league-dark/133-flat.svg")
             embed.set_footer(text=f"NHL API | https://api-web.nhle.com/v1/club-schedule/{abbreviation}/week/now")
             await msg.edit(embed=embed)
