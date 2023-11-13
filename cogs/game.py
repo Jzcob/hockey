@@ -99,9 +99,11 @@ class game(commands.Cog):
                 homeShots += shotsByPeriod[i]['home']
                 awayShots += shotsByPeriod[i]['away']
             embed.add_field(name="Shots", value=f"{away}: {awayShots}\n{home}: {homeShots}", inline=False)
-            embed.add_field(name="Current clock", value=f"{clock}", inline=False)
+            
             if clockRunning == True:
-                embed.add_field(name="Clock", value=f"Running", inline=False)
+                embed.add_field(name="Clock", value=f"{clock}\nRunning", inline=False)
+            else:
+                embed.add_field(name="Clock", value=f"{clock}", inline=False)
             if clockIntermission == True:
                 embed.add_field(name="Clock", value=f"Intermission", inline=False)
             embed.set_footer(text="Data provided by NHL API")
