@@ -68,7 +68,7 @@ class standings(commands.Cog):
                     pacific.append(pacificString)
             embed = discord.Embed(title="Standings", color=config.color)
             embed.set_thumbnail(url="https://www-league.nhlstatic.com/images/logos/league-dark/133-flat.svg")
-            embed.set_footer(text=f"NHL API | https://api-web.nhle.com/v1/standings/{today}")
+            embed.set_footer(text=config.footer)
             embed.add_field(name="Atlantic", value="\n".join(atlantic), inline=False)
             embed.add_field(name="Metropolitan", value="\n".join(metropolitan), inline=False)
             embed.add_field(name="Central", value="\n".join(central), inline=False)
@@ -82,7 +82,6 @@ class standings(commands.Cog):
             embed.add_field(name="Server", value=interaction.guild.name)
             embed.add_field(name="Channel", value=interaction.channel.mention)
             embed.set_footer(text=datetime.now().strftime("%m/%d/%Y, %H:%M:%S"))
-            #await interaction.followup.send("Error getting schedule! THERE IS CURRENTLY AN ERROR WITH THE NHL API ALL HOCKEY BOTS DO NOT WORK!!!", ephemeral=True)
             await interaction.followup.send("Error getting standings! Message has been sent to Bot Developers", ephemeral=True)
             await error_channel.send(embed=embed)
 

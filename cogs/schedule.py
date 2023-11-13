@@ -74,12 +74,9 @@ class schedule(commands.Cog):
                 startTime = games[i]['startTimeUTC']
                 startTime = datetime.strptime(startTime, '%Y-%m-%dT%H:%M:%SZ')
                 start_timestamp = int(startTime.timestamp())
-                
-                
-
                 embed.add_field(name=f"<t:{start_timestamp}:F>", value=f"{away} @ {home}", inline=False)
             embed.set_thumbnail(url="https://www-league.nhlstatic.com/images/logos/league-dark/133-flat.svg")
-            embed.set_footer(text=f"NHL API | https://api-web.nhle.com/v1/club-schedule/{abbreviation}/week/now")
+            embed.set_footer(text=config.footer)
             await msg.edit(embed=embed)
         except Exception as e:
             error_channel = self.bot.get_channel(config.error_channel)

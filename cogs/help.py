@@ -15,7 +15,7 @@ class Help(commands.Cog):
     @app_commands.command(name="help", description="Shows the help menu!")
     async def help(self, interaction: discord.Interaction):
         try:
-            embed = discord.Embed(title="Help Menu", description="Here are the commands you can use with this bot!\n\n<> = Required\n() = Not Required", color=config.color)
+            embed = discord.Embed(title="Help Menu", description="Here are the commands you can use with this bot!\n\n<> = Required\n() = Not Required\n\nHave any questions?\nhttps://discord.gg/H6ePukhwJZ", color=config.color)
             embed.set_thumbnail(url="https://cdn.discordapp.com/attachments/1156254139966292099/1156254690573557920/61487dbbd329bb0004dbd335.png?ex=65144d98&is=6512fc18&hm=a2d4ae15d46d52bdf2e15ee6feea5042323d96b706ba03586b477b262f7af48b&")
             embed.add_field(name="`/help`", value="Shows this help menu!", inline=False)
             #embed.add_field(name="`/player <name>`", value="Gets the information of a player!", inline=False)
@@ -27,8 +27,9 @@ class Help(commands.Cog):
             embed.add_field(name="`/schedule <abbreviation>`", value="Gets the schedule of the NHL!", inline=False)
             embed.add_field(name="`/game <abbreviation>`", value="Gets the information of a game!", inline=False)
             embed.add_field(name="`/today`", value="Gets the games of today!", inline=False)
+            embed.add_field(name="`/vote`", value="Vote for the bot!", inline=False)
             embed.add_field(name="`/help`", value="Shows this help menu!", inline=False)
-            embed.set_footer(text="Made by @jzcob")
+            embed.set_footer(text=config.footer)
             await interaction.response.send_message(embed=embed, ephemeral=True)
         except Exception as e:
             error_channel = self.bot.get_channel(config.error_channel)

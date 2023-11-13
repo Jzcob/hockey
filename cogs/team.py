@@ -89,7 +89,7 @@ class team(commands.Cog):
                         embed.add_field(name="Games Played", value=gamesPlayed)
                         embed.add_field(name="Points", value=points)
                         embed.add_field(name="Streak", value=f"{streakCode} {streakNumber}")
-                        embed.set_footer(text=f"API: https://statsapi.web.nhl.com/api/v1/standings/{today}")
+                        embed.set_footer(text=config.footer)
                 except Exception as e:
                     print(e)
             await msg.edit(embed=embed)

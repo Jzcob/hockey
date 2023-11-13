@@ -100,7 +100,7 @@ class game(commands.Cog):
                 embed.add_field(name="Clock", value=f"{clock}", inline=False)
             if clockIntermission == True:
                 embed.add_field(name="Clock", value=f"Intermission", inline=False)
-            embed.set_footer(text="Data provided by NHL API")
+            embed.set_footer(text=config.footer)
             for i in range(len(tvBroadcasts)):
                 network = tvBroadcasts[i]['network']
                 countryCode = tvBroadcasts[i]['countryCode']

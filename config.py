@@ -13,6 +13,7 @@ owner = 1165854743281799218
 
 color = 0xffffff
 error_channel = 1166019404870463558
+footer = "Bot created by @jzcob"
 
 def checkForTeam(team: str) -> None:
     url = "https://statsapi.web.nhl.com/api/v1/teams"

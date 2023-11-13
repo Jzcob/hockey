@@ -51,6 +51,7 @@ class teams(commands.Cog):
             embed = discord.Embed(title="Teams", description=f"Here are the teams in the league!", color=0x00ff00)
             for team in teams:
                 embed.add_field(name=team, value=teams[team], inline=False)
+            embed.set_footer(text=config.footer)
             await interaction.response.send_message(embed=embed, ephemeral=True)
             return
         except Exception as e:
