@@ -467,7 +467,6 @@ class punish(commands.Cog):
                     embed.add_field(name="`/fix-punishment <member> <type> <punishment> <reason>`", value="Fixes a punishment for a member of the discord server.", inline=False)
                     embed.add_field(name="`/purge <amount> (member)`", value="Purges a certain amount of messages.", inline=False)
                     embed.add_field(name="`/punishments <member>`", value="Shows the punishments of a member.", inline=False)
-                    embed.add_field(name="`/set-warns <member> <amount>`", value="Sets the amount of warns for a member.", inline=False)
                     await interaction.response.send_message(embed=embed, ephemeral=True)
                 else:
                     await interaction.response.send_message("You are not an administrator!", ephemeral=True)
