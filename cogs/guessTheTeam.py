@@ -51,17 +51,17 @@ class GuessTheTeam(commands.Cog):
             ]
             team = random.choice(teams)
             scramble_team = ''.join(random.sample(team, len(team)))
-            embed = discord.Embed(title="Guess The Team", description=f"Guess the team you have 30 seconds!\n\n{scramble_team}", color=config.color)
+            embed = discord.Embed(title="Guess The Team", description=f"Guess the team you have 30 seconds!\n\n`{scramble_team}`", color=config.color)
 
-            await interaction.response.send_message(embed=embed, ephemeral=True)
+            await interaction.response.send_message(embed=embed)
 
             def check(message):
                 return message.content.lower() == team.lower()
             try:
                 msg = await self.bot.wait_for('message', timeout=30.0, check=check)
-                await interaction.followup.send(f"Correct! {msg.author.mention} guessed the team!", ephemeral=True)
+                await interaction.followup.send(f"Correct! {msg.author.mention} guessed the team!")
             except asyncio.TimeoutError:
-                await interaction.followup.send("You didn't answer in time!", ephemeral=True)
+                await interaction.followup.send(f"You didn't answer in time! It was {team}")
         except Exception as e:
             error_channel = self.bot.get_channel(config.error_channel)
             embed = discord.Embed(title="Error with `/guess-the-team`", description=f"```{e}```", color=config.color)
