@@ -1,43 +1,67 @@
 import discord
 from discord.ext import commands
 from discord import app_commands
-import requests
-import json
-import config
-import asyncio
 import random
+import asyncio
+import config
 
-class GuessTheTeam(commands.Cog):
+class guessTheTeam(commands.Cog):
     def __init__(self, bot):
         self.bot = bot
     
-    @commands.Cog.listener()
+    @commands.command()
     async def on_ready(self):
-        print(f"LOADED: `guessTheTeam.py`")
+        print("LOADED: `guessTheTeam.py`")
     
     @app_commands.command(name="guess-the-team", description="Guess the team!")
     async def guessTheTeam(self, interaction: discord.Interaction):
-        # Get a team from the API
         try:
-            response = requests.get("https://statsapi.web.nhl.com/api/v1/teams")
-            teams = json.loads(response.text)["teams"]
-            team = random.choice(teams)["name"]
-            
-            # Scramble the team name
-            scrambled_team = "".join(random.sample(team, len(team)))
-            
-            # Send the scrambled team name
-            await interaction.response.send_message(f"Unscramble this team name: `{scrambled_team}`, you have 30 seconds!")
-            
-            # Wait for a response from the user that sent the message
+            teams = [
+                "Anaheim Ducks",
+                "Arizona Coyotes",
+                "Boston Bruins",
+                "Buffalo Sabres",
+                "Calgary Flames",
+                "Carolina Hurricanes",
+                "Chicago Blackhawks",
+                "Colorado Avalanche",
+                "Columbus Blue Jackets",
+                "Dallas Stars",
+                "Detroit Red Wings",
+                "Edmonton Oilers",
+                "Florida Panthers",
+                "Los Angeles Kings",
+                "Minnesota Wild",
+                "Montreal Canadiens",
+                "Nashville Predators",
+                "New Jersey Devils",
+                "New York Islanders",
+                "New York Rangers",
+                "Ottawa Senators",
+                "Philadelphia Flyers",
+                "Pittsburgh Penguins",
+                "San Jose Sharks",
+                "St. Louis Blues",
+                "Tampa Bay Lightning",
+                "Toronto Maple Leafs",
+                "Vancouver Canucks",
+                "Vegas Golden Knights",
+                "Washington Capitals",
+                "Winnipeg Jets"
+            ]
+            team = random.choice(teams)
+            scramble_team = ''.join(random.sample(team, len(team)))
+            embed = discord.Embed(title="Guess The Team", description=f"Guess the team you have 30 seconds!\n\n{scramble_team}", color=config.color)
+
+            await interaction.response.send_message(embed=embed, ephemeral=True)
+
             def check(message):
                 return message.content.lower() == team.lower()
-            
             try:
-                message = await self.bot.wait_for("message", check=check, timeout=30.0)
-                await interaction.followup.send(f"Congratulations, {message.author.mention}! You unscrambled the team name!")
+                msg = await self.bot.wait_for('message', timeout=30.0, check=check)
+                await interaction.followup.send(f"Correct! {msg.author.mention} guessed the team!", ephemeral=True)
             except asyncio.TimeoutError:
-                await interaction.followup.send(f"Sorry, time's up!, the correct answer was `{team}`.")
+                await interaction.followup.send("You didn't answer in time!", ephemeral=True)
         except Exception as e:
             error_channel = self.bot.get_channel(config.error_channel)
             embed = discord.Embed(title="Error with `/guess-the-team`", description=f"```{e}```", color=config.color)
@@ -45,8 +69,7 @@ class GuessTheTeam(commands.Cog):
             embed.add_field(name="User", value=f"{interaction.user.mention}", inline=False)
             embed.add_field(name="Server", value=f"{interaction.guild.name}", inline=False)
             embed.add_field(name="Channel", value=f"{interaction.channel.name}", inline=False)
-            await interaction.followup.send("Error getting schedule! THERE IS CURRENTLY AN ERROR WITH THE NHL API ALL HOCKEY BOTS DO NOT WORK!!!", ephemeral=True)
-            #await interaction.followup.send("Error with `/guess-the-team`! Message has been sent to Bot Developers", ephemeral=True)
+            await interaction.followup.send("Error with `/guess-the-team`! Message has been sent to Bot Developers", ephemeral=True)
             await error_channel.send(embed=embed)
 
 async def setup(bot):

@@ -90,12 +90,10 @@ class game(commands.Cog):
             awayShots = 0
             networks = ""
             embed = discord.Embed(title=f"{away} @ {home}", description=f"{awayScore} - {homeScore}", color=config.color)
-            
             for i in range(len(shotsByPeriod)):
                 homeShots += shotsByPeriod[i]['home']
                 awayShots += shotsByPeriod[i]['away']
             embed.add_field(name="Shots", value=f"{away}: {awayShots}\n{home}: {homeShots}", inline=False)
-            
             if clockRunning == True:
                 embed.add_field(name="Clock", value=f"{clock}\nRunning", inline=False)
             else:
