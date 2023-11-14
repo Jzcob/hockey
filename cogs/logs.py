@@ -80,20 +80,20 @@ class logs(commands.Cog):
                 try:
                     if before.nick != after.nick:
                         embed = discord.Embed(title=f"Nickname Changed", color=config.color)
-                        embed.set_author(name=before, icon_url=before.avatar_url)
+                        embed.set_author(name=before, icon_url=before.avatar.url)
                         embed.add_field(name="Before", value=before.nick, inline=False)
                         embed.add_field(name="After", value=after.nick, inline=False)
                         return await self.bot.get_channel(logs).send(embed=embed)
                     elif len(before.roles) < len(after.roles):
                         newRole = next(role for role in after.roles if role not in before.roles)
                         embed = discord.Embed(title=f"Role Added",description=newRole.mention, color=config.color)
-                        embed.set_author(name=before, icon_url=before.avatar_url)
+                        embed.set_author(name=before, icon_url=before.avatar.url)
                         embed.set_footer(text=f"ID: {before.id}")
                         return await self.bot.get_channel(logs).send(embed=embed)
                     elif len(before.roles) > len(after.roles):
                         oldRole = next(role for role in before.roles if role not in after.roles)
                         embed = discord.Embed(title=f"Role Removed",description=oldRole.mention, color=config.color)
-                        embed.set_author(name=before, icon_url=before.avatar_url)
+                        embed.set_author(name=before, icon_url=before.avatar.url)
                         embed.set_footer(text=f"ID: {before.id}")
                         return await self.bot.get_channel(logs).send(embed=embed)
                 except Exception as e:
@@ -112,19 +112,19 @@ class logs(commands.Cog):
                 try:
                     if before.name != after.name:
                         embed = discord.Embed(title=f"Username Changed", color=config.color)
-                        embed.set_author(name=before, icon_url=before.avatar_url)
+                        embed.set_author(name=before, icon_url=before.avatar.url)
                         embed.add_field(name="Before", value=before.name, inline=False)
                         embed.add_field(name="After", value=after.name, inline=False)
                         return await self.bot.get_channel(logs).send(embed=embed)
                     elif before.discriminator != after.discriminator:
                         embed = discord.Embed(title=f"Discriminator Changed", color=config.color)
-                        embed.set_author(name=before, icon_url=before.avatar_url)
+                        embed.set_author(name=before, icon_url=before.avatar.url)
                         embed.add_field(name="Before", value=before.discriminator, inline=False)
                         embed.add_field(name="After", value=after.discriminator, inline=False)
                         return await self.bot.get_channel(logs).send(embed=embed)
                     elif before.avatar != after.avatar:
                         embed = discord.Embed(title=f"Avatar Changed", color=config.color)
-                        embed.set_author(name=before, icon_url=before.avatar_url)
+                        embed.set_author(name=before, icon_url=before.avatar.url)
                         embed.set_thumbnail(url=after.avatar_url)
                         return await self.bot.get_channel(logs).send(embed=embed)
                 except Exception as e:
