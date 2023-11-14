@@ -40,7 +40,6 @@ class today(commands.Cog):
                 gameState = game["gameState"]
                 gameID = game['id']
                 url2 = f"https://api-web.nhle.com/v1/gamecenter/{gameID}/boxscore"
-                print(url2)
                 r2 = requests.get(url2)
                 game2 = r2.json()
                 startTime = game["startTimeUTC"]
