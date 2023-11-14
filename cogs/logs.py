@@ -96,12 +96,6 @@ class logs(commands.Cog):
                         embed.set_author(name=before, icon_url=before.avatar_url)
                         embed.set_footer(text=f"ID: {before.id}")
                         return await self.bot.get_channel(logs).send(embed=embed)
-                    elif before.guild_avatar != after.guild_avatar:
-                        embed = discord.Embed(title=f"Guild Avatar Changed", color=config.color)
-                        embed.set_author(name=before, icon_url=before.avatar_url)
-                        embed.set_thumbnail(url=after.guild_avatar)
-                        embed.set_footer(text=f"ID: {before.id}")
-                        return await self.bot.get_channel(logs).send(embed=embed)
                 except Exception as e:
                     error_channel = self.bot.get_channel(config.error_channel)
                     embed = discord.Embed(title="Error with `on_member_update`", description=f"```{e}```", color=config.color)
