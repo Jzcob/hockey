@@ -85,7 +85,6 @@ class joinLeave(commands.Cog):
         if interaction.user.id not in config.bot_authors:
             return await interaction.response.send_message("You cannot add a member to the database!", ephemeral=True)
         try:
-            
             playerDB = mycol.find_one({"_id": member.id})
             if playerDB is None:
                 add_db(member)
