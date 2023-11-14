@@ -139,3 +139,6 @@ class logs(commands.Cog):
                     return await error_channel.send(embed=embed)
         else:
             return
+
+async def setup(bot):
+    await bot.add_cog(logs(bot))
