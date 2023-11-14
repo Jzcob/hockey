@@ -56,7 +56,7 @@ class game(commands.Cog):
                 team = abbreviation.upper()
                 team = teams[team]
             else:    
-                await interaction.response.send_message("Please enter a valid team abbreviation. e.g. `/game BOS`", ephemeral=True)
+                await msg.edit("Please enter a valid team abbreviation. e.g. `/game BOS`", ephemeral=True)
                 return
             hawaii = pytz.timezone('US/Hawaii')
             dt = datetime.now(hawaii)
