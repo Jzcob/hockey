@@ -24,6 +24,18 @@ manager = 1165854746863751168
 owner = 1165854743281799218
 ##### Channels ########
 
+def check_punishments(member: discord.Member):
+    playerDB = mycol.find_one({"_id": member.id})
+    if playerDB is None:
+        return False
+    warnList = playerDB['punishments']["warns"]
+    timeoutList = playerDB['punishments']["timeouts"]
+    banList = playerDB['punishments']["bans"]
+    notelist = playerDB['punishments']["notes"]
+    if len(warnList) == 0 and len(timeoutList) == 0 and len(banList) == 0 and len(notelist) == 0:
+        return False
+    else:
+        return True
 
 class punish(commands.Cog):
     def __init__(self, bot):
@@ -53,6 +65,10 @@ class punish(commands.Cog):
                 return await interaction.response.send_message("You cannot warn yourself!", ephemeral=True)
             elif member.id == 1156302042969677845:
                 return await interaction.response.send_message("You cannot warn me!", ephemeral=True)
+            if playerDB['info']['punished'] == True:
+                pass
+            else:
+                mycol.update_one({"_id": member.id}, {"$set": {"info.punished": True}})
             warnList = playerDB['punishments']["warns"]
             warnList.append({"date": f"{timeFormat}", "staff": f"{staff}", "reason": f"{reason}"})
             embed = discord.Embed(title=f"{member} was warned", color=config.color)
@@ -108,6 +124,10 @@ class punish(commands.Cog):
                 return await interaction.response.send_message("You cannot timeout yourself!", ephemeral=True)
             elif member.id == 1156302042969677845:
                 return await interaction.response.send_message("You cannot timeout me!", ephemeral=True)
+            if playerDB['info']['punished'] == True:
+                pass
+            else:
+                mycol.update_one({"_id": member.id}, {"$set": {"info.punished": True}})
             
             embed = discord.Embed(title=f"`{member.name}` was timed out", color=config.color)
             embed.add_field(name="Punished By", value=f"{interaction.user.name}", inline=False)
@@ -179,6 +199,10 @@ class punish(commands.Cog):
                 return await interaction.response.send_message("You cannot ban yourself!", ephemeral=True)
             elif member.id == 1156302042969677845:
                 return await interaction.response.send_message("You cannot ban me!", ephemeral=True)
+            if playerDB['info']['punished'] == True:
+                pass
+            else:
+                mycol.update_one({"_id": member.id}, {"$set": {"info.punished": True}})
             
             embed = discord.Embed(title=f"`{member.name}` was banned", color=config.color)
             embed.add_field(name="Punished By", value=f"{interaction.user.name}", inline=False)
@@ -227,6 +251,8 @@ class punish(commands.Cog):
                 return await interaction.response.send_message(f"Invalid warn number! Warns start at 1!", ephemeral=True)
             if warn > len(warnList):
                 return await interaction.response.send_message(f"Invalid warn number! {member.mention} only has {len(warnList)} warns!", ephemeral=True)
+            if check_punishments(member) is False:
+                mycol.update_one({"_id": member.id}, {"$set": {"info.punished": False}})
             warn -= 1
             warnList.pop(warn)
             warn += 1
@@ -250,6 +276,8 @@ class punish(commands.Cog):
                 return await interaction.response.send_message(f"Invalid timeout number! Timeouts start at 1!", ephemeral=True)
             if timeout > len(timeoutList):
                 return await interaction.response.send_message(f"Invalid timeout number! {member.mention} only has {len(timeoutList)} timeouts!", ephemeral=True)
+            if check_punishments(member) is False:
+                mycol.update_one({"_id": member.id}, {"$set": {"info.punished": False}})
             timeout -= 1
             timeoutList.pop(timeout)
             timeout += 1
@@ -273,6 +301,8 @@ class punish(commands.Cog):
                 return await interaction.response.send_message(f"Invalid ban number! Bans start at 1!", ephemeral=True)
             if ban > len(banList):
                 return await interaction.response.send_message(f"Invalid ban number! {member.mention} only has {len(banList)} bans!", ephemeral=True)
+            if check_punishments(member) is False:
+                mycol.update_one({"_id": member.id}, {"$set": {"info.punished": False}})
             ban -= 1
             banList.pop(ban)
             ban += 1
@@ -337,7 +367,6 @@ class punish(commands.Cog):
             error_channel = self.bot.get_channel(config.error_channel)
             await error_channel.send(f"Error in `fix-punishment` command:\n{e}")
 
-
 ###############################################################################################################
 ################################# NOTE COMMANDS #############################################################
 ###############################################################################################################
@@ -370,6 +399,8 @@ class punish(commands.Cog):
                 return await interaction.response.send_message(f"Invalid note number! Notes start at 1!", ephemeral=True)
             if note > len(noteList):
                 return await interaction.response.send_message(f"Invalid note number! {member.mention} only has {len(noteList)} notes!", ephemeral=True)
+            if check_punishments(member) is False:
+                mycol.update_one({"_id": member.id}, {"$set": {"info.punished": False}})
             note -= 1
             noteList.pop(note)
             mycol.update_one({"_id": member.id}, {"$set": {"punishments.notes": noteList}})
