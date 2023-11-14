@@ -418,6 +418,7 @@ class punish(commands.Cog):
     @app_commands.checks.has_any_role(mod, admin, manager, owner)
     async def purge(self, interaction: discord.Interaction, amount: int, member: discord.Member=None):
         try:
+            await interaction.response.defer()
             if member is None:
                 await interaction.channel.purge(limit=amount)
                 await interaction.response.send_message(f"Purged {amount} messages!")
