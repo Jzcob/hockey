@@ -8,4 +8,4 @@ Top Commands:
 - /schedule
 - /standings
 - /guess-the-team
-- /guess-the-player
+- game
