@@ -23,6 +23,7 @@ class today(commands.Cog):
             dt = datetime.now(hawaii)
             today = dt.strftime('%Y-%m-%d')
             url = f"https://api-web.nhle.com/v1/schedule/{today}"
+            print(url)
             await interaction.response.defer()
             msg = await interaction.original_response()
             r = requests.get(url)
