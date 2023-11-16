@@ -74,7 +74,6 @@ class game(commands.Cog):
                     await msg.edit(content=f"**{team}** do not play today.")
                     return
             url2 = f"https://api-web.nhle.com/v1/gamecenter/{gameID}/boxscore"
-            print(url2)
             response2 = requests.get(url2)
             data2 = response2.json()
             home = data2['homeTeam']['name']['default']
