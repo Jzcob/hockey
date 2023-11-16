@@ -80,7 +80,7 @@ class standings(commands.Cog):
             embed.set_author(icon_url=interaction.user.avatar.url, name="NHL Bot Error")
             embed.add_field(name="User", value=interaction.user.mention)
             embed.add_field(name="Server", value=interaction.guild.name)
-            embed.add_field(name="Channel", value=interaction.channel.mention)
+            embed.add_field(name="Channel", value=interaction.channel.name)
             embed.set_footer(text=datetime.now().strftime("%m/%d/%Y, %H:%M:%S"))
             await interaction.followup.send("Error getting standings! Message has been sent to Bot Developers", ephemeral=True)
             await error_channel.send(embed=embed)
