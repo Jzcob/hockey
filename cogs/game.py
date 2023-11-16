@@ -56,7 +56,7 @@ class game(commands.Cog):
                 team = abbreviation.upper()
                 team = teams[team]
             else:    
-                await msg.edit("Please enter a valid team abbreviation. e.g. `/game BOS`", ephemeral=True)
+                await msg.edit("Please enter a valid team abbreviation. e.g. `/game BOS`")
                 return
             hawaii = pytz.timezone('US/Hawaii')
             dt = datetime.now(hawaii)
@@ -74,10 +74,14 @@ class game(commands.Cog):
                     await msg.edit(content=f"**{team}** do not play today.")
                     return
             url2 = f"https://api-web.nhle.com/v1/gamecenter/{gameID}/boxscore"
+            print(url2)
             response2 = requests.get(url2)
             data2 = response2.json()
             home = data2['homeTeam']['name']['default']
             away = data2['awayTeam']['name']['default']
+            if game['gameState'] == "FUT":
+                await msg.edit(content=f"**{away} @ {home}**\nGame is scheduled!")
+                return
             homeScore = data2['boxscore']['linescore']['totals']['home']
             awayScore = data2['boxscore']['linescore']['totals']['away']
             clock = data2['clock']['timeRemaining']
