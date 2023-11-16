@@ -80,7 +80,8 @@ class game(commands.Cog):
             home = data2['homeTeam']['name']['default']
             away = data2['awayTeam']['name']['default']
             if game['gameState'] == "FUT":
-                await msg.edit(content=f"**{away} @ {home}**\nGame is scheduled!")
+                embed = discord.Embed(title=f"{away} @ {home}", description=f"Game is scheduled!", color=config.color)
+                await msg.edit(embed=embed)
                 return
             homeScore = data2['boxscore']['linescore']['totals']['home']
             awayScore = data2['boxscore']['linescore']['totals']['away']
@@ -93,6 +94,10 @@ class game(commands.Cog):
             homeShots = 0
             awayShots = 0
             networks = ""
+            if game['gameState'] == "FINAL" or game['gameState'] == "OFF":
+                embed = discord.Embed(title=f"{away} @ {home}", description=f"Final!\nScore: {awayScore} | {homeScore}", color=config.color)
+                await msg.edit(embed=embed)
+                return
             embed = discord.Embed(title=f"{away} @ {home}", description=f"{awayScore} - {homeScore}", color=config.color)
             for i in range(len(shotsByPeriod)):
                 homeShots += shotsByPeriod[i]['home']
