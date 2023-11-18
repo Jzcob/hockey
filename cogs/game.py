@@ -78,6 +78,7 @@ class game(commands.Cog):
             data2 = response2.json()
             home = data2['homeTeam']['name']['default']
             away = data2['awayTeam']['name']['default']
+            tvBroadcasts= data2['tvBroadcasts']
             for i in range(len(tvBroadcasts)):
                 network = tvBroadcasts[i]['network']
                 countryCode = tvBroadcasts[i]['countryCode']
@@ -96,7 +97,7 @@ class game(commands.Cog):
             clockIntermission = data2['clock']['inIntermission']
             venue = data2['venue']['default']
             shotsByPeriod = data2['boxscore']['shotsByPeriod']
-            tvBroadcasts= data2['tvBroadcasts']
+            
             homeShots = 0
             awayShots = 0
             networks = ""
