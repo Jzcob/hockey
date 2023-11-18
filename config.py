@@ -3,7 +3,6 @@ import discord
 import json
 
 jacob = 920797181034778655
-bot_authors = [jacob]
 dev_server_dev_channel = 1165858822183735316
 allowed_channels = [dev_server_dev_channel]
 mgr_channel = 1168943605205962912

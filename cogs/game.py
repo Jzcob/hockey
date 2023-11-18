@@ -83,7 +83,10 @@ class game(commands.Cog):
             for i in range(len(tvBroadcasts)):
                 network = tvBroadcasts[i]['network']
                 countryCode = tvBroadcasts[i]['countryCode']
-                networks += f"{network} ({countryCode})\n"
+                if countryCode == "US" and network == "NESN" and interaction.user.id in config.jacob:
+                    networks += f"{network} ({countryCode}) :star:\n "
+                else: 
+                    networks += f"{network} ({countryCode})\n"
             if game['gameState'] == "FUT":
                 startTime = data2["startTimeUTC"]
                 startTime = datetime.strptime(startTime, '%Y-%m-%dT%H:%M:%SZ')
@@ -136,8 +139,6 @@ class game(commands.Cog):
             embed.add_field(name="Team", value=team)
             embed.add_field(name="User", value=interaction.user.mention)
             embed.add_field(name="Server", value=interaction.guild.name)
-            embed.add_field(name="Channel", value=interaction.channel.name)
-            embed.set_footer(text=datetime.now().strftime("%m/%d/%Y, %H:%M:%S"))
             await interaction.followup.send("Error getting game! Message has been sent to Bot Developers", ephemeral=True)
             return await error_channel.send(embed=embed)
 

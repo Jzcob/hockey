@@ -101,7 +101,6 @@ class team(commands.Cog):
             embed.add_field(name="Team", value=team)
             embed.add_field(name="User", value=interaction.user.mention)
             embed.add_field(name="Server", value=interaction.guild.name)
-            embed.add_field(name="Channel", value=interaction.channel.name)
             await error_channel.send(embed=embed)
 
 

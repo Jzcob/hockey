@@ -77,11 +77,16 @@ class today(commands.Cog):
                     home = game2["homeTeam"]["name"]["default"]
                     away = game2["awayTeam"]["name"]["default"]
                     embed.add_field(name=f"{startTime}", value=f"{away} @ {home}\nGame is scheduled!", inline=False)
-            
             return await msg.edit(embed=embed)
         except Exception as e:
             error_channel = self.bot.get_channel(config.error_channel)
-            await error_channel.send(f"Error in `/today`:\n `{e}`")
+            await interaction.response.send_message("Error getting today's schedule! Message has been sent to Bot Developers", ephemeral=True)
+            embed = discord.Embed(title="Error with `/today`", description=f"```{e}```", color=config.color)
+            embed.set_author(icon_url=interaction.user.avatar.url, name="NHL Bot Error")
+            embed.add_field(name="User", value=interaction.user.mention)
+            embed.add_field(name="Server", value=interaction.guild.name)
+            await error_channel.send(embed=embed)
+            return
 
 
 async def setup(bot):

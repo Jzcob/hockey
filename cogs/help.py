@@ -37,7 +37,6 @@ class Help(commands.Cog):
             embed = discord.Embed(title="Error with `/help`", description=f"```{e}```", color=config.color)
             embed.add_field(name="User", value=f"{interaction.user.mention}", inline=False)
             embed.add_field(name="Server", value=f"{interaction.guild.name}", inline=False)
-            embed.add_field(name="Channel", value=f"{interaction.channel.name}", inline=False)
             await error_channel.send(embed=embed)
 
 

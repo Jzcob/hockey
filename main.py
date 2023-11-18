@@ -16,7 +16,7 @@ status = discord.Status.online
 
 @bot.command()
 async def sync(ctx) -> None:
-    if ctx.author.id in config.bot_authors:
+    if ctx.author.id == config.jacob:
         try:
             fmt = await ctx.bot.tree.sync()
             print(f"Synced {len(fmt)} commands.")
@@ -31,7 +31,7 @@ async def sync(ctx) -> None:
 
 @bot.command()
 async def syncserver(ctx) -> None:
-    if ctx.author.id in config.bot_authors:
+    if ctx.author.id == config.jacob:
         try:
             fmt = await ctx.bot.tree.sync(guild=ctx.guild)
             print(f"Synced {len(fmt)} commands.")
@@ -46,7 +46,7 @@ async def syncserver(ctx) -> None:
 
 @bot.command()
 async def servers(ctx):
-    if ctx.author.id in config.bot_authors:
+    if ctx.author.id == config.jacob:
         if ctx.channel.type == discord.ChannelType.private or ctx.channel.id in config.allowed_channels:   
             guilds = bot.guilds
             try:

@@ -86,7 +86,6 @@ class schedule(commands.Cog):
             embed.set_footer(text=f"Game ID: {gameID}")
             embed.add_field(name="User", value=interaction.user.mention, inline=True)
             embed.add_field(name="Server", value=interaction.guild.name, inline=True)
-            embed.add_field(name="Channel", value=interaction.channel.name, inline=True)
             await interaction.followup.send("Error getting schedule! Message has been sent to Bot Developers", ephemeral=True)
             return await error_channel.send(embed=embed)
 

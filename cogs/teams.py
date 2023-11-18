@@ -55,10 +55,14 @@ class teams(commands.Cog):
             await interaction.response.send_message(embed=embed, ephemeral=True)
             return
         except Exception as e:
-            print(e)
-            error_channel = self.get_channel(config.error_channel)
-            await interaction.response.send_message("Error processing command. Message has been sent to Bot Developers", ephemeral=True)
-            await error_channel.send(f"Error in command `/teams`: {e}")
+            error_channel = self.bot.get_channel(config.error_channel)
+            await interaction.response.send_message("Error getting teams! Message has been sent to Bot Developers", ephemeral=True)
+            embed = discord.Embed(title="Error with `/teams`", description=f"```{e}```", color=config.color)
+            embed.set_author(icon_url=interaction.user.avatar.url, name="NHL Bot Error")
+            embed.add_field(name="Team", value=team)
+            embed.add_field(name="User", value=interaction.user.mention)
+            embed.add_field(name="Server", value=interaction.guild.name)
+            await error_channel.send(embed=embed)
             return
 
 async def setup(bot):
