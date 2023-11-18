@@ -78,8 +78,15 @@ class game(commands.Cog):
             data2 = response2.json()
             home = data2['homeTeam']['name']['default']
             away = data2['awayTeam']['name']['default']
+            for i in range(len(tvBroadcasts)):
+                network = tvBroadcasts[i]['network']
+                countryCode = tvBroadcasts[i]['countryCode']
+                networks += f"{network} ({countryCode})\n"
+            embed.add_field(name="TV Broadcast", value=f"{networks}", inline=False)
             if game['gameState'] == "FUT":
                 embed = discord.Embed(title=f"{away} @ {home}", description=f"Game is scheduled!", color=config.color)
+                embed.add_field(name="Network", value=f"{networks}", inline=False)
+                embed.add_field(name="Game ID", value=gameID, inline=False)
                 await msg.edit(embed=embed)
                 return
             homeScore = data2['boxscore']['linescore']['totals']['home']
@@ -93,6 +100,7 @@ class game(commands.Cog):
             homeShots = 0
             awayShots = 0
             networks = ""
+            
             if game['gameState'] == "FINAL" or game['gameState'] == "OFF":
                 embed = discord.Embed(title=f"{away} @ {home}", description=f"Final!\nScore: {awayScore} | {homeScore}", color=config.color)
                 await msg.edit(embed=embed)
