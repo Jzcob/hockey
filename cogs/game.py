@@ -79,6 +79,7 @@ class game(commands.Cog):
             home = data2['homeTeam']['name']['default']
             away = data2['awayTeam']['name']['default']
             tvBroadcasts= data2['tvBroadcasts']
+            networks = ""
             for i in range(len(tvBroadcasts)):
                 network = tvBroadcasts[i]['network']
                 countryCode = tvBroadcasts[i]['countryCode']
@@ -97,10 +98,8 @@ class game(commands.Cog):
             clockIntermission = data2['clock']['inIntermission']
             venue = data2['venue']['default']
             shotsByPeriod = data2['boxscore']['shotsByPeriod']
-            
             homeShots = 0
             awayShots = 0
-            networks = ""
             
             if game['gameState'] == "FINAL" or game['gameState'] == "OFF":
                 embed = discord.Embed(title=f"{away} @ {home}", description=f"Final!\nScore: {awayScore} | {homeScore}", color=config.color)
