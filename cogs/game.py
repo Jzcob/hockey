@@ -85,7 +85,11 @@ class game(commands.Cog):
                 countryCode = tvBroadcasts[i]['countryCode']
                 networks += f"{network} ({countryCode})\n"
             if game['gameState'] == "FUT":
-                embed = discord.Embed(title=f"{away} @ {home}", description=f"Game is scheduled!", color=config.color)
+                startTime = data2["startTimeUTC"]
+                startTime = datetime.strptime(startTime, '%Y-%m-%dT%H:%M:%SZ')
+                startTime = startTime - timedelta(hours=5)
+                startTime = startTime.strftime('%I:%M %p')
+                embed = discord.Embed(title=f"{away} @ {home}", description=f"Game is scheduled! for {startTime}", color=config.color)
                 embed.add_field(name="TV Broadcast", value=f"{networks}", inline=False)
                 embed.add_field(name="Game ID", value=gameID, inline=False)
                 await msg.edit(embed=embed)
