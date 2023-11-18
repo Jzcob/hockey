@@ -1,3 +1,4 @@
 
 *.pyc
 TOKEN.py
+.vscode/settings.json
