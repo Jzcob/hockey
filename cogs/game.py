@@ -84,10 +84,9 @@ class game(commands.Cog):
                 network = tvBroadcasts[i]['network']
                 countryCode = tvBroadcasts[i]['countryCode']
                 networks += f"{network} ({countryCode})\n"
-            embed.add_field(name="TV Broadcast", value=f"{networks}", inline=False)
             if game['gameState'] == "FUT":
                 embed = discord.Embed(title=f"{away} @ {home}", description=f"Game is scheduled!", color=config.color)
-                embed.add_field(name="Network", value=f"{networks}", inline=False)
+                embed.add_field(name="TV Broadcast", value=f"{networks}", inline=False)
                 embed.add_field(name="Game ID", value=gameID, inline=False)
                 await msg.edit(embed=embed)
                 return
