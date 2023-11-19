@@ -17,7 +17,6 @@ mycol = myDB["user_info"]
 
 ###### Roles ########
 staff = 1165854744577855509
-helper = 1165854743894179930
 mod = 1165854748604383243
 admin = 1165854745177640990
 manager = 1165854746863751168
@@ -441,7 +440,6 @@ class punish(commands.Cog):
     @app_commands.checks.has_any_role("Staff")
     @app_commands.describe(role="The role you want to see the help menu for!")
     @app_commands.choices(role=[
-        app_commands.Choice(name="Helper", value="helper"),
         app_commands.Choice(name="Moderator", value="moderator"),
         app_commands.Choice(name="Administrator", value="administrator"),
         app_commands.Choice(name="Manager", value="manager")
@@ -449,8 +447,6 @@ class punish(commands.Cog):
     async def staffHelp(self, interaction: discord.Interaction, role: discord.app_commands.Choice[str]):
         try:
             member = interaction.user
-            def is_helper(member):
-                return discord.utils.get(member.roles, name="Helper") is not None
             def is_moderator(member):
                 return discord.utils.get(member.roles, name="Moderator") is not None
             def is_administrator(member):
@@ -459,17 +455,7 @@ class punish(commands.Cog):
                 return discord.utils.get(member.roles, name="Manager") is not None
             def is_owner(member):
                 return discord.utils.get(member.roles, name="Server Owner") is not None
-            if role.value == "helper":
-                if is_helper(member) or is_manager(member) or is_owner(member):
-                    embed = discord.Embed(title="Helper Help Menu", description="Here are the commands you can use with this bot!\n\n<> = Required\n() = Not Required", color=config.color)
-                    embed.add_field(name="`/staff-help helper`", value="Shows this help menu!", inline=False)
-                    embed.add_field(name="`/warn <member> <reason> <evidence>`", value="Warns a member of the discord server.", inline=False)
-                    embed.add_field(name="`/punishments <member>`", value="Shows the punishments of a member.", inline=False)
-                    await interaction.response.send_message(embed=embed, ephemeral=True)
-                else:
-                    await interaction.response.send_message("You are not a helper!", ephemeral=True)
-                
-            elif role.value == "moderator":
+            if role.value == "moderator":
                 if is_moderator(member) or is_manager(member) or is_owner(member):
                     embed = discord.Embed(title="Moderator Help Menu", description="Here are the commands you can use with this bot!\n\n<> = Required\n() = Not Required", color=config.color)
                     embed.add_field(name="`/staff-help moderator`", value="Shows this help menu!", inline=False)
