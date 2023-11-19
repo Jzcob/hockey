@@ -52,14 +52,12 @@ class game(commands.Cog):
                 "WSH": "Washington Capitals",
                 "WPG": "Winnipeg Jets"
             }
-            print("1")
             if abbreviation.upper() in teams:
                 team = abbreviation.upper()
                 team = teams[team]
             else:    
                 await msg.edit("Please enter a valid team abbreviation. e.g. `/game BOS`")
                 return
-            print("2")
             hawaii = pytz.timezone('US/Hawaii')
             dt = datetime.now(hawaii)
             today = dt.strftime('%Y-%m-%d')
@@ -67,7 +65,6 @@ class game(commands.Cog):
             response = requests.get(url)
             data = response.json()
             games = data['games']
-            print("3")
             for i in range(len(games)):
                 if f"{games[i]['gameDate']}" == f"{today}":
                     game = games[i]
@@ -126,10 +123,6 @@ class game(commands.Cog):
             if clockIntermission == True:
                 embed.add_field(name="Clock", value=f"Intermission", inline=False)
             embed.set_footer(text=config.footer)
-            for i in range(len(tvBroadcasts)):
-                network = tvBroadcasts[i]['network']
-                countryCode = tvBroadcasts[i]['countryCode']
-                networks += f"{network} ({countryCode})\n"
             embed.add_field(name="TV Broadcast", value=f"{networks}", inline=False)
             embed.add_field(name="Venue", value=venue, inline=False)
             embed.add_field(name="Game ID", value=gameID, inline=False)
