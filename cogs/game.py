@@ -87,7 +87,7 @@ class game(commands.Cog):
                     networks += f"{network} ({countryCode}) :star:\n "
                 else: 
                     networks += f"{network} ({countryCode})\n"
-            if game['gameState'] == "FUT":
+            if game['gameState'] == "FUT" or game['gameState'] == "PRE":
                 startTime = data2["startTimeUTC"]
                 startTime = datetime.strptime(startTime, '%Y-%m-%dT%H:%M:%SZ')
                 startTime = startTime - timedelta(hours=5)
