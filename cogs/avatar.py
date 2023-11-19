@@ -17,7 +17,7 @@ class avatar(commands.Cog):
             await interaction.response.defer()
             msg = await interaction.original_response()
             embed = discord.Embed(title="Avatar", url="https://www.craiyon.com/image/srRf0fglTs-NwjWKUC3vNg", color=0x00ff00)
-            embed.set_image(url=self.bot.user.avatar_url)
+            embed.set_image(url=self.bot.user.avatar)
             await msg.edit(embed=embed)
         except Exception as e:
             print(e)
