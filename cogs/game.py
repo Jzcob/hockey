@@ -52,12 +52,14 @@ class game(commands.Cog):
                 "WSH": "Washington Capitals",
                 "WPG": "Winnipeg Jets"
             }
+            print("1")
             if abbreviation.upper() in teams:
                 team = abbreviation.upper()
                 team = teams[team]
             else:    
                 await msg.edit("Please enter a valid team abbreviation. e.g. `/game BOS`")
                 return
+            print("2")
             hawaii = pytz.timezone('US/Hawaii')
             dt = datetime.now(hawaii)
             today = dt.strftime('%Y-%m-%d')
@@ -65,6 +67,7 @@ class game(commands.Cog):
             response = requests.get(url)
             data = response.json()
             games = data['games']
+            print("3")
             for i in range(len(games)):
                 if f"{games[i]['gameDate']}" == f"{today}":
                     game = games[i]
@@ -73,6 +76,7 @@ class game(commands.Cog):
                 else:
                     await msg.edit(content=f"**{team}** do not play today.")
                     return
+            print("4")
             url2 = f"https://api-web.nhle.com/v1/gamecenter/{gameID}/boxscore"
             response2 = requests.get(url2)
             data2 = response2.json()
@@ -80,6 +84,7 @@ class game(commands.Cog):
             away = data2['awayTeam']['name']['default']
             tvBroadcasts= data2['tvBroadcasts']
             networks = ""
+            print("5")
             for i in range(len(tvBroadcasts)):
                 network = tvBroadcasts[i]['network']
                 countryCode = tvBroadcasts[i]['countryCode']
@@ -87,8 +92,9 @@ class game(commands.Cog):
                     networks += f"{network} ({countryCode}) :star:\n "
                 else: 
                     networks += f"{network} ({countryCode})\n"
+            print("6")
             if game['gameState'] == "FUT" or game['gameState'] == "PRE":
-                print("1")
+                print("6.5")
                 startTime = data2["startTimeUTC"]
                 startTime = datetime.strptime(startTime, '%Y-%m-%dT%H:%M:%SZ')
                 startTime = startTime - timedelta(hours=5)
@@ -98,6 +104,7 @@ class game(commands.Cog):
                 embed.add_field(name="Game ID", value=gameID, inline=False)
                 await msg.edit(embed=embed)
                 return
+            print("7")
             homeScore = data2['boxscore']['linescore']['totals']['home']
             awayScore = data2['boxscore']['linescore']['totals']['away']
             clock = data2['clock']['timeRemaining']
@@ -107,7 +114,7 @@ class game(commands.Cog):
             shotsByPeriod = data2['boxscore']['shotsByPeriod']
             homeShots = 0
             awayShots = 0
-            
+            print("8")
             if game['gameState'] == "FINAL" or game['gameState'] == "OFF":
                 embed = discord.Embed(title=f"{away} @ {home}", description=f"Final!\nScore: {awayScore} | {homeScore}", color=config.color)
                 await msg.edit(embed=embed)
