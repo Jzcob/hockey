@@ -55,7 +55,7 @@ async def servers(ctx):
                 embed = discord.Embed(title="Servers", color=0x00ff00)
                 for guild in guilds:
                     try:
-                        embed.description += f"Name: {guild.name}\n"
+                        embed.description = desc + f"Name: {guild.name}\n"
                     except:
                         await ctx.send("Error getting server information")
                 await ctx.send(embed=embed)
