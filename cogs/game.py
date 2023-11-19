@@ -112,10 +112,11 @@ class game(commands.Cog):
                 await msg.edit(embed=embed)
                 return
             embed = discord.Embed(title=f"{away} @ {home}", description=f"{awayScore} - {homeScore}", color=config.color)
+            
             for i in range(len(shotsByPeriod)):
                 homeShots += shotsByPeriod[i]['home']
                 awayShots += shotsByPeriod[i]['away']
-            embed.add_field(name="Shots", value=f"{away}: {awayShots}\n{home}: {homeShots}", inline=False)
+            embed.description = f"GAME IS LIVE!!!\n\nScore: {awayScore} - {homeScore}\nShots: {awayShots} - {homeShots}"
             if clockRunning == True:
                 embed.add_field(name="Clock", value=f"{clock}\nRunning", inline=False)
             else:
@@ -124,7 +125,6 @@ class game(commands.Cog):
                 embed.add_field(name="Clock", value=f"Intermission", inline=False)
             embed.set_footer(text=config.footer)
             embed.add_field(name="TV Broadcast", value=f"{networks}", inline=False)
-            embed.add_field(name="Venue", value=venue, inline=False)
             embed.add_field(name="Game ID", value=gameID, inline=False)
             await msg.edit(embed=embed)
         except Exception as e:
