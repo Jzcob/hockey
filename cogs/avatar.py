@@ -21,3 +21,6 @@ class avatar(commands.Cog):
             await msg.edit(embed=embed)
         except Exception as e:
             print(e)
+
+async def setup(bot):
+    await bot.add_cog(avatar(bot))
