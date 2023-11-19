@@ -32,7 +32,7 @@ class today(commands.Cog):
             print(e)
         try:
             games = data["gameWeek"][0]["games"]
-            embed = discord.Embed(title=f"Today's Games", color=config.color)
+            embed = discord.Embed(title=f"Today's Games", description=f"Total games today: {len(games)}", color=config.color)
             embed.set_thumbnail(url="https://www-league.nhlstatic.com/images/logos/league-dark/133-flat.svg")
             embed.set_footer(text=config.footer)
             for i in range(len(games)):
