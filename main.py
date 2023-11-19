@@ -59,6 +59,8 @@ async def servers(ctx):
                     except:
                         embed.description += ("Error getting server information\n")
                 await ctx.send(embed=embed)
+                vc = bot.get_channel(1173304351872253952)
+                await vc.edit(name=f"Servers: {len(bot.guilds)}")
             except Exception as e:
                 embed = discord.Embed(title="Error", description=f"Something went wrong. `{e}`", color=0xff0000)
                 return await ctx.send(embed=embed)
