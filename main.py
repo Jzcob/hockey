@@ -52,7 +52,7 @@ async def servers(ctx):
             try:
                 desc = ""
                 desc += f"Total Servers: {len(guilds)}\n" 
-                embed = discord.Embed(title="Servers", description=f"Total Servers: {len(guilds)}", color=0x00ff00)
+                embed = discord.Embed(title="Servers", color=0x00ff00)
                 for guild in guilds:
                     try:
                         embed.description += f"Name: {guild.name}\n"
@@ -60,7 +60,6 @@ async def servers(ctx):
                         await ctx.send("Error getting server information")
                 await ctx.send(embed=embed)
             except Exception as e:
-                print(e)
                 embed = discord.Embed(title="Error", description=f"Something went wrong. `{e}`", color=0xff0000)
                 return await ctx.send(embed=embed)
         else:
