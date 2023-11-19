@@ -50,7 +50,7 @@ async def servers(ctx):
         if ctx.channel.type == discord.ChannelType.private or ctx.channel.id in config.allowed_channels:   
             guilds = bot.guilds
             try:
-                desc += f"Total Servers: {len(guilds)}\n"
+                desc += f"Total Servers: {len(guilds)}\n" 
                 embed = discord.Embed(title="Servers", description=f"Total Servers: {len(guilds)}", color=0x00ff00)
                 for guild in guilds:
                     try:
