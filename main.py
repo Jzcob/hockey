@@ -50,18 +50,14 @@ async def servers(ctx):
         if ctx.channel.type == discord.ChannelType.private or ctx.channel.id in config.allowed_channels:   
             guilds = bot.guilds
             try:
+                desc += f"Total Servers: {len(guilds)}\n"
+                embed = discord.Embed(title="Servers", description=f"Total Servers: {len(guilds)}", color=0x00ff00)
                 for guild in guilds:
                     try:
-                        embed = discord.Embed(description=f"Name: {guild.name}\n" +
-                                            f"Owner: {guild.owner.name} ID: {guild.owner_id}\n" +
-                                            f"Members: {guild.member_count}\n" +
-                                            f"Created: {guild.created_at}\n" +
-                                            f"Verification Level: {guild.verification_level}", color=0x00ff00)
-                        embed.set_thumbnail(url=f"{guild.icon}")
-                        await ctx.send(embed=embed)
+                        embed.description += f"Name: {guild.name}\n"
                     except:
                         await ctx.send("Error getting server information")
-                    
+                await ctx.send(embed=embed)
             except Exception as e:
                 print(e)
                 embed = discord.Embed(title="Error", description=f"Something went wrong. `{e}`", color=0xff0000)
