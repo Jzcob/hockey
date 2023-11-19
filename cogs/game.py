@@ -76,7 +76,6 @@ class game(commands.Cog):
                 else:
                     await msg.edit(content=f"**{team}** do not play today.")
                     return
-            print("4")
             url2 = f"https://api-web.nhle.com/v1/gamecenter/{gameID}/boxscore"
             response2 = requests.get(url2)
             data2 = response2.json()
@@ -84,17 +83,14 @@ class game(commands.Cog):
             away = data2['awayTeam']['name']['default']
             tvBroadcasts= data2['tvBroadcasts']
             networks = ""
-            print("5")
             for i in range(len(tvBroadcasts)):
                 network = tvBroadcasts[i]['network']
                 countryCode = tvBroadcasts[i]['countryCode']
-                if countryCode == "US" and network == "NESN" and interaction.user.id in config.jacob:
+                if countryCode == "US" and network == "NESN" and interaction.user.id == config.jacob:
                     networks += f"{network} ({countryCode}) :star:\n "
                 else: 
                     networks += f"{network} ({countryCode})\n"
-            print("6")
             if game['gameState'] == "FUT" or game['gameState'] == "PRE":
-                print("6.5")
                 startTime = data2["startTimeUTC"]
                 startTime = datetime.strptime(startTime, '%Y-%m-%dT%H:%M:%SZ')
                 startTime = startTime - timedelta(hours=5)
@@ -104,7 +100,6 @@ class game(commands.Cog):
                 embed.add_field(name="Game ID", value=gameID, inline=False)
                 await msg.edit(embed=embed)
                 return
-            print("7")
             homeScore = data2['boxscore']['linescore']['totals']['home']
             awayScore = data2['boxscore']['linescore']['totals']['away']
             clock = data2['clock']['timeRemaining']
