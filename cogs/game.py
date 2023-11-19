@@ -106,7 +106,6 @@ class game(commands.Cog):
             shotsByPeriod = data2['boxscore']['shotsByPeriod']
             homeShots = 0
             awayShots = 0
-            print("8")
             if game['gameState'] == "FINAL" or game['gameState'] == "OFF":
                 embed = discord.Embed(title=f"{away} @ {home}", description=f"Final!\nScore: {awayScore} | {homeScore}", color=config.color)
                 await msg.edit(embed=embed)
