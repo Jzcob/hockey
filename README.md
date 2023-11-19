@@ -9,3 +9,5 @@ Top Commands:
 - /standings
 - /guess-the-team
 - /game
+- /help
+- /info
