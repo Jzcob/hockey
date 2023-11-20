@@ -51,13 +51,16 @@ async def servers(ctx):
             guilds = bot.guilds
             try:
                 desc = ""
+                members = 0
                 desc += f"Total Servers: {len(guilds)}\n" 
                 embed = discord.Embed(title="Servers", description=desc, color=0x00ff00)
                 for guild in guilds:
+                    members += guild.member_count
                     try:
                         embed.description += f"Name: {guild.name}\n"
                     except:
                         embed.description += ("Error getting server information\n")
+                embed.set_footer(text=f"Total Members: {members}")
                 await ctx.send(embed=embed)
                 vc = bot.get_channel(1173304351872253952)
                 await vc.edit(name=f"Servers: {len(bot.guilds)}")
