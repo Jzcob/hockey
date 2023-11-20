@@ -11,7 +11,7 @@ class avatar(commands.Cog):
     async def on_ready(self):
         print(f"LOADED: `avatar.py`")
     
-    @app_commands.command(name="avatar", description="Get the bot's avatar!")
+    @app_commands.command(name="avatar", description="Get the avatar of a user! or the bot if no user is specified.")
     async def avatar(self, interaction: discord.Interaction, user: discord.User = None):
         try:
             if user == None:
