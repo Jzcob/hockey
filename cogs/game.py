@@ -73,7 +73,8 @@ class game(commands.Cog):
                     break
                 else:
                     print("No game today")
-                    await msg.edit(f"**{team}** do not play today.")
+                    string = f"**{team}** do not play today."
+                    await msg.edit(string)
                     print("here")
                     return
             url2 = f"https://api-web.nhle.com/v1/gamecenter/{gameID}/boxscore"
