@@ -66,15 +66,13 @@ class game(commands.Cog):
             response = requests.get(url)
             data = response.json()
             games = data['games']
-            print("1")
             for i in range(len(games)):
                 if f"{games[i]['gameDate']}" == f"{today}":
                     game = games[i]
                     gameID = game['id']
                     break
                 else:
-                    print("2")
-                    return await msg.edit(content=f"They don't play today!")
+                    return await msg.edit(content=f"**{team}** does not play today!")
             url2 = f"https://api-web.nhle.com/v1/gamecenter/{gameID}/boxscore"
             response2 = requests.get(url2)
             data2 = response2.json()
