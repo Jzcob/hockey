@@ -11,7 +11,7 @@ intents.members = True
 intents.message_content = True
 intents.auto_moderation_configuration = True
 intents.reactions = True
-bot = commands.Bot(command_prefix=';', intents=intents)
+bot = commands.Bot(command_prefix=';', intents=intents, help_command=None)
 status = discord.Status.online
 
 @bot.command()
