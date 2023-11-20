@@ -74,7 +74,7 @@ class game(commands.Cog):
                     break
                 else:
                     print("2")
-                    return await msg.edit(content="They don't play today!")
+                    return await msg.edit(content=f"They don't play today!")
             url2 = f"https://api-web.nhle.com/v1/gamecenter/{gameID}/boxscore"
             response2 = requests.get(url2)
             data2 = response2.json()
