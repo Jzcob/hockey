@@ -6,6 +6,7 @@ from datetime import datetime
 import json
 import config
 
+#hello world
 class announcement(commands.Cog):
     def __init__(self, bot): 
         self.bot = bot
