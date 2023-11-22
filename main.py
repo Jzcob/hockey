@@ -94,10 +94,7 @@ async def on_guild_join(guild):
     join_leave_channel = bot.get_channel(1168939285274177627)
     try:
         embed = discord.Embed(title="Joined Server", description=f"Name: {guild.name}\n" +
-                                            f"Owner: {guild.owner.name} ID: {guild.owner_id}\n" +
-                                            f"Members: {guild.member_count}\n" +
-                                            f"Created: {guild.created_at}\n" +
-                                            f"Verification Level: {guild.verification_level}", color=0x00ff00)
+                                            f"Members: {guild.member_count}\n", color=0x00ff00)
         embed.set_thumbnail(url=f"{guild.icon}")
         await join_leave_channel.send(embed=embed)
     except:
@@ -110,10 +107,7 @@ async def on_guild_remove(guild):
     join_leave_channel = bot.get_channel(1168939285274177627)
     try:
         embed = discord.Embed(title="Left Server", description=f"Name: {guild.name}\n" +
-                                        f"Owner: {guild.owner.name} ID: {guild.owner_id}\n" +
-                                        f"Members: {guild.member_count}\n" +
-                                        f"Created: {guild.created_at}\n" +
-                                        f"Verification Level: {guild.verification_level}", color=0xff0000)
+                                        f"Members: {guild.member_count}\n", color=0xff0000)
         embed.set_thumbnail(url=f"{guild.icon}")
         await join_leave_channel.send(embed=embed)
     except:
