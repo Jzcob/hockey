@@ -5,6 +5,7 @@ import requests
 from datetime import datetime
 import json
 import config
+watching = discord.Activity(name="hockey", type=discord.ActivityType.watching)
 
 #hello world
 class announcement(commands.Cog):
@@ -14,6 +15,7 @@ class announcement(commands.Cog):
     @commands.Cog.listener()
     async def on_ready(self):
         print(f"LOADED: `announcement.py`")
+        await self.bot.change_presence(activity=watching)
     
     @app_commands.command(name="announce", description="Sends an announcement to every server the bot is in!")
     async def announcement(self, interaction: discord.Interaction, title: str, description: str):
