@@ -5,7 +5,7 @@ import requests
 from datetime import datetime
 import json
 import config
-watching = discord.Activity(name="hockey", type=discord.ActivityType.watching)
+watching = discord.Activity(name="Hockey!", type=discord.ActivityType.watching)
 
 #hello world
 class announcement(commands.Cog):
