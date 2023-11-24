@@ -22,7 +22,7 @@ class Info(commands.Cog):
         embed.add_field(name="Discord Privacy Policy", value="https://discord.com/privacy", inline=False)
         embed.add_field(name="Discord Terms of Service", value="https://discord.com/terms", inline=False)
         embed.add_field(name="My GitHub", value="https://github.com/Jzcob/hockey", inline=False)
-        embed.add_field(name="My Discord", value="https://discord.gg/H6ePukhwJZ", inline=False)
+        embed.add_field(name="My Discord", value="https://discord.gg/W5Jx5QSZCb", inline=False)
         embed.set_footer(text="Hockey Bot")
         await interaction.response.send_message(embed=embed, ephemeral=True)
 
