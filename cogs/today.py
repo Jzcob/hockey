@@ -7,7 +7,7 @@ import config
 from datetime import datetime, timedelta
 import pytz
 
-def strings(awayAbbreviation, homeAbbreviation):
+def strings(awayAbbreviation, homeAbbreviation, home, away):
     if awayAbbreviation == "ANA":
         awayString = f"{config.anahiem_ducks_emoji} {away}"
     elif awayAbbreviation == "ARI":
@@ -183,7 +183,7 @@ class today(commands.Cog):
                         away = game2["awayTeam"]["name"]["default"]
                         homeAbbreviation = game2["homeTeam"]["abbrev"]
                         awayAbbreviation = game2["awayTeam"]["abbrev"]
-                        awayString, homeString = strings(awayAbbreviation, homeAbbreviation)
+                        awayString, homeString = strings(awayAbbreviation, homeAbbreviation, home, away)
                         embed.add_field(name=f"{startTime}", value=f"{awayString} @ {homeString}\nGame is scheduled!", inline=False)
                     elif gameState == "FINAL" or gameState == "OFF":
                         homeScore = game2['boxscore']['linescore']['totals']['home']
@@ -192,7 +192,7 @@ class today(commands.Cog):
                         away = game2["awayTeam"]["name"]["default"]
                         homeAbbreviation = game2["homeTeam"]["abbrev"]
                         awayAbbreviation = game2["awayTeam"]["abbrev"]
-                        awayString, homeString = strings(awayAbbreviation, homeAbbreviation)
+                        awayString, homeString = strings(awayAbbreviation, homeAbbreviation, home, away)
                         embed.add_field(name=f"Final!", value=f"\n{awayString} @ {homeString}\nScore: {awayScore} | {homeScore}\n", inline=False)
                     elif gameState == "LIVE":
                         homeScore = game2['boxscore']['linescore']['totals']['home']
@@ -204,7 +204,7 @@ class today(commands.Cog):
                         away = game2["awayTeam"]["name"]["default"]
                         homeAbbreviation = game2["homeTeam"]["abbrev"]
                         awayAbbreviation = game2["awayTeam"]["abbrev"]
-                        awayString, homeString = strings(awayAbbreviation, homeAbbreviation)
+                        awayString, homeString = strings(awayAbbreviation, homeAbbreviation, home, away)
                         if clockRunning == True:
                             embed.add_field(name=f"LIVE", value=f"{awayString} @ {homeString}\nScore: {awayScore} | {homeScore}\nTime: {clock}", inline=False)
                         if clockIntermission == True:
@@ -214,14 +214,14 @@ class today(commands.Cog):
                         away = game2["awayTeam"]["name"]["default"]
                         homeAbbreviation = game2["homeTeam"]["abbrev"]
                         awayAbbreviation = game2["awayTeam"]["abbrev"]
-                        awayString, homeString = strings(awayAbbreviation, homeAbbreviation)
+                        awayString, homeString = strings(awayAbbreviation, homeAbbreviation, home, away)
                         embed.add_field(name=f"{startTime}", value=f"{awayString} @ {homeString}\nGame is scheduled!", inline=False)
                 except:
                     home = game2["homeTeam"]["name"]["default"]
                     away = game2["awayTeam"]["name"]["default"]
                     homeAbbreviation = game2["homeTeam"]["abbrev"]
                     awayAbbreviation = game2["awayTeam"]["abbrev"]
-                    awayString, homeString = strings(awayAbbreviation, homeAbbreviation)
+                    awayString, homeString = strings(awayAbbreviation, homeAbbreviation, home, away)
                     embed.add_field(name=f"{startTime}", value=f"{awayString} @ {homeString}\nGame is scheduled!", inline=False)
             return await msg.edit(embed=embed)
         except Exception as e:
