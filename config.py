@@ -17,9 +17,9 @@ footer = "Bot created by @jzcob"
 
 
 anahiem_ducks_emoji = "<:anaheimducks:1166050853879296030>"
-arizona_coyotes_emoji = "<:arizonacoyotes:1166050957740337664>"
-boston_bruins_emoji = "<:bostonbruins:1166051061666307584>"
-buffalo_sabres_emoji = "<:buffalosabres:1166051165541379072>"
+arizona_coyotes_emoji = "<:arizonacoyotes:1166050965451968654>"
+boston_bruins_emoji = "<:bostonbruins:1166051078714949692>"
+buffalo_sabres_emoji = "<:buffalosabres:1166051476880240660>"
 calgary_flames_emoji = "<:calgaryflames:1166051546337923112>"
 carolina_hurricanes_emoji = "<:carolinahurricanes:1166051616483455087>"
 chicago_blackhawks_emoji = "<:chicagoblackhawks:1178009419968151583>"
