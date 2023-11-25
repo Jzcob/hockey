@@ -54,15 +54,16 @@ async def servers(ctx):
                 desc = ""
                 members = 0
                 desc += f"Total Servers: {len(guilds)}\n" 
-                embed = discord.Embed(title="Servers", description=desc, color=0x00ff00)
                 for guild in guilds:
                     members += guild.member_count
                     try:
-                        embed.description += f"Name: {guild.name}\n"
+                        desc += f"Name: {guild.name}\n"
                     except:
-                        embed.description += ("Error getting server information\n")
-                embed.set_footer(text=f"Total Members: {members}")
-                await ctx.send(embed=embed)
+                        desc += ("Error getting server information\n")
+                file_path = "server_info.txt"
+                with open(file_path, "w") as file:
+                    file.write(desc)
+                await ctx.send(file=discord.File(file_path))
                 vc = bot.get_channel(1173304351872253952)
                 await vc.edit(name=f"Servers: {len(bot.guilds)}")
             except Exception as e:

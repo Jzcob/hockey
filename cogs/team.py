@@ -79,7 +79,70 @@ class team(commands.Cog):
                         goalDifference = data['standings'][i]['goalDifferential']
                         streakCode = data['standings'][i]['streakCode']
                         streakNumber = data['standings'][i]['streakCount']
-                        embed = discord.Embed(title=f"{teamName} ({teamAbbreviation})", description=f"**{confrence} confrence & {division} division**", color=config.color)
+                        embed = discord.Embed(description=f"**{confrence} confrence & {division} division**", color=config.color)
+                        if teamAbbreviation == "ANA":
+                            embed.title = f"{teamName} ({teamAbbreviation}) {config.anahiem_ducks_emoji}"
+                        elif teamAbbreviation == "ARI":
+                            embed.title = f"{teamName} ({teamAbbreviation}) {config.arizona_coyotes_emoji}"
+                        elif teamAbbreviation == "BOS":
+                            embed.title = f"{teamName} ({teamAbbreviation}) {config.boston_bruins_emoji}"
+                        elif teamAbbreviation == "BUF":
+                            embed.title = f"{teamName} ({teamAbbreviation}) {config.buffalo_sabres_emoji}"
+                        elif teamAbbreviation == "CGY":
+                            embed.title = f"{teamName} ({teamAbbreviation}) {config.calgary_flames_emoji}"
+                        elif teamAbbreviation == "CAR":
+                            embed.title = f"{teamName} ({teamAbbreviation}) {config.carolina_hurricanes_emoji}"
+                        elif teamAbbreviation == "CHI":
+                            embed.title = f"{teamName} ({teamAbbreviation}) {config.chicago_blackhawks_emoji}"
+                        elif teamAbbreviation == "COL":
+                            embed.title = f"{teamName} ({teamAbbreviation}) {config.colorado_avalanche_emoji}"
+                        elif teamAbbreviation == "CBJ":
+                            embed.title = f"{teamName} ({teamAbbreviation}) {config.columbus_blue_jackets_emoji}"
+                        elif teamAbbreviation == "DAL":
+                            embed.title = f"{teamName} ({teamAbbreviation}) {config.dallas_stars_emoji}"
+                        elif teamAbbreviation == "DET":
+                            embed.title = f"{teamName} ({teamAbbreviation}) {config.detroit_red_wings_emoji}"
+                        elif teamAbbreviation == "EDM":
+                            embed.title = f"{teamName} ({teamAbbreviation}) {config.edmonton_oilers_emoji}"
+                        elif teamAbbreviation == "FLA":
+                            embed.title = f"{teamName} ({teamAbbreviation}) {config.florida_panthers_emoji}"
+                        elif teamAbbreviation == "LAK":
+                            embed.title = f"{teamName} ({teamAbbreviation}) {config.los_angeles_kings_emoji}"
+                        elif teamAbbreviation == "MIN":
+                            embed.title = f"{teamName} ({teamAbbreviation}) {config.minnesota_wild_emoji}"
+                        elif teamAbbreviation == "MTL":
+                            embed.title = f"{teamName} ({teamAbbreviation}) {config.montreal_canadiens_emoji}"
+                        elif teamAbbreviation == "NSH":
+                            embed.title = f"{teamName} ({teamAbbreviation}) {config.nashville_predators_emoji}"
+                        elif teamAbbreviation == "NJD":
+                            embed.title = f"{teamName} ({teamAbbreviation}) {config.new_jersey_devils_emoji}"
+                        elif teamAbbreviation == "NYI":
+                            embed.title = f"{teamName} ({teamAbbreviation}) {config.new_york_islanders_emoji}"
+                        elif teamAbbreviation == "NYR":
+                            embed.title = f"{teamName} ({teamAbbreviation}) {config.new_york_rangers_emoji}"
+                        elif teamAbbreviation == "OTT":
+                            embed.title = f"{teamName} ({teamAbbreviation}) {config.ottawa_senators_emoji}"
+                        elif teamAbbreviation == "PHI":
+                            embed.title = f"{teamName} ({teamAbbreviation}) {config.philadelphia_flyers_emoji}"
+                        elif teamAbbreviation == "PIT":
+                            embed.title = f"{teamName} ({teamAbbreviation}) {config.pittsburgh_penguins_emoji}"
+                        elif teamAbbreviation == "SJS":
+                            embed.title = f"{teamName} ({teamAbbreviation}) {config.san_jose_sharks_emoji}"
+                        elif teamAbbreviation == "STL":
+                            embed.title = f"{teamName} ({teamAbbreviation}) {config.st_louis_blues_emoji}"
+                        elif teamAbbreviation == "TBL":
+                            embed.title = f"{teamName} ({teamAbbreviation}) {config.tampa_bay_lightning_emoji}"
+                        elif teamAbbreviation == "TOR":
+                            embed.title = f"{teamName} ({teamAbbreviation}) {config.toronto_maple_leafs_emoji}"
+                        elif teamAbbreviation == "VAN":
+                            embed.title = f"{teamName} ({teamAbbreviation}) {config.vancouver_canucks_emoji}"
+                        elif teamAbbreviation == "VGK":
+                            embed.title = f"{teamName} ({teamAbbreviation}) {config.vegas_golden_knights_emoji}"
+                        elif teamAbbreviation == "WSH":
+                            embed.title = f"{teamName} ({teamAbbreviation}) {config.washington_capitals_emoji}"
+                        elif teamAbbreviation == "WPG":
+                            embed.title = f"{teamName} ({teamAbbreviation}) {config.winnipeg_jets_emoji}"
+
                         embed.add_field(name="Wins", value=wins)
                         embed.add_field(name="Losses", value=losses)
                         embed.add_field(name="OT Losses", value=otLosses)
