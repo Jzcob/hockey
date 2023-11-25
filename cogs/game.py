@@ -72,7 +72,7 @@ class game(commands.Cog):
                     gameID = game['id']
                     break
                 else:
-                    return await msg.edit(content=f"**{team}** does not play today!")
+                    return await msg.edit(content=f"**{team}** do not play today!")
             url2 = f"https://api-web.nhle.com/v1/gamecenter/{gameID}/boxscore"
             response2 = requests.get(url2)
             data2 = response2.json()
