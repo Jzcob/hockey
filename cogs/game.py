@@ -62,7 +62,7 @@ class game(commands.Cog):
             hawaii = pytz.timezone('US/Hawaii')
             dt = datetime.now(hawaii)
             today = dt.strftime('%Y-%m-%d')
-            url = f'https://api-web.nhle.com/v1/club-schedule/{abbreviation}/week/now'
+            url = f'https://api-web.nhle.com/v1/club-schedule/{abbreviation}/week/{today}'
             response = requests.get(url)
             data = response.json()
             games = data['games']
