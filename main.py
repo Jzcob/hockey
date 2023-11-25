@@ -85,6 +85,7 @@ async def load():
         if filename.endswith('.py'):
             await bot.load_extension(f'cogs.{filename[:-3]}')
             print(f'FOUND: `{filename}`')
+
 async def main():
     await load()
     await bot.start(token=TOKEN)
