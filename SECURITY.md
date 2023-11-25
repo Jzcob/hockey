@@ -35,5 +35,3 @@ We reserve the right to update or modify this Privacy Policy at any time. Any ch
 If you have any questions, concerns, or requests regarding this Privacy Policy or our Discord bot's practices, please us by our Discord server: https://www.discord.gg/H6ePukhwJZ.
 
 By using our Discord bot, you acknowledge that you have read, understood, and agreed to the terms of this Privacy Policy.
-
-Note: This privacy policy template assumes that no information is being collected or stored by the Discord bot. If any information is collected or stored in the future, this policy would need to be updated accordingly.
