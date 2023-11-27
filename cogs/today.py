@@ -12,7 +12,7 @@ def strings(awayAbbreviation, homeAbbreviation, home, away):
         awayString = f"{config.anahiem_ducks_emoji} {away}"
     elif awayAbbreviation == "ARI":
         awayString = f"{config.arizona_coyotes_emoji} {away}"
-    elif homeAbbreviation == "BOS":
+    elif awayAbbreviation == "BOS":
         awayString = f"{config.boston_bruins_emoji} {away}"
     elif awayAbbreviation == "BUF":
         awayString = f"{config.buffalo_sabres_emoji} {away}"
