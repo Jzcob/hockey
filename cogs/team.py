@@ -43,6 +43,7 @@ class team(commands.Cog):
                 "PHI": "Philadelphia Flyers",
                 "PIT": "Pittsburgh Penguins",
                 "SJS": "San Jose Sharks",
+                "SEA": "Seattle Kraken",
                 "STL": "St. Louis Blues",
                 "TBL": "Tampa Bay Lightning",
                 "TOR": "Toronto Maple Leafs",
@@ -128,6 +129,8 @@ class team(commands.Cog):
                             embed.title = f"{teamName} ({teamAbbreviation}) {config.pittsburgh_penguins_emoji}"
                         elif teamAbbreviation == "SJS":
                             embed.title = f"{teamName} ({teamAbbreviation}) {config.san_jose_sharks_emoji}"
+                        elif teamAbbreviation == "SEA":
+                            embed.title = f"{teamName} ({teamAbbreviation}) {config.seattle_kraken_emoji}"
                         elif teamAbbreviation == "STL":
                             embed.title = f"{teamName} ({teamAbbreviation}) {config.st_louis_blues_emoji}"
                         elif teamAbbreviation == "TBL":

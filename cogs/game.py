@@ -94,6 +94,7 @@ class game(commands.Cog):
                 embed = discord.Embed(title=f"{away} @ {home}", description=f"Game is scheduled! for {startTime}", color=config.color)
                 embed.add_field(name="TV Broadcast", value=f"{networks}", inline=False)
                 embed.add_field(name="Game ID", value=gameID, inline=False)
+                embed.set_footer(text=config.footer)
                 await msg.edit(embed=embed)
                 return
             homeScore = data2['boxscore']['linescore']['totals']['home']
@@ -106,6 +107,7 @@ class game(commands.Cog):
             awayShots = 0
             if game['gameState'] == "FINAL" or game['gameState'] == "OFF":
                 embed = discord.Embed(title=f"{away} @ {home}", description=f"Final!\nScore: {awayScore} | {homeScore}", color=config.color)
+                embed.set_footer(text=config.footer)
                 await msg.edit(embed=embed)
                 return
             embed = discord.Embed(title=f"{away} @ {home}", description=f"{awayScore} - {homeScore}", color=config.color)

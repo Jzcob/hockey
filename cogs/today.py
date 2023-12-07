@@ -198,7 +198,7 @@ class today(commands.Cog):
                         awayAbbreviation = game2["awayTeam"]["abbrev"]
                         awayString, homeString = strings(awayAbbreviation, homeAbbreviation, home, away)
                         embed.add_field(name=f"Final!", value=f"\n{awayString} @ {homeString}\nScore: {awayScore} | {homeScore}\n", inline=False)
-                        embed.set_footer(text=f"ID: {gameID}")
+                        embed.set_footer(text=config.footer)
                     elif gameState == "LIVE":
                         homeScore = game2['boxscore']['linescore']['totals']['home']
                         awayScore = game2['boxscore']['linescore']['totals']['away']

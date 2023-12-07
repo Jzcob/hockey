@@ -38,6 +38,7 @@ class teams(commands.Cog):
             "PHI": "Philadelphia Flyers",
             "PIT": "Pittsburgh Penguins",
             "SJS": "San Jose Sharks",
+            "SEA": "Seattle Kraken",
             "STL": "St. Louis Blues",
             "TBL": "Tampa Bay Lightning",
             "TOR": "Toronto Maple Leafs",
@@ -98,6 +99,8 @@ class teams(commands.Cog):
                     embed.description += f"**{team}** - {teams[team]} {config.pittsburgh_penguins_emoji}\n"
                 elif team == "SJS":
                     embed.description += f"**{team}** - {teams[team]} {config.san_jose_sharks_emoji}\n"
+                elif team == "SEA":
+                    embed.description += f"**{team}** - {teams[team]} {config.seattle_kraken_emoji}\n"
                 elif team == "STL":
                     embed.description += f"**{team}** - {teams[team]} {config.st_louis_blues_emoji}\n"
                 elif team == "TBL":
