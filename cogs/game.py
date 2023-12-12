@@ -44,6 +44,7 @@ class game(commands.Cog):
                 "PHI": "Philadelphia Flyers",
                 "PIT": "Pittsburgh Penguins",
                 "SJS": "San Jose Sharks",
+                "SEA": "Seattle Kraken",   
                 "STL": "St. Louis Blues",
                 "TBL": "Tampa Bay Lightning",
                 "TOR": "Toronto Maple Leafs",
