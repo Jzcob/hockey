@@ -16,6 +16,7 @@ class player(commands.Cog):
     
     @app_commands.command(name="player", description="Gets the information of a player!")
     async def player(self, interaction: discord.Interaction, name: str):
+        return await interaction.response.send_message("This command is currently disabled! Due to the NHL API.", ephemeral=True)
         await interaction.response.defer()
         msg = await interaction.original_response()
         try:
