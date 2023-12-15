@@ -57,9 +57,9 @@ async def servers(ctx):
                 for guild in guilds:
                     members += guild.member_count
                     try:
-                        desc += f"Name: {guild.name}\n"
+                        desc += f"ID: {guild.id}, Name: {guild.name}\n"
                     except:
-                        desc += ("Error getting server information\n")
+                        desc += ("---Error getting server information---\n")
                 file_path = "server_info.txt"
                 with open(file_path, "w") as file:
                     file.write(desc)
