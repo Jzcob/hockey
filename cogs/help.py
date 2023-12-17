@@ -15,7 +15,7 @@ class Help(commands.Cog):
     @app_commands.command(name="help", description="Shows the help menu!")
     async def help(self, interaction: discord.Interaction):
         try:
-            embed = discord.Embed(title="Help Menu", description="Here are the commands you can use with this bot!\n\n<> = Required\n() = Not Required\n\nHave any questions?\nhttps://discord.gg/H6ePukhwJZ", color=config.color)
+            embed = discord.Embed(title="Help Menu", description="Here are the commands you can use with this bot!\n\n<> = Required\n() = Not Required\n\nHave any questions?\nhttps://discord.gg/W5Jx5QSZCb", color=config.color)
             embed.set_thumbnail(url="https://cdn.discordapp.com/attachments/1156254139966292099/1156254690573557920/61487dbbd329bb0004dbd335.png?ex=65144d98&is=6512fc18&hm=a2d4ae15d46d52bdf2e15ee6feea5042323d96b706ba03586b477b262f7af48b&")
             embed.add_field(name="`/help`", value="Shows this help menu!", inline=False)
             #embed.add_field(name="`/player <name>`", value="Gets the information of a player!", inline=False)
