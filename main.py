@@ -64,8 +64,11 @@ async def servers(ctx):
                 with open(file_path, "w") as file:
                     file.write(desc)
                 await ctx.send(file=discord.File(file_path))
+                os.remove(file_path)
                 vc = bot.get_channel(1173304351872253952)
+                membersVC = bot.get_channel(1186445778043031722)
                 await vc.edit(name=f"Servers: {len(bot.guilds)}")
+                await membersVC.edit(name=f"Members: {int(members):,}")
             except Exception as e:
                 embed = discord.Embed(title="Error", description=f"Something went wrong. `{e}`", color=0xff0000)
                 return await ctx.send(embed=embed)
@@ -101,8 +104,14 @@ async def on_guild_join(guild):
         await join_leave_channel.send(embed=embed)
     except:
         await join_leave_channel.send("Joined a server but couldn't get server information")
+    guilds = bot.guilds
+    for guild in guilds:
+        members += guild.member_count
     vc = bot.get_channel(1173304351872253952)
     await vc.edit(name=f"Servers: {len(bot.guilds)}")
+    membersVC = bot.get_channel(1186445778043031722)
+    await membersVC.edit(name=f"Members: {int(members):,}")
+
 
 @bot.event
 async def on_guild_remove(guild):
@@ -114,8 +123,13 @@ async def on_guild_remove(guild):
         await join_leave_channel.send(embed=embed)
     except:
         await join_leave_channel.send("Left a server but couldn't get server information")
+    guilds = bot.guilds
+    for guild in guilds:
+        members += guild.member_count
     vc = bot.get_channel(1173304351872253952)
     await vc.edit(name=f"Servers: {len(bot.guilds)}")
+    membersVC = bot.get_channel(1186445778043031722)
+    await membersVC.edit(name=f"Members: {int(members):,}")
 
 
 
