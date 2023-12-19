@@ -1,6 +1,6 @@
 Effective Date: 11/16/2023.
 
-This Privacy Policy outlines how our Discord bot ("the Bot") handles and protects user information. We are committed to ensuring the privacy and security of our users and their data. Please read this policy carefully to understand how we collect, use, and disclose information.
+This Privacy Policy outlines how our Discord bot ("Hockey") handles and protects user information. We are committed to ensuring the privacy and security of our users and their data. Please read this policy carefully to understand how we collect, use, and disclose information.
 
 1. Information Collection:
 
@@ -32,6 +32,6 @@ We reserve the right to update or modify this Privacy Policy at any time. Any ch
 
 8. Contact Us:
 
-If you have any questions, concerns, or requests regarding this Privacy Policy or our Discord bot's practices, please us by our Discord server: https://www.discord.gg/H6ePukhwJZ.
+If you have any questions, concerns, or requests regarding this Privacy Policy or our Discord bot's practices, please us by our Discord server: https://www.discord.gg/W5Jx5QSZCb.
 
 By using our Discord bot, you acknowledge that you have read, understood, and agreed to the terms of this Privacy Policy.
