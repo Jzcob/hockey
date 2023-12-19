@@ -226,7 +226,7 @@ class player(commands.Cog):
                 await interaction.followup.send("Player not found!", ephemeral=True)
         except Exception as e:
             error_channel = self.bot.get_channel(config.error_channel)
-            await error_channel.send(f"Error in `/player`\n `{e}`")
+            await error_channel.send(f"Error in `/player`\n`{e}`")
             await interaction.followup.send("Error getting player! Message has been sent to Bot Developers", ephemeral=True)
 
 async def setup(bot):
