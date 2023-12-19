@@ -106,6 +106,7 @@ async def on_guild_join(guild):
         await join_leave_channel.send("Joined a server but couldn't get server information")
     try:
         guilds = bot.guilds
+        members = 0
         for guild in guilds:
             members += guild.member_count
         vc = bot.get_channel(1173304351872253952)
@@ -128,6 +129,7 @@ async def on_guild_remove(guild):
         await join_leave_channel.send("Left a server but couldn't get server information")
     try:
         guilds = bot.guilds
+        members = 0
         for guild in guilds:
             members += guild.member_count
         vc = bot.get_channel(1173304351872253952)
