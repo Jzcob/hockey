@@ -11,7 +11,7 @@ intents.members = True
 intents.message_content = True
 intents.auto_moderation_configuration = True
 intents.reactions = True
-bot = commands.Bot(command_prefix=';', intents=intents, help_command=None)
+bot = commands.Bot(command_prefix='[', intents=intents, help_command=None)
 status = discord.Status.online
 
 
@@ -104,13 +104,16 @@ async def on_guild_join(guild):
         await join_leave_channel.send(embed=embed)
     except:
         await join_leave_channel.send("Joined a server but couldn't get server information")
-    guilds = bot.guilds
-    for guild in guilds:
-        members += guild.member_count
-    vc = bot.get_channel(1173304351872253952)
-    await vc.edit(name=f"Servers: {len(bot.guilds)}")
-    membersVC = bot.get_channel(1186445778043031722)
-    await membersVC.edit(name=f"Members: {int(members):,}")
+    try:
+        guilds = bot.guilds
+        for guild in guilds:
+            members += guild.member_count
+        vc = bot.get_channel(1173304351872253952)
+        membersVC = bot.get_channel(1186445778043031722)
+        await membersVC.edit(name=f"Members: {int(members):,}")
+        await vc.edit(name=f"Servers: {len(bot.guilds)}")
+    except Exception as e:
+        print(e)
 
 
 @bot.event
@@ -123,13 +126,17 @@ async def on_guild_remove(guild):
         await join_leave_channel.send(embed=embed)
     except:
         await join_leave_channel.send("Left a server but couldn't get server information")
-    guilds = bot.guilds
-    for guild in guilds:
-        members += guild.member_count
-    vc = bot.get_channel(1173304351872253952)
-    await vc.edit(name=f"Servers: {len(bot.guilds)}")
-    membersVC = bot.get_channel(1186445778043031722)
-    await membersVC.edit(name=f"Members: {int(members):,}")
+    try:
+        guilds = bot.guilds
+        for guild in guilds:
+            members += guild.member_count
+        vc = bot.get_channel(1173304351872253952)
+        membersVC = bot.get_channel(1186445778043031722)
+        await membersVC.edit(name=f"Members: {int(members):,}")
+        await vc.edit(name=f"Servers: {len(bot.guilds)}")
+    except Exception as e:
+        print(e)
+
 
 
 
