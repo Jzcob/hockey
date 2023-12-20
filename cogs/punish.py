@@ -3,7 +3,6 @@ import pymongo
 from discord.ext import commands
 from discord import app_commands
 import config
-import TOKEN
 from datetime import datetime as dt
 from datetime import timedelta as td
 import os
