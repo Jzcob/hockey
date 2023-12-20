@@ -1,17 +1,18 @@
 import discord
 import asyncio
-from TOKEN import token as TOKEN
 from discord.ext import commands
 from discord import app_commands
 import os
 import config
+from dotenv import load_dotenv
+load_dotenv()
 
 intents = discord.Intents.all()
 intents.members = True
 intents.message_content = True
 intents.auto_moderation_configuration = True
 intents.reactions = True
-bot = commands.Bot(command_prefix='[', intents=intents, help_command=None)
+bot = commands.Bot(command_prefix=';', intents=intents, help_command=None)
 status = discord.Status.online
 
 
@@ -92,7 +93,7 @@ async def load():
 
 async def main():
     await load()
-    await bot.start(token=TOKEN)
+    await bot.start(token=os.getenv("token"))
 
 @bot.event
 async def on_guild_join(guild):
