@@ -3,15 +3,17 @@ import pymongo
 from discord.ext import commands
 from discord import app_commands
 import config
-import TOKEN
 from datetime import datetime as dt
 from datetime import timedelta as td
+import os
+from dotenv import load_dotenv
+load_dotenv()
 
 currTime = dt.now()
 timeFormat = currTime.strftime("%b %d, %Y")
 dt_string = currTime.strftime("%d/%m/%Y %H:%M:%S")
 
-myclient = pymongo.MongoClient(TOKEN.mongoDB)
+myclient = pymongo.MongoClient(os.getenv("mongodb"))
 myDB = myclient["Hockey"]
 mycol = myDB["user_info"]
 

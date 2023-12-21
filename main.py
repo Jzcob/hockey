@@ -1,10 +1,11 @@
 import discord
 import asyncio
-from TOKEN import token as TOKEN
 from discord.ext import commands
 from discord import app_commands
 import os
 import config
+from dotenv import load_dotenv
+load_dotenv()
 
 intents = discord.Intents.all()
 intents.members = True
@@ -54,17 +55,21 @@ async def servers(ctx):
                 desc = ""
                 members = 0
                 desc += f"Total Servers: {len(guilds)}\n" 
-                embed = discord.Embed(title="Servers", description=desc, color=0x00ff00)
                 for guild in guilds:
                     members += guild.member_count
                     try:
-                        embed.description += f"Name: {guild.name}\n"
+                        desc += f"ID: {guild.id}, Name: {guild.name}\n"
                     except:
-                        embed.description += ("Error getting server information\n")
-                embed.set_footer(text=f"Total Members: {members}")
-                await ctx.send(embed=embed)
+                        desc += ("---Error getting server information---\n")
+                file_path = "server_info.txt"
+                with open(file_path, "w") as file:
+                    file.write(desc)
+                await ctx.send(file=discord.File(file_path))
+                os.remove(file_path)
                 vc = bot.get_channel(1173304351872253952)
+                membersVC = bot.get_channel(1186445778043031722)
                 await vc.edit(name=f"Servers: {len(bot.guilds)}")
+                await membersVC.edit(name=f"Members: {int(members):,}")
             except Exception as e:
                 embed = discord.Embed(title="Error", description=f"Something went wrong. `{e}`", color=0xff0000)
                 return await ctx.send(embed=embed)
@@ -88,7 +93,7 @@ async def load():
 
 async def main():
     await load()
-    await bot.start(token=TOKEN)
+    await bot.start(token=os.getenv("token"))
 
 @bot.event
 async def on_guild_join(guild):
@@ -100,8 +105,18 @@ async def on_guild_join(guild):
         await join_leave_channel.send(embed=embed)
     except:
         await join_leave_channel.send("Joined a server but couldn't get server information")
-    vc = bot.get_channel(1173304351872253952)
-    await vc.edit(name=f"Servers: {len(bot.guilds)}")
+    try:
+        guilds = bot.guilds
+        members = 0
+        for guild in guilds:
+            members += guild.member_count
+        vc = bot.get_channel(1173304351872253952)
+        membersVC = bot.get_channel(1186445778043031722)
+        await membersVC.edit(name=f"Members: {int(members):,}")
+        await vc.edit(name=f"Servers: {len(bot.guilds)}")
+    except Exception as e:
+        print(e)
+
 
 @bot.event
 async def on_guild_remove(guild):
@@ -113,8 +128,18 @@ async def on_guild_remove(guild):
         await join_leave_channel.send(embed=embed)
     except:
         await join_leave_channel.send("Left a server but couldn't get server information")
-    vc = bot.get_channel(1173304351872253952)
-    await vc.edit(name=f"Servers: {len(bot.guilds)}")
+    try:
+        guilds = bot.guilds
+        members = 0
+        for guild in guilds:
+            members += guild.member_count
+        vc = bot.get_channel(1173304351872253952)
+        membersVC = bot.get_channel(1186445778043031722)
+        await membersVC.edit(name=f"Members: {int(members):,}")
+        await vc.edit(name=f"Servers: {len(bot.guilds)}")
+    except Exception as e:
+        print(e)
+
 
 
 

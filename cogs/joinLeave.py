@@ -2,10 +2,12 @@ import discord
 from discord.ext import commands
 from discord import app_commands
 import config
-import TOKEN
 import pymongo
+import os
+from dotenv import load_dotenv
+load_dotenv()
 
-myclient = pymongo.MongoClient(TOKEN.mongoDB)
+myclient = pymongo.MongoClient(os.getenv("mongodb"))
 myDB = myclient["Hockey"]
 mycol = myDB["user_info"]
 
