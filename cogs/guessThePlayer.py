@@ -65,6 +65,8 @@ class guessThePlayer(commands.Cog):
             positions = ["forwards", "defensemen", "goalies"]
             position = random.choice(positions)
             roster = x[position]
+            print("1")
+            print(len(roster))
             length = len(roster)
             randomChoice = random.randint(0, length)
             personID = x[position][randomChoice]["id"]
