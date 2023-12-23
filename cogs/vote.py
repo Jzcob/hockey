@@ -3,7 +3,7 @@ from discord.ext import commands
 from discord import app_commands
 import requests
 import config
-import topgg
+#import topgg
 
 class vote(commands.Cog):
     def __init__(self, bot):
@@ -22,7 +22,7 @@ class vote(commands.Cog):
         embed.set_footer(text=config.footer)
         await interaction.response.send_message(embed=embed, ephemeral=True)
     
-    @commands.Cog.Listener()
+    """@commands.Cog.Listener()
     async def on_dbl_vote(self, data):
         user = self.bot.get_user(data["user"])
         voterChannel = self.bot.get_channel(1187613219796291684)
@@ -34,7 +34,7 @@ class vote(commands.Cog):
         user = self.bot.get_user(data["user"])
         voterChannel = self.bot.get_channel(1187613219796291684)
         await voterChannel.send(f"`{user.name}` has voted for the bot!")
-        await user.send(f"Received a test upvote from {data['user']}")
+        await user.send(f"Received a test upvote from {data['user']}")"""
 
 async def setup(bot):
     await bot.add_cog(vote(bot))
