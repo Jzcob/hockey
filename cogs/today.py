@@ -12,7 +12,7 @@ def strings(awayAbbreviation, homeAbbreviation, home, away):
         awayString = f"{config.anahiem_ducks_emoji} {away}"
     elif awayAbbreviation == "ARI":
         awayString = f"{config.arizona_coyotes_emoji} {away}"
-    elif homeAbbreviation == "BOS":
+    elif awayAbbreviation == "BOS":
         awayString = f"{config.boston_bruins_emoji} {away}"
     elif awayAbbreviation == "BUF":
         awayString = f"{config.buffalo_sabres_emoji} {away}"
@@ -56,6 +56,8 @@ def strings(awayAbbreviation, homeAbbreviation, home, away):
         awayString = f"{config.pittsburgh_penguins_emoji} {away}"
     elif awayAbbreviation == "SJS":
         awayString = f"{config.san_jose_sharks_emoji} {away}"
+    elif awayAbbreviation == "SEA":
+        awayString = f"{config.seattle_kraken_emoji} {away}"
     elif awayAbbreviation == "STL":
         awayString = f"{config.st_louis_blues_emoji} {away}"
     elif awayAbbreviation == "TBL":
@@ -120,6 +122,8 @@ def strings(awayAbbreviation, homeAbbreviation, home, away):
         homeString = f"{home} {config.pittsburgh_penguins_emoji}"
     elif homeAbbreviation == "SJS":
         homeString = f"{home} {config.san_jose_sharks_emoji}"
+    elif homeAbbreviation == "SEA":
+        homeString = f"{home} {config.seattle_kraken_emoji}"
     elif homeAbbreviation == "STL":
         homeString = f"{home} {config.st_louis_blues_emoji}"
     elif homeAbbreviation == "TBL":
