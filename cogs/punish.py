@@ -435,7 +435,6 @@ class punish(commands.Cog):
     async def test_user(self, interaction: discord.Interaction, member: discord.Member):
         def is_staff(member):
             return discord.utils.get(member.roles, name="Staff") is not None
-        print(is_staff(member))
         await interaction.response.send_message(f"User Roles: {member.roles}")
 
     @app_commands.command(name="staff-help", description="Shows the help menu!")

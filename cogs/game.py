@@ -128,7 +128,6 @@ class game(commands.Cog):
             embed.add_field(name="Game ID", value=gameID, inline=False)
             await msg.edit(embed=embed)
         except Exception as e:
-            print(e)
             error_channel = self.bot.get_channel(config.error_channel)
             embed = discord.Embed(title="Error with `/game`", description=f"```{e}```", color=config.color)
             embed.set_author(icon_url=interaction.user.avatar.url, name="NHL Bot Error")
