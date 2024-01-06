@@ -65,13 +65,11 @@ class guessThePlayer(commands.Cog):
             positions = ["forwards", "defensemen", "goalies"]
             position = random.choice(positions)
             roster = x[position]
-            print("2")
             length = len(roster)
-            print("3")
             randomChoice = random.randint(0, length)
-            print("4")
+            print(length)
+            print(randomChoice)
             personID = x[position][randomChoice]["id"]
-            print(personID)
             playerURL = f"https://api-web.nhle.com/v1/player/{personID}/landing"
             response = requests.get(playerURL)
             y = response.json()
