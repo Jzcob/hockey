@@ -4,7 +4,7 @@ This Privacy Policy outlines how our Discord bot ("Hockey") handles and protects
 
 1. Information Collection:
 
-Our Discord bot does not collect or store any personal information from users. We do not track, record, or retain any user data, including but not limited to names, email addresses, IP addresses, or any other identifiable information.
+Our Discord bot only reads information from 2 of our commands `/guess-the-team` and `/guess-the-player` however the bot does not collect or store any personal information from users. We do not track, record, or retain any user data, including but not limited to names, email addresses, IP addresses, or any other identifiable information.
 
 2. Information Usage:
 
