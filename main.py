@@ -7,7 +7,7 @@ import config
 from dotenv import load_dotenv
 load_dotenv()
 
-intents = discord.Intents.all()
+intents = discord.Intents.default()
 intents.members = True
 intents.message_content = True
 intents.auto_moderation_configuration = True
