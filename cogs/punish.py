@@ -1,3 +1,8 @@
+### This is a private Cog for the Hockey Bot and is not for public use. ###
+# Purpose: Punoishments within the hockey bot discord server.
+# No other server can use this Cog, other than the Hockey Bot server.
+
+
 import discord
 import pymongo
 from discord.ext import commands
