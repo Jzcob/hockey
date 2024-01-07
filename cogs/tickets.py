@@ -84,12 +84,12 @@ class Tickets(commands.Cog):
         print("LOADED: `tickets.py`")
     
     @app_commands.command(name="ticket", description="Create a ticket")
-    @app_commands.has_role(management)
+    @app_commands.checks.has_any_role(management)
     async def ticket(self, interaction: discord.Interaction):
         await interaction.response.send_message("Select a ticket type.", ephemeral=True, view=SelectMenu())
     
     @app_commands.command(name="close", description="Close a ticket")
-    @app_commands.has_role(management, admin, moderator, staff, developer, tester)
+    @app_commands.checks.has_any_role(management, admin, moderator, staff, developer, tester)
     async def close(self, interaction: discord.Interaction):
         try:
             if interaction.channel.name.startswith("mgmt-") or interaction.channel.name.startswith("dev-") or interaction.channel.name.startswith("gen-") or interaction.channel.name.startswith("oth-"):
