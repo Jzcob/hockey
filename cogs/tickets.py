@@ -115,6 +115,7 @@ class Tickets(commands.Cog):
                 try:
                     messages = interaction.channel.history(limit=None)
                     transcript = ""
+                    
                     async for message in messages:
                         timestamp = message.created_at.strftime("%m/%d/%Y @ %H:%M:%S")
                         transcript += f"{message.author.name} ({timestamp}): {message.content}\n\n"
