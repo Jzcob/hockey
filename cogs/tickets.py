@@ -126,9 +126,7 @@ class Tickets(commands.Cog):
                     await error_channel.send(f"<@920797181034778655> Error with Tickets!\n ```{e}```")
                     return await interaction.followup.send("There was an error closing the ticket. I have alerted the Developers!", ephemeral=True)
                 ticketLog = interaction.client.get_channel(config.ticketLog)
-                adminTicketLog = interaction.client.get_channel(config.adminTicketLog)
-                await adminTicketLog.send(file=discord.File("transcript.txt"), content=f"Ticket closed by {interaction.user.name}")
-                await ticketLog.send(content=f"`{interaction.channel.name}` closed by `{interaction.user.name}`")
+                await ticketLog.send(file=discord.File("transcript.txt"), content=f"`{interaction.channel.name}` Ticket closed by {interaction.user.name}")
                 await interaction.channel.delete(reason=f"Ticket closed by {interaction.user}")
             else:
                 await interaction.response.send_message("This is not a ticket channel.", ephemeral=True)
