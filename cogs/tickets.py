@@ -86,7 +86,7 @@ class Tickets(commands.Cog):
     @app_commands.command(name="ticket", description="Create a ticket")
     @app_commands.checks.has_any_role(management)
     async def ticket(self, interaction: discord.Interaction):
-        await interaction.response.send_message("Select a ticket type.", ephemeral=True, view=SelectMenu())
+        await interaction.response.send_message("Select a ticket type.", view=SelectMenu(), ephemeral=True)
     
     @app_commands.command(name="close", description="Close a ticket")
     @app_commands.checks.has_any_role(management, admin, moderator, staff, developer, tester)
