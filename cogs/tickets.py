@@ -32,14 +32,12 @@ class SelectMenu(discord.ui.Select):
         managementTicket = utils.get(interaction.guild.text_channels, name=f"mgmt-{interaction.user.name.lower()}")
         developmentTicket = utils.get(interaction.guild.text_channels, name=f"dev-{interaction.user.name.lower()}")
         generalTicket = utils.get(interaction.guild.text_channels, name=f"gen-{interaction.user.name.lower()}")
-        otherTicket = utils.get(interaction.guild.text_channels, name=f"oth-{interaction.user.name.lower()}")
         overwritesManagement = {
             interaction.guild.default_role: discord.PermissionOverwrite(read_messages=False),
             interaction.user: discord.PermissionOverwrite(read_messages=True),
             interaction.guild.get_role(management): discord.PermissionOverwrite(read_messages=True),
             interaction.guild.me: discord.PermissionOverwrite(read_messages=True)
         }
-
         overwritesDevelopment = {
             interaction.guild.default_role: discord.PermissionOverwrite(read_messages=False),
             interaction.user: discord.PermissionOverwrite(read_messages=True),
@@ -47,7 +45,6 @@ class SelectMenu(discord.ui.Select):
             interaction.guild.get_role(tester): discord.PermissionOverwrite(read_messages=True),
             interaction.guild.me: discord.PermissionOverwrite(read_messages=True)
         }
-
         overwritesGeneral = {
             interaction.guild.default_role: discord.PermissionOverwrite(read_messages=False),
             interaction.user: discord.PermissionOverwrite(read_messages=True),
@@ -70,11 +67,15 @@ class SelectMenu(discord.ui.Select):
                 await interaction.guild.create_text_channel(name=f"gen-{interaction.user.name.lower()}", category=ticketCategory, overwrites=overwritesGeneral)
                 await interaction.response.send_message(f"Hey {interaction.user.mention}, I've created a ticket for you in {generalTicket.mention}", ephemeral=True)
             else: await interaction.response.send_message(f"Hey {interaction.user.mention}, you already have a ticket in {generalTicket.mention}", ephemeral=True)
-        else:
-            if otherTicket is None:
-                await interaction.guild.create_text_channel(name=f"oth-{interaction.user.name.lower()}", category=ticketCategory, overwrites=overwritesGeneral)
-                await interaction.response.send_message(f"Hey {interaction.user.mention}, I've created a ticket for you in {otherTicket.mention}", ephemeral=True)
-            else: await interaction.response.send_message(f"Hey {interaction.user.mention}, you already have a ticket in {otherTicket.mention}", ephemeral=True)
+
+class SelectView(discord.ui.View):
+    try:
+        def __init__(self, *, timeout = 60):
+            super().__init__(timeout=timeout)
+            self.add_item(SelectMenu())
+    except Exception as e:
+            print(e)
+
 
 class Tickets(commands.Cog):
     def __init__(self, bot):
@@ -88,7 +89,7 @@ class Tickets(commands.Cog):
     @app_commands.checks.has_any_role(management)
     async def ticket(self, interaction: discord.Interaction):
         try:
-            await interaction.response.send_message("Select a ticket type.", view=SelectMenu(), ephemeral=True)
+            await interaction.response.send_message("Select a ticket type.", view=SelectView(), ephemeral=True)
         except Exception as e:
             error_channel = self.bot.get_channel(config.error_channel)
             await error_channel.send(f"<@920797181034778655> Error with Tickets!\n ```{e}```")
