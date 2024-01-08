@@ -111,22 +111,24 @@ class Tickets(commands.Cog):
     async def close(self, interaction: discord.Interaction):
         try:
             if interaction.channel.name.startswith("mgmt-") or interaction.channel.name.startswith("dev-") or interaction.channel.name.startswith("gen-"):
+                await interaction.response.send_message("Closing the ticket", ephemeral=True)
                 try:
-                    messages = await interaction.channel.history(limit=None)
+                    messages = interaction.channel.history(limit=None)
                     transcript = ""
-                    for message in messages:
+                    async for message in messages:
                         timestamp = message.created_at.strftime("%m/%d/%Y @ %H:%M:%S")
                         transcript += f"{message.author.name} ({timestamp}): {message.content}\n\n"
-                    with open(f"transcript.txt", "w") as f:
-                        f.write(transcript)
+                    with open("transcript.txt", "w", encoding="utf-8") as file:
+                        file.write(transcript)
                 except Exception as e:
                     error_channel = self.bot.get_channel(config.error_channel)
                     await error_channel.send(f"<@920797181034778655> Error with Tickets!\n ```{e}```")
-                    return await interaction.response.send_message("Error getting transcript! Message has been sent to Jacob", ephemeral=True)
-                ticketLog = self.bot.get_channel(config.ticket_log)
-                await interaction.response.send_message("Ticket closed!", ephemeral=True)
-                await ticketLog.send(file=discord.File("transcript.txt"), content=f"Ticket `{interaction.channel.name}` closed by `{interaction.user.name}`.") 
-                await interaction.channel.delete()
+                    return await interaction.followup.send("There was an error closing the ticket. I have alerted the Developers!", ephemeral=True)
+                ticketLog = interaction.client.get_channel(config.ticketLog)
+                adminTicketLog = interaction.client.get_channel(config.adminTicketLog)
+                await adminTicketLog.send(file=discord.File("transcript.txt"), content=f"Ticket closed by {interaction.user.name}")
+                await ticketLog.send(content=f"`{interaction.channel.name}` closed by `{interaction.user.name}`")
+                await interaction.channel.delete(reason=f"Ticket closed by {interaction.user}")
             else:
                 await interaction.response.send_message("This is not a ticket channel.", ephemeral=True)
         except Exception as e:
