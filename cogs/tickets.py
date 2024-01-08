@@ -23,7 +23,7 @@ class SelectMenu(discord.ui.Select):
         menu = [
             discord.SelectOption(label="Management", description="Management related questions", emoji="👨‍💼"),
             discord.SelectOption(label="Development", description="Development related questions", emoji="👨‍💻"),
-            discord.SelectOption(label="General", description="General questions", emoji="👨‍🎓"),
+            discord.SelectOption(label="General", description="General questions", emoji="👨‍🎓")
         ]
         super().__init__(placeholder="Select a category", min_values=1, max_values=1, options=menu)
     
