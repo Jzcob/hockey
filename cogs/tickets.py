@@ -52,13 +52,13 @@ class SelectMenu(discord.ui.Select):
         if managementTicket is None and developmentTicket is None and generalTicket is None:
             if self.values[0] == "Management":
                 if managementTicket is None:
-                    ticket = await interaction.guild.create_text_channel(name=f"mgmt-{interaction.user.name.lower()}", category=ticketCategory, overwrites=overwritesManagement)
                     try:
+                        ticket = await interaction.guild.create_text_channel(name=f"mgmt-{interaction.user.name.lower()}", category=ticketCategory, overwrites=overwritesManagement)
                         await interaction.response.send_message(f"Hey {interaction.user.mention}, I've created a ticket for you in {managementTicket.mention}", ephemeral=True)
+                        await ticket.send(f"<@{interaction.user.id}> please specify below this what your issue is.")
                     except Exception as e:
                         error_channel = self.bot.get_channel(config.error_channel)
                         await error_channel.send(f"<@920797181034778655> Error with Tickets!\n ```{e}```")
-                    await ticket.send(f"<@{interaction.user.id}> please specify below this what your issue is.")
                 else: await interaction.response.send_message(f"Hey {interaction.user.mention}, you already have a ticket in {managementTicket.mention}", ephemeral=True)
             elif self.values[0] == "Development":
                 if developmentTicket is None:
