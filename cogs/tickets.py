@@ -4,11 +4,9 @@
 
 
 import discord
-from discord import app_commands, TextStyle, utils
+from discord import app_commands, utils
 from discord.ext import commands
 import config
-from dotenv import load_dotenv
-load_dotenv()
 
 #### Roles ####
 management = 1165854746863751168
@@ -21,9 +19,9 @@ tester = 1171967165843386519
 class SelectMenu(discord.ui.Select):
     def __init__(self):
         menu = [
-            discord.SelectOption(label="Management", description="Management related questions", emoji="👨‍💼"),
-            discord.SelectOption(label="Development", description="Development related questions", emoji="👨‍💻"),
-            discord.SelectOption(label="General", description="General questions", emoji="👨‍🎓")
+            discord.SelectOption(label="Management", description="Management related questions"),
+            discord.SelectOption(label="Development", description="Development related questions"),
+            discord.SelectOption(label="General", description="General questions")
         ]
         super().__init__(placeholder="Select a category", min_values=1, max_values=1, options=menu)
     
@@ -97,7 +95,7 @@ class Tickets(commands.Cog):
     @app_commands.checks.has_any_role(management, admin, moderator, staff, developer, tester)
     async def close(self, interaction: discord.Interaction):
         try:
-            if interaction.channel.name.startswith("mgmt-") or interaction.channel.name.startswith("dev-") or interaction.channel.name.startswith("gen-") or interaction.channel.name.startswith("oth-"):
+            if interaction.channel.name.startswith("mgmt-") or interaction.channel.name.startswith("dev-") or interaction.channel.name.startswith("gen-"):
                 try:
                     messages = await interaction.channel.history(limit=1).flatten()
                     transcript = ""
