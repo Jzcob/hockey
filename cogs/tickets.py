@@ -86,7 +86,12 @@ class Tickets(commands.Cog):
     @app_commands.command(name="ticket", description="Create a ticket")
     @app_commands.checks.has_any_role(management)
     async def ticket(self, interaction: discord.Interaction):
-        await interaction.response.send_message("Select a ticket type.", view=SelectMenu(), ephemeral=True)
+        try:
+            await interaction.response.send_message("Select a ticket type.", view=SelectMenu(), ephemeral=True)
+        except Exception as e:
+            error_channel = self.bot.get_channel(config.error_channel)
+            await error_channel.send(f"<@920797181034778655> Error with Tickets!\n ```{e}```")
+            return await interaction.response.send_message("Error creating ticket! Message has been sent to Jacob", ephemeral=True)
     
     @app_commands.command(name="close", description="Close a ticket")
     @app_commands.checks.has_any_role(management, admin, moderator, staff, developer, tester)
