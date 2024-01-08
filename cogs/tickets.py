@@ -53,7 +53,7 @@ class SelectMenu(discord.ui.Select):
             if self.values[0] == "Management":
                 if managementTicket is None:
                     ticket = await interaction.guild.create_text_channel(name=f"mgmt-{interaction.user.name.lower()}", category=ticketCategory, overwrites=overwritesManagement)
-                    await interaction.followup.send(f"Hey {interaction.user.mention}, I've created a ticket for you in {managementTicket.mention}", ephemeral=True)
+                    await interaction.response.send_message(f"Hey {interaction.user.mention}, I've created a ticket for you in {managementTicket.mention}", ephemeral=True)
                     await ticket.send(f"<@{interaction.user.id}> please specify below this what your issue is.")
                 else: await interaction.response.send_message(f"Hey {interaction.user.mention}, you already have a ticket in {managementTicket.mention}", ephemeral=True)
             elif self.values[0] == "Development":
