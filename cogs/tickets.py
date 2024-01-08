@@ -18,15 +18,12 @@ tester = 1171967165843386519
 
 class SelectMenu(discord.ui.Select):
     def __init__(self):
-        print("1")
         menu = [
             discord.SelectOption(label="Management", description="Management related questions"),
             discord.SelectOption(label="Development", description="Development related questions"),
             discord.SelectOption(label="General", description="General questions")
         ]
-        print("2")
         super().__init__(placeholder="Select a category", min_values=1, max_values=1, options=menu)
-        print("3")
     
     async def callback(self, interaction: discord.Interaction):
         managementTicket = utils.get(interaction.guild.text_channels, name=f"mgmt-{interaction.user.name.lower()}")
