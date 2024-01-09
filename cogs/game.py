@@ -5,6 +5,7 @@ import requests
 from datetime import datetime, timedelta
 import config
 import pytz
+import traceback
 
 class game(commands.Cog):
     def __init__(self, bot):
@@ -127,15 +128,10 @@ class game(commands.Cog):
             embed.add_field(name="TV Broadcast", value=f"{networks}", inline=False)
             embed.add_field(name="Game ID", value=gameID, inline=False)
             await msg.edit(embed=embed)
-        except Exception as e:
+        except:
             error_channel = self.bot.get_channel(config.error_channel)
-            embed = discord.Embed(title="Error with `/game`", description=f"```{e}```", color=config.color)
-            embed.set_author(icon_url=interaction.user.avatar.url, name="NHL Bot Error")
-            embed.add_field(name="Team", value=team)
-            embed.add_field(name="User", value=interaction.user.mention)
-            embed.add_field(name="Server", value=interaction.guild.name)
-            await interaction.followup.send("Error getting game! Message has been sent to Bot Developers", ephemeral=True)
-            return await error_channel.send(embed=embed)
+            string = f"{traceback.format_exc()}"
+            await error_channel.send(f"```{string}```")
 
 async def setup(bot):
     await bot.add_cog(game(bot))

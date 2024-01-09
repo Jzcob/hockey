@@ -2,6 +2,7 @@ import discord
 from discord.ext import commands
 from discord import app_commands
 import config
+import traceback
 
 class teams(commands.Cog):
     def __init__(self, bot):
@@ -116,16 +117,11 @@ class teams(commands.Cog):
             embed.set_footer(text=config.footer)
             await interaction.response.send_message(embed=embed, ephemeral=True)
             return
-        except Exception as e:
+        except:
             error_channel = self.bot.get_channel(config.error_channel)
-            await interaction.response.send_message("Error getting teams! Message has been sent to Bot Developers", ephemeral=True)
-            embed = discord.Embed(title="Error with `/teams`", description=f"```{e}```", color=config.color)
-            embed.set_author(icon_url=interaction.user.avatar.url, name="NHL Bot Error")
-            embed.add_field(name="Team", value=team)
-            embed.add_field(name="User", value=interaction.user.mention)
-            embed.add_field(name="Server", value=interaction.guild.name)
-            await error_channel.send(embed=embed)
-            return
+            string = f"{traceback.format_exc()}"
+            await error_channel.send(f"```{string}```")
+            await interaction.followup.send("Error with command, Message has been sent to Bot Developers", ephemeral=True)
 
 async def setup(bot):
     await bot.add_cog(teams(bot))

@@ -3,6 +3,7 @@ from discord.ext import commands
 from discord import app_commands
 import config
 from config import logs
+import traceback
 
 
 class logs(commands.Cog):
@@ -27,10 +28,10 @@ class logs(commands.Cog):
                     embed.add_field(name=f"Message Deleted in <#{message.channel.id}>", value=message.content)
                     embed.set_footer(text=f"ID: {message.author.id}")
                     return await channel.send(embed=embed)
-                except Exception as e:
+                except:
                     error_channel = self.bot.get_channel(config.error_channel)
-                    embed = discord.Embed(title="Error with `on_message_delete`", description=f"```{e}```", color=config.color)
-                    return await error_channel.send(embed=embed)
+                    string = f"{traceback.format_exc()}"
+                    await error_channel.send(f"```{string}```")
         else:
             return
     
@@ -45,10 +46,10 @@ class logs(commands.Cog):
                     embed = discord.Embed(color=config.color)
                     embed.add_field(name=f'Messaged Deleted', value=len(messages))
                     return await channel.send(embed=embed)
-                except Exception as e:
+                except:
                     error_channel = self.bot.get_channel(config.error_channel)
-                    embed = discord.Embed(title="Error with `on_bulk_message_delete`", description=f"```{e}```", color=config.color)
-                    return await error_channel.send(embed=embed)
+                    string = f"{traceback.format_exc()}"
+                    await error_channel.send(f"```{string}```")
         else:
             return
     
@@ -64,10 +65,10 @@ class logs(commands.Cog):
                     embed.set_footer(text=f"ID: {before.author.id}")
                     channel = self.bot.get_channel(1168944556927103067)
                     await channel.send(embed=embed)
-                except Exception as e:
+                except:
                     error_channel = self.bot.get_channel(config.error_channel)
-                    embed = discord.Embed(title="Error with `on_message_edit`", description=f"```{e}```", color=config.color)
-                    return await error_channel.send(embed=embed)
+                    string = f"{traceback.format_exc()}"
+                    await error_channel.send(f"```{string}```")
         else:
             return
 
@@ -98,10 +99,10 @@ class logs(commands.Cog):
                         embed.set_author(name=before, icon_url=before.avatar.url)
                         embed.set_footer(text=f"ID: {before.id}")
                         await channel.send(embed=embed)
-                except Exception as e:
+                except:
                     error_channel = self.bot.get_channel(config.error_channel)
-                    embed = discord.Embed(title="Error with `on_member_update`", description=f"```{e}```", color=config.color)
-                    return await error_channel.send(embed=embed)
+                    string = f"{traceback.format_exc()}"
+                    await error_channel.send(f"```{string}```")
         else:
             return
     
@@ -130,10 +131,10 @@ class logs(commands.Cog):
                         embed.set_author(name=before, icon_url=before.avatar.url)
                         embed.set_thumbnail(url=after.avatar_url)
                         return await channel.send(embed=embed)
-                except Exception as e:
+                except:
                     error_channel = self.bot.get_channel(config.error_channel)
-                    embed = discord.Embed(title="Error with `on_user_update`", description=f"```{e}```", color=config.color)
-                    return await error_channel.send(embed=embed)
+                    string = f"{traceback.format_exc()}"
+                    await error_channel.send(f"```{string}```")
         else:
             return
 

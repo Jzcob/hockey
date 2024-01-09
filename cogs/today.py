@@ -6,6 +6,7 @@ from datetime import datetime
 import config
 from datetime import datetime, timedelta
 import pytz
+import traceback
 
 def strings(awayAbbreviation, homeAbbreviation, home, away):
     if awayAbbreviation == "ANA":
@@ -229,15 +230,11 @@ class today(commands.Cog):
                     awayString, homeString = strings(awayAbbreviation, homeAbbreviation, home, away)
                     embed.add_field(name=f"{startTime}", value=f"{awayString} @ {homeString}\nGame is scheduled!", inline=False)
             return await msg.edit(embed=embed)
-        except Exception as e:
+        except:
             error_channel = self.bot.get_channel(config.error_channel)
-            await interaction.response.send_message("Error getting today's schedule! Message has been sent to Bot Developers", ephemeral=True)
-            embed = discord.Embed(title="Error with `/today`", description=f"```{e}```", color=config.color)
-            embed.set_author(icon_url=interaction.user.avatar.url, name="NHL Bot Error")
-            embed.add_field(name="User", value=interaction.user.mention)
-            embed.add_field(name="Server", value=interaction.guild.name)
-            await error_channel.send(embed=embed)
-            return
+            string = f"{traceback.format_exc()}"
+            await error_channel.send(f"```{string}```")
+            await interaction.followup.send("Error with command, Message has been sent to Bot Developers", ephemeral=True)
 
 
 async def setup(bot):

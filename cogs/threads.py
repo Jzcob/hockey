@@ -3,7 +3,8 @@ from discord.ext import commands
 from discord import app_commands
 import config
 import requests
-from datetime import datetime, timedelta
+from datetime import datetime
+import traceback
 
 class thread(commands.Cog):
     def __init__(self, bot):
@@ -89,12 +90,11 @@ class thread(commands.Cog):
                 await msg.edit("Please enter a valid team abbreviation. e.g. `/thread BOS`")
                 return
 
-        except Exception as e:
+        except:
             error_channel = self.bot.get_channel(config.error_channel)
-            embed = discord.Embed(title="Error with `/thread`", description=f"```{e}```", color=config.color)
-            embed.add_field(name="User", value=f"{interaction.user.mention}", inline=False)
-            embed.add_field(name="Server", value=f"{interaction.guild.name}", inline=False)
-            await error_channel.send(embed=embed)
+            string = f"{traceback.format_exc()}"
+            await error_channel.send(f"```{string}```")
+            await interaction.followup.send("Error with command, Message has been sent to Bot Developers", ephemeral=True)
 
 async def setup(bot):
     await bot.add_cog(thread(bot), guilds=[discord.Object(id=config.hockey_discord_server)])

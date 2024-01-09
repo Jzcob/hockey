@@ -2,6 +2,7 @@ import discord
 from discord.ext import commands
 from discord import app_commands
 import config
+import traceback
 
 
 class avatar(commands.Cog):
@@ -29,8 +30,11 @@ class avatar(commands.Cog):
                 embed.set_image(url=user.avatar)
                 embed.set_footer(text=f"{config.footer}")
                 await msg.edit(embed=embed)
-        except Exception as e:
-            print(e)
-
+        except:
+            error_channel = self.bot.get_channel(config.error_channel)
+            string = f"{traceback.format_exc()}"
+            await error_channel.send(f"```{string}```")
+            await interaction.followup.send("Error with command, Message has been sent to Bot Developers", ephemeral=True)
+    
 async def setup(bot):
     await bot.add_cog(avatar(bot))

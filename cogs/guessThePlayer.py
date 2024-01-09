@@ -6,6 +6,7 @@ import json
 import random
 import config
 import asyncio
+import traceback
 
 class guessThePlayer(commands.Cog):
     def __init__(self, bot): 
@@ -94,10 +95,11 @@ class guessThePlayer(commands.Cog):
                 await interaction.followup.send(f"Congratulations, {message.author.mention}! You guessed the Player!")
             except asyncio.TimeoutError:
                 await interaction.followup.send(f"Sorry, time's up!, the correct answer was `{fullName}`.")
-        except Exception as e:
+        except:
             error_channel = self.bot.get_channel(config.error_channel)
-            await interaction.followup.send("Error with the command | Message has been sent to Bot Developers", ephemeral=True)
-            await error_channel.send(f"Error with `/guess-the-player`\n`{e}`")
+            string = f"{traceback.format_exc()}"
+            await error_channel.send(f"```{string}```")
+            await interaction.followup.send("Error with command, Message has been sent to Bot Developers", ephemeral=True)
 
 async def setup(bot):
     await bot.add_cog(guessThePlayer(bot))

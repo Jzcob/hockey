@@ -4,7 +4,7 @@ from discord import app_commands
 import requests
 from datetime import datetime, timedelta
 import config
-import time
+import traceback
 
 class schedule(commands.Cog):
     def __init__(self, bot):
@@ -78,16 +78,10 @@ class schedule(commands.Cog):
             embed.set_thumbnail(url="https://www-league.nhlstatic.com/images/logos/league-dark/133-flat.svg")
             embed.set_footer(text=config.footer)
             await msg.edit(embed=embed)
-        except Exception as e:
+        except:
             error_channel = self.bot.get_channel(config.error_channel)
-            embed = discord.Embed(title="Error with `/schedule`", description=f"Something went wrong! `{e}`", color=config.color)
-            embed.set_author(icon_url=interaction.user.avatar.url, name="NHL Game")
-            embed.add_field(name="Team", value=team, inline=True)
-            embed.set_footer(text=f"Game ID: {gameID}")
-            embed.add_field(name="User", value=interaction.user.mention, inline=True)
-            embed.add_field(name="Server", value=interaction.guild.name, inline=True)
-            await interaction.followup.send("Error getting schedule! Message has been sent to Bot Developers", ephemeral=True)
-            return await error_channel.send(embed=embed)
-
+            string = f"{traceback.format_exc()}"
+            await error_channel.send(f"```{string}```")
+            await interaction.followup.send("Error with command, Message has been sent to Bot Developers", ephemeral=True)
 async def setup(bot):
     await bot.add_cog(schedule(bot))

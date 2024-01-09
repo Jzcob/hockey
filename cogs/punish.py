@@ -13,6 +13,7 @@ from datetime import timedelta as td
 import os
 from dotenv import load_dotenv
 load_dotenv()
+import traceback
 
 currTime = dt.now()
 timeFormat = currTime.strftime("%b %d, %Y")
@@ -94,9 +95,11 @@ class punish(commands.Cog):
             except:
                 await mod_logs.send(f"Unable to DM {member.mention} about their warn.")
             await mod_logs.send(embed=embed)
-        except Exception as e:
+        except:
             error_channel = self.bot.get_channel(config.error_channel)
-            await error_channel.send(f"Error in `warn` command:\n{e}")
+            string = f"{traceback.format_exc()}"
+            await error_channel.send(f"```{string}```")
+            await interaction.followup.send("Error with command, Message has been sent to Bot Developers", ephemeral=True)
 
 ### Timeout ###
     @app_commands.command(name="timeout", description="Timeouts a user!")
@@ -180,9 +183,11 @@ class punish(commands.Cog):
             except:
                 await mod_logs.send(f"Unable to DM {member.mention} about their timeout.")
             await mod_logs.send(embed=embed)
-        except Exception as e:
+        except:
             error_channel = self.bot.get_channel(config.error_channel)
-            await error_channel.send(f"Error in `timeout` command:\n{e}")
+            string = f"{traceback.format_exc()}"
+            await error_channel.send(f"```{string}```")
+            await interaction.followup.send("Error with command, Message has been sent to Bot Developers", ephemeral=True)
     
     @app_commands.command(name="ban", description="Bans a user!")
     @app_commands.checks.has_any_role(mod, admin, manager, owner)
@@ -226,9 +231,11 @@ class punish(commands.Cog):
             mycol.update_one({"_id": member.id}, {"$set": {"punishments.bans": banList}})
             await member.ban(reason=reason)
             await interaction.response.send_message(embed=embed)
-        except Exception as e:
+        except:
             error_channel = self.bot.get_channel(config.error_channel)
-            await error_channel.send(f"Error in `ban` command:\n{e}")
+            string = f"{traceback.format_exc()}"
+            await error_channel.send(f"```{string}```")
+            await interaction.followup.send("Error with command, Message has been sent to Bot Developers", ephemeral=True)
 ##################################################################################################################
 ########################### REMOVE PUNISHMENT COMMANDS ###########################################################
 ##################################################################################################################            
@@ -240,9 +247,11 @@ class punish(commands.Cog):
         try:
             await member.edit(timed_out_until=None)
             await interaction.response.send_message(f"Cancelled {member.mention}'s timeout!")
-        except Exception as e:
+        except:
             error_channel = self.bot.get_channel(config.error_channel)
-            await error_channel.send(f"Error in `cancel-timeout` command:\n{e}")
+            string = f"{traceback.format_exc()}"
+            await error_channel.send(f"```{string}```")
+            await interaction.followup.send("Error with command, Message has been sent to Bot Developers", ephemeral=True)
     
     @app_commands.command(name="remove-warn", description="Remove a warn from a user's punishment history!")
     @app_commands.checks.has_any_role(admin, manager, owner)
@@ -265,9 +274,11 @@ class punish(commands.Cog):
             mycol.update_one({"_id": member.id}, {"$set": {"punishments.warns": warnList}})
             await interaction.response.send_message(f"Removed warn #{warn} from {member.mention}'s punishment history!")
             await mod_logs.send(f"Removed warn #{warn} from {member.mention}'s punishment history!")
-        except Exception as e:
+        except:
             error_channel = self.bot.get_channel(config.error_channel)
-            await error_channel.send(f"Error in `remove-warn` command:\n{e}")
+            string = f"{traceback.format_exc()}"
+            await error_channel.send(f"```{string}```")
+            await interaction.followup.send("Error with command, Message has been sent to Bot Developers", ephemeral=True)
     
     @app_commands.command(name="remove-timeout", description="Remove a timeout from a user's punishment history!")
     @app_commands.checks.has_any_role(admin, manager, owner)
@@ -290,9 +301,11 @@ class punish(commands.Cog):
             mycol.update_one({"_id": member.id}, {"$set": {"punishments.timeouts": timeoutList}})
             await interaction.response.send_message(f"Removed timeout #{timeout} from {member.mention}'s punishment history!")
             await mod_logs.send(f"Removed timeout #{timeout} from {member.mention}'s punishment history!")
-        except Exception as e:
+        except:
             error_channel = self.bot.get_channel(config.error_channel)
-            await error_channel.send(f"Error in `remove-timeout` command:\n{e}")
+            string = f"{traceback.format_exc()}"
+            await error_channel.send(f"```{string}```")
+            await interaction.followup.send("Error with command, Message has been sent to Bot Developers", ephemeral=True)
         
     @app_commands.command(name="remove-ban", description="Remove a ban from a user's punishment history!")
     @app_commands.checks.has_any_role(admin, manager, owner)
@@ -315,9 +328,11 @@ class punish(commands.Cog):
             mycol.update_one({"_id": member.id}, {"$set": {"punishments.bans": banList}})
             await interaction.response.send_message(f"Removed ban #{ban} from {member.mention}'s punishment history!")
             await mod_logs.send(f"Removed ban #{ban} from {member.mention}'s punishment history!")
-        except Exception as e:
+        except:
             error_channel = self.bot.get_channel(config.error_channel)
-            await error_channel.send(f"Error in `remove-ban` command:\n{e}")
+            string = f"{traceback.format_exc()}"
+            await error_channel.send(f"```{string}```")
+            await interaction.followup.send("Error with command, Message has been sent to Bot Developers", ephemeral=True)
 
 ##################################################################################################################
 ############################### PUNISHMENT COMMANDS ##############################################################
@@ -343,9 +358,11 @@ class punish(commands.Cog):
             for note in notelist:
                 embed.add_field(name=f"Note #{notelist.index(note) + 1}", value=f"**Note:** {note['note']}\n**Staff:** <@{note['staff']}>\n**Date:** {note['date']}", inline=False)
             await interaction.response.send_message(embed=embed)
-        except Exception as e:
+        except:
             error_channel = self.bot.get_channel(config.error_channel)
-            await error_channel.send(f"Error in `punishments` command:\n{e}")
+            string = f"{traceback.format_exc()}"
+            await error_channel.send(f"```{string}```")
+            await interaction.followup.send("Error with command, Message has been sent to Bot Developers", ephemeral=True)
 
     @app_commands.command(name="fix-punishment", description="Fix a user's punishment reason!")
     @app_commands.checks.has_any_role(admin, manager, owner)
@@ -369,9 +386,11 @@ class punish(commands.Cog):
                 await interaction.response.send_message(f"Updated ban #{punishment} for {member.mention}!\nNew Reason: `{reason}`")
             else:
                 await interaction.response.send_message("Invalid punishment type!", ephemeral=True)
-        except Exception as e:
+        except:
             error_channel = self.bot.get_channel(config.error_channel)
-            await error_channel.send(f"Error in `fix-punishment` command:\n{e}")
+            string = f"{traceback.format_exc()}"
+            await error_channel.send(f"```{string}```")
+            await interaction.followup.send("Error with command, Message has been sent to Bot Developers", ephemeral=True)
 
 ###############################################################################################################
 ################################# NOTE COMMANDS #############################################################
@@ -388,9 +407,11 @@ class punish(commands.Cog):
             mycol.update_one({"_id": member.id}, {"$set": {"punishments.notes": noteList}})
             await interaction.response.send_message(f"Set a note for {member.mention}!")
             await mod_logs.send(f"Set a note for {member.mention}!")
-        except Exception as e:
+        except:
             error_channel = self.bot.get_channel(config.error_channel)
-            await error_channel.send(f"Error in `set-note` command:\n{e}")
+            string = f"{traceback.format_exc()}"
+            await error_channel.send(f"```{string}```")
+            await interaction.followup.send("Error with command, Message has been sent to Bot Developers", ephemeral=True)
     
     @app_commands.command(name="remove-note", description="Remove a note from a user!")
     @app_commands.checks.has_any_role(admin, manager, owner)
@@ -412,9 +433,11 @@ class punish(commands.Cog):
             mycol.update_one({"_id": member.id}, {"$set": {"punishments.notes": noteList}})
             await interaction.response.send_message(f"Removed note #{note} from {member.mention}'s punishment history!")
             await mod_logs.send(f"Removed note #{note} from {member.mention}'s punishment history!")
-        except Exception as e:
+        except:
             error_channel = self.bot.get_channel(config.error_channel)
-            await error_channel.send(f"Error in `remove-note` command:\n{e}")
+            string = f"{traceback.format_exc()}"
+            await error_channel.send(f"```{string}```")
+            await interaction.followup.send("Error with command, Message has been sent to Bot Developers", ephemeral=True)
 
 ##################################################################################################################
 ################################# TEST COMMANDS ###################################################################
@@ -430,17 +453,11 @@ class punish(commands.Cog):
             else:
                 await interaction.channel.purge(limit=amount, check=lambda m: m.author == member)
                 await interaction.channel.send(f"Purged {amount} messages from {member.mention}!")
-        except Exception as e:
+        except:
             error_channel = self.bot.get_channel(config.error_channel)
-            await error_channel.send(f"Error in `purge` command:\n{e}")
-
-
-    @app_commands.command(name="test-user", description="Test user command")
-    @app_commands.checks.has_any_role(owner)
-    async def test_user(self, interaction: discord.Interaction, member: discord.Member):
-        def is_staff(member):
-            return discord.utils.get(member.roles, name="Staff") is not None
-        await interaction.response.send_message(f"User Roles: {member.roles}")
+            string = f"{traceback.format_exc()}"
+            await error_channel.send(f"```{string}```")
+            await interaction.followup.send("Error with command, Message has been sent to Bot Developers", ephemeral=True)
 
     @app_commands.command(name="staff-help", description="Shows the help menu!")
     @app_commands.checks.has_any_role("Staff")
@@ -503,14 +520,11 @@ class punish(commands.Cog):
                     await interaction.response.send_message("You are not a manager!", ephemeral=True)
             else:
                 await interaction.response.send_message("Role not found!", ephemeral=True)
-        except Exception as e:
+        except:
             error_channel = self.bot.get_channel(config.error_channel)
-            embed = discord.Embed(title="Error with `/staff-help`", description=f"```{e}```", color=config.color)
-            embed.add_field(name="User", value=f"{interaction.user.mention}", inline=False)
-            embed.add_field(name="Server", value=f"{interaction.guild.name}", inline=False)
-            embed.add_field(name="Channel", value=f"{interaction.channel.name}", inline=False)
-            await interaction.response.send_message("Error with `/staff-help`! Message has been sent to Jacob, but feel free to ping him in <#1168943619886035066> I give you permission. :)\n Tell him to look at #bot-errors", ephemeral=True)
-            await error_channel.send(embed=embed)
+            string = f"{traceback.format_exc()}"
+            await error_channel.send(f"```{string}```")
+            await interaction.followup.send("Error with command, Message has been sent to Bot Developers", ephemeral=True)
 
 async def setup(bot):
     await bot.add_cog(punish(bot), guilds=[discord.Object(id=config.hockey_discord_server)])

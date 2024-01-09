@@ -2,9 +2,9 @@ import discord
 from discord.ext import commands
 from discord import app_commands
 import requests
-from datetime import datetime, timedelta
+from datetime import datetime
 import config
-import json
+import traceback
 
 class standings(commands.Cog):
     def __init__(self, bot):
@@ -74,15 +74,11 @@ class standings(commands.Cog):
             embed.add_field(name="Central", value="\n".join(central), inline=False)
             embed.add_field(name="Pacific", value="\n".join(pacific), inline=False)
             await msg.edit(embed=embed)
-        except Exception as e:
+        except:
             error_channel = self.bot.get_channel(config.error_channel)
-            embed = discord.Embed(title="Error with `/standings`", description=f"```{e}```", color=config.color)
-            embed.set_author(icon_url=interaction.user.avatar.url, name="NHL Bot Error")
-            embed.add_field(name="User", value=interaction.user.mention)
-            embed.add_field(name="Server", value=interaction.guild.name)
-            embed.set_footer(text=datetime.now().strftime("%m/%d/%Y, %H:%M:%S"))
-            await interaction.followup.send("Error getting standings! Message has been sent to Bot Developers", ephemeral=True)
-            await error_channel.send(embed=embed)
+            string = f"{traceback.format_exc()}"
+            await error_channel.send(f"```{string}```")
+            await interaction.followup.send("Error with command, Message has been sent to Bot Developers", ephemeral=True)
 
 
 async def setup(bot):

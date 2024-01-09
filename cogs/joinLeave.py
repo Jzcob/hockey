@@ -6,6 +6,7 @@ import pymongo
 import os
 from dotenv import load_dotenv
 load_dotenv()
+import traceback
 
 myclient = pymongo.MongoClient(os.getenv("mongodb"))
 myDB = myclient["Hockey"]
@@ -64,7 +65,9 @@ class joinLeave(commands.Cog):
             try:
                 await member.send(embed=embed)
             except:
-                return
+                error_channel = self.bot.get_channel(config.error_channel)
+                string = f"{traceback.format_exc()}"
+                await error_channel.send(f"```{string}```")
         else:
             return
     
@@ -93,9 +96,10 @@ class joinLeave(commands.Cog):
                 await interaction.response.send_message("User added to the database!", ephemeral=True)
             else:
                 await interaction.response.send_message("User already exists in the database!", ephemeral=True)
-        except Exception as e:
+        except:
             error_channel = self.bot.get_channel(config.error_channel)
-            return await error_channel.send(f"Something went wrong with `/add-db` `{e}`")
+            string = f"{traceback.format_exc()}"
+            await error_channel.send(f"```{string}```")
 
 async def setup(bot):
     await bot.add_cog(joinLeave(bot), guilds=[discord.Object(id=config.hockey_discord_server)])

@@ -7,6 +7,7 @@ import discord
 from discord import app_commands, utils
 from discord.ext import commands
 import config
+import traceback
 
 #### Roles ####
 management = 1165854746863751168
@@ -105,10 +106,11 @@ class Tickets(commands.Cog):
     async def ticket(self, interaction: discord.Interaction):
         try:
             await interaction.response.send_message("Select a ticket type.", view=SelectView(), ephemeral=True)
-        except Exception as e:
+        except:
             error_channel = self.bot.get_channel(config.error_channel)
-            await error_channel.send(f"<@920797181034778655> Error with Tickets!\n ```{e}```")
-            return await interaction.response.send_message("Error creating ticket! Message has been sent to Jacob", ephemeral=True)
+            string = f"{traceback.format_exc()}"
+            await error_channel.send(f"```{string}```")
+            await interaction.followup.send("Error with command, Message has been sent to Bot Developers", ephemeral=True)
     
     @app_commands.command(name="close", description="Close a ticket")
     @app_commands.checks.has_any_role(management, admin, moderator, staff, developer, tester)
@@ -125,19 +127,21 @@ class Tickets(commands.Cog):
                         transcript += f"{message.author.name} ({timestamp}): {message.content}\n\n"
                     with open("transcript.txt", "w", encoding="utf-8") as file:
                         file.write(transcript)
-                except Exception as e:
+                except:
                     error_channel = self.bot.get_channel(config.error_channel)
-                    await error_channel.send(f"<@920797181034778655> Error with Tickets!\n ```{e}```")
-                    return await interaction.followup.send("There was an error closing the ticket. I have alerted the Developers!", ephemeral=True)
+                    string = f"{traceback.format_exc()}"
+                    await error_channel.send(f"```{string}```")
+                    await interaction.followup.send("Error with command, Message has been sent to Bot Developers", ephemeral=True)
                 ticketLog = interaction.client.get_channel(config.ticketLog)
                 await ticketLog.send(file=discord.File("transcript.txt"), content=f"`{interaction.channel.name}` Ticket closed by {interaction.user.name}")
                 await interaction.channel.delete(reason=f"Ticket closed by {interaction.user}")
             else:
                 await interaction.response.send_message("This is not a ticket channel.", ephemeral=True)
-        except Exception as e:
+        except:
             error_channel = self.bot.get_channel(config.error_channel)
-            await error_channel.send(f"<@920797181034778655> Error with Tickets!\n ```{e}```")
-            return await interaction.response.send_message("Error closing ticket! Message has been sent to Jacob", ephemeral=True)
+            string = f"{traceback.format_exc()}"
+            await error_channel.send(f"```{string}```")
+            await interaction.followup.send("Error with command, Message has been sent to Bot Developers", ephemeral=True)
 
 
 async def setup(bot):

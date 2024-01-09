@@ -4,6 +4,7 @@ from discord import app_commands
 import random
 import asyncio
 import config
+import traceback
 
 class GuessTheTeam(commands.Cog):
     def __init__(self, bot):
@@ -62,14 +63,11 @@ class GuessTheTeam(commands.Cog):
                 await interaction.followup.send(f"Correct! {msg.author.mention} guessed the team!")
             except asyncio.TimeoutError:
                 await interaction.followup.send(f"You didn't answer in time! It was {team}")
-        except Exception as e:
+        except:
             error_channel = self.bot.get_channel(config.error_channel)
-            embed = discord.Embed(title="Error with `/guess-the-team`", description=f"```{e}```", color=config.color)
-            embed.add_field(name="Team Chosen", value=f"{team}", inline=False)
-            embed.add_field(name="User", value=f"{interaction.user.mention}", inline=False)
-            embed.add_field(name="Server", value=f"{interaction.guild.name}", inline=False)
-            await interaction.followup.send("Error with `/guess-the-team`! Message has been sent to Bot Developers", ephemeral=True)
-            await error_channel.send(embed=embed)
+            string = f"{traceback.format_exc()}"
+            await error_channel.send(f"```{string}```")
+            await interaction.followup.send("Error with command, Message has been sent to Bot Developers", ephemeral=True)
 
 async def setup(bot):
     await bot.add_cog(GuessTheTeam(bot))

@@ -31,9 +31,7 @@ class Info(commands.Cog):
             await interaction.response.send_message(embed=embed, ephemeral=True)
         except:
             error_channel = self.bot.get_channel(config.error_channel)
-            string = traceback.format_exc()
-            embed = discord.Embed(title="Error with `/info`", description=f"```{str(string)}```", color=config.color)
-            await error_channel.send(embed=embed)
-
+            string = f"{traceback.format_exc()}"
+            await error_channel.send(f"```{string}```")
 async def setup(bot):
     await bot.add_cog(Info(bot))
