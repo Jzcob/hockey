@@ -1,6 +1,8 @@
 import requests
 import discord
 import json
+import linecache
+import sys
 
 jacob = 920797181034778655
 dev_server_dev_channel = 1165858822183735316
@@ -52,49 +54,12 @@ winnipeg_jets_emoji = "<:winnipegjets:1178086107418722434>"
 nhl_logo_emoji = "<:nhl:1165874790117150820>"
 
 
-
-def checkForTeam(team: str) -> None:
-    url = "https://statsapi.web.nhl.com/api/v1/teams"
-    response = requests.get(url)
-    x = json.loads(response.text)
-    y = 0
-    team = team.lower()
-
-    for i in x['teams']:
-        teamName = x['teams'][y]['teamName']
-        teamName = teamName.lower()
-        teamAbbreviation = x['teams'][y]["abbreviation"]
-        teamAbbreviation = teamAbbreviation.lower()
-        teamFullName = x['teams'][y]["name"]
-        teamFullName = teamFullName.lower()
-        if teamName == team or teamAbbreviation == team or teamFullName == team:
-            teamID = x['teams'][y]['id']
-            return teamID
-        else:
-            y += 1
-    else:
-        teamID = None
-        return teamID
-
-def checkForTeamName(team: str) -> None:
-    url = "https://statsapi.web.nhl.com/api/v1/teams"
-    response = requests.get(url)
-    x = json.loads(response.text)
-    y = 0
-    team = team.lower()
+def PrintException():
+    exc_type, exc_obj, tb = sys.exc_info()
+    f = tb.tb_frame
+    lineno = tb.tb_lineno
+    filename = f.f_code.co_filename
+    linecache.checkcache(filename)
+    line = linecache.getline(filename, lineno, f.f_globals)
+    return 'EXCEPTION IN ({}, LINE {} "{}"): {}'.format(filename, lineno, line.strip(), exc_obj)
     
-    for i in x['teams']:
-        teamName = x['teams'][y]['teamName']
-        teamName = teamName.lower()
-        teamAbbreviation = x['teams'][y]["abbreviation"]
-        teamAbbreviation = teamAbbreviation.lower()
-        teamFullName = x['teams'][y]["name"]
-        teamFullName = teamFullName.lower()
-        if teamName == team or teamAbbreviation == team or teamFullName == team:
-            teamName = x['teams'][y]['name']
-            return teamName
-        else:
-            y += 1
-    else:
-        teamName = None
-        return teamName
