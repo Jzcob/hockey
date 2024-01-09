@@ -94,14 +94,11 @@ class player(commands.Cog):
                                 playerPosition = "Left Wing"
                             elif playerPosition == "R":
                                 playerPosition = "Right Wing"
-                            embed.description = f"{playerPosition} for the {teams[team]}"
-                            embed.add_field(name="Number", value=f"{playerNumber}", inline=True)
+                            embed.description = f"{playerPosition} for the {teams[team]} #{playerNumber}"
                             embed.add_field(name="Birth Date", value=f"{birthDate}", inline=True)
                             embed.add_field(name="Birth City", value=f"{birthCity}", inline=True)
                             embed.add_field(name="Birth Country", value=f"{birthCountry}", inline=True)
                             embed.add_field(name="Drafted", value=f"{drafted}", inline=True)
-                            embed.add_field(name="Drafted Round", value=f"{draftedRound}", inline=True)
-                            embed.add_field(name="Drafted Overall", value=f"{draftedOverall}", inline=True)
                             embed.add_field(name="Drafted Team", value=f"{draftedTeam}", inline=True)
                             embed.add_field(name="Games Played", value=f"{gamesPlayed}", inline=True)
                             embed.add_field(name="Goals", value=f"{goals}", inline=True)
