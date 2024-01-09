@@ -1,5 +1,4 @@
 # Hockey Discord Bot
-### A simplistic NHL Hockey bot used to get stats, game scores, standings, and a guess the team!
 
 A discord bot that shows NHL team stats that go in-depth to some degree. The bot also shows the games that are on today as well as the current standings and schedule for any team in the league.
 
