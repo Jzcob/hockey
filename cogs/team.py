@@ -82,9 +82,7 @@ class team(commands.Cog):
                         streakCode = data['standings'][i]['streakCode']
                         streakNumber = data['standings'][i]['streakCount']
                         teamLogo = data['standings'][i]['teamLogo']
-                        image = renderPM.drawToFile(svg2rlg(teamLogo), "teamLogo.png", fmt="PNG")
                         embed = discord.Embed(description=f"**{confrence} confrence & {division} division**", color=config.color)
-                        embed.thumbnail(url="attachment://teamLogo.png")
                         if teamAbbreviation == "ANA":
                             embed.title = f"{teamName} ({teamAbbreviation}) {config.anahiem_ducks_emoji}"
                         elif teamAbbreviation == "ARI":
