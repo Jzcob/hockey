@@ -4,8 +4,6 @@ from discord import app_commands
 import requests
 from datetime import datetime, timedelta
 import config
-from svglib.svglib import svg2rlg
-from reportlab.graphics import renderPM
 
 class team(commands.Cog):
     def __init__(self, bot):
@@ -81,7 +79,6 @@ class team(commands.Cog):
                         goalDifference = data['standings'][i]['goalDifferential']
                         streakCode = data['standings'][i]['streakCode']
                         streakNumber = data['standings'][i]['streakCount']
-                        teamLogo = data['standings'][i]['teamLogo']
                         embed = discord.Embed(description=f"**{confrence} confrence & {division} division**", color=config.color)
                         if teamAbbreviation == "ANA":
                             embed.title = f"{teamName} ({teamAbbreviation}) {config.anahiem_ducks_emoji}"

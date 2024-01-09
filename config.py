@@ -1,9 +1,3 @@
-import requests
-import discord
-import json
-import linecache
-import sys
-
 jacob = 920797181034778655
 dev_server_dev_channel = 1165858822183735316
 allowed_channels = [dev_server_dev_channel]
@@ -52,14 +46,3 @@ vegas_golden_knights_emoji = "<:vegasgoldenknights:1178086044931989576>"
 washington_capitals_emoji = "<:washingtoncapitals:1178086062518710413>"
 winnipeg_jets_emoji = "<:winnipegjets:1178086107418722434>"
 nhl_logo_emoji = "<:nhl:1165874790117150820>"
-
-
-def PrintException():
-    exc_type, exc_obj, tb = sys.exc_info()
-    f = tb.tb_frame
-    lineno = tb.tb_lineno
-    filename = f.f_code.co_filename
-    linecache.checkcache(filename)
-    line = linecache.getline(filename, lineno, f.f_globals)
-    print('EXCEPTION IN ({}, LINE {} "{}"): {}'.format(filename, lineno, line.strip(), exc_obj))
-    
