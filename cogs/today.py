@@ -164,9 +164,6 @@ class today(commands.Cog):
             r = requests.get(url)
             global data
             data = r.json()
-        except Exception as e:
-            print(e)
-        try:
             games = data["gameWeek"][0]["games"]
             embed = discord.Embed(title=f"Today's Games", description=f"Total games today: {len(games)}", color=config.color)
             embed.set_thumbnail(url="https://www-league.nhlstatic.com/images/logos/league-dark/133-flat.svg")
@@ -182,47 +179,39 @@ class today(commands.Cog):
                 startTime = datetime.strptime(startTime, '%Y-%m-%dT%H:%M:%SZ')
                 startTime = startTime - timedelta(hours=5)
                 startTime = startTime.strftime('%I:%M %p')
-                try:
-                    if gameState == "FUT":
-                        home = game2["homeTeam"]["name"]["default"]
-                        away = game2["awayTeam"]["name"]["default"]
-                        homeAbbreviation = game2["homeTeam"]["abbrev"]
-                        awayAbbreviation = game2["awayTeam"]["abbrev"]
-                        awayString, homeString = strings(awayAbbreviation, homeAbbreviation, home, away)
-                        embed.add_field(name=f"{startTime}", value=f"{awayString} @ {homeString}\nGame is scheduled!", inline=False)
-                    elif gameState == "FINAL" or gameState == "OFF":
-                        homeScore = game2['boxscore']['linescore']['totals']['home']
-                        awayScore = game2['boxscore']['linescore']['totals']['away']
-                        home = game2["homeTeam"]["name"]["default"]
-                        away = game2["awayTeam"]["name"]["default"]
-                        homeAbbreviation = game2["homeTeam"]["abbrev"]
-                        awayAbbreviation = game2["awayTeam"]["abbrev"]
-                        awayString, homeString = strings(awayAbbreviation, homeAbbreviation, home, away)
-                        embed.add_field(name=f"Final!", value=f"\n{awayString} @ {homeString}\nScore: {awayScore} | {homeScore}\n", inline=False)
-                        embed.set_footer(text=f"ID: {gameID}")
-                    elif gameState == "LIVE":
-                        homeScore = game2['boxscore']['linescore']['totals']['home']
-                        awayScore = game2['boxscore']['linescore']['totals']['away']
-                        clock = game2['clock']['timeRemaining']
-                        clockRunning = game2['clock']['running']
-                        clockIntermission = game2['clock']['inIntermission']
-                        home = game2["homeTeam"]["name"]["default"]
-                        away = game2["awayTeam"]["name"]["default"]
-                        homeAbbreviation = game2["homeTeam"]["abbrev"]
-                        awayAbbreviation = game2["awayTeam"]["abbrev"]
-                        awayString, homeString = strings(awayAbbreviation, homeAbbreviation, home, away)
-                        if clockRunning == True:
-                            embed.add_field(name=f"LIVE", value=f"{awayString} @ {homeString}\nScore: {awayScore} | {homeScore}\nTime: {clock}", inline=False)
-                        if clockIntermission == True:
-                            embed.add_field(name=f"Intermission!", value=f"{awayString} @ {homeString}\nScore: {awayScore} | {homeScore}", inline=False)
-                    else:
-                        home = game2["homeTeam"]["name"]["default"]
-                        away = game2["awayTeam"]["name"]["default"]
-                        homeAbbreviation = game2["homeTeam"]["abbrev"]
-                        awayAbbreviation = game2["awayTeam"]["abbrev"]
-                        awayString, homeString = strings(awayAbbreviation, homeAbbreviation, home, away)
-                        embed.add_field(name=f"{startTime}", value=f"{awayString} @ {homeString}\nGame is scheduled!", inline=False)
-                except:
+                if gameState == "FUT":
+                    home = game2["homeTeam"]["name"]["default"]
+                    away = game2["awayTeam"]["name"]["default"]
+                    homeAbbreviation = game2["homeTeam"]["abbrev"]
+                    awayAbbreviation = game2["awayTeam"]["abbrev"]
+                    awayString, homeString = strings(awayAbbreviation, homeAbbreviation, home, away)
+                    embed.add_field(name=f"{startTime}", value=f"{awayString} @ {homeString}\nGame is scheduled!", inline=False)
+                elif gameState == "FINAL" or gameState == "OFF":
+                    homeScore = game2['boxscore']['linescore']['totals']['home']
+                    awayScore = game2['boxscore']['linescore']['totals']['away']
+                    home = game2["homeTeam"]["name"]["default"]
+                    away = game2["awayTeam"]["name"]["default"]
+                    homeAbbreviation = game2["homeTeam"]["abbrev"]
+                    awayAbbreviation = game2["awayTeam"]["abbrev"]
+                    awayString, homeString = strings(awayAbbreviation, homeAbbreviation, home, away)
+                    embed.add_field(name=f"Final!", value=f"\n{awayString} @ {homeString}\nScore: {awayScore} | {homeScore}\n", inline=False)
+                    embed.set_footer(text=f"ID: {gameID}")
+                elif gameState == "LIVE":
+                    homeScore = game2['boxscore']['linescore']['totals']['home']
+                    awayScore = game2['boxscore']['linescore']['totals']['away']
+                    clock = game2['clock']['timeRemaining']
+                    clockRunning = game2['clock']['running']
+                    clockIntermission = game2['clock']['inIntermission']
+                    home = game2["homeTeam"]["name"]["default"]
+                    away = game2["awayTeam"]["name"]["default"]
+                    homeAbbreviation = game2["homeTeam"]["abbrev"]
+                    awayAbbreviation = game2["awayTeam"]["abbrev"]
+                    awayString, homeString = strings(awayAbbreviation, homeAbbreviation, home, away)
+                    if clockRunning == True:
+                        embed.add_field(name=f"LIVE", value=f"{awayString} @ {homeString}\nScore: {awayScore} | {homeScore}\nTime: {clock}", inline=False)
+                    if clockIntermission == True:
+                        embed.add_field(name=f"Intermission!", value=f"{awayString} @ {homeString}\nScore: {awayScore} | {homeScore}", inline=False)
+                else:
                     home = game2["homeTeam"]["name"]["default"]
                     away = game2["awayTeam"]["name"]["default"]
                     homeAbbreviation = game2["homeTeam"]["abbrev"]
