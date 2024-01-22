@@ -15,7 +15,7 @@ class thread(commands.Cog):
         print(f"LOADED: `thread.py`")
     
     @app_commands.command(name="thread", description="Creates a hockey thread!")
-    async def thread(self, interaction: discord.Interaction, abbreviation: str, channel: int):
+    async def thread(self, interaction: discord.Interaction, abbreviation: str, channel: discord.TextChannel):
         try:
             await interaction.response.defer()
             msg = await interaction.original_response()
@@ -86,6 +86,9 @@ class thread(commands.Cog):
                     else: 
                         networks += f"{network} ({countryCode})\n"
                 embed = discord.Embed(title=f"**{away} @ {home}**", description=f"**{team}** game thread!", color=config.color)
+                await channel.create_thread(name=f"{away} @ {home}", message=interaction.user.mention, reason=f"Game Thread for {away} @ {home}", auto_archive_duration=1440, start_message=embed)
+                await msg.edit(content=f"Game Thread for **{away} @ {home}** has been created in {channel.mention}!")
+                return
             else:
                 await msg.edit("Please enter a valid team abbreviation. e.g. `/thread BOS`")
                 return
