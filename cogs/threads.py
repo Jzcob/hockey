@@ -66,6 +66,8 @@ class thread(commands.Cog):
                 data = response.json()
                 games = data['games']
                 for i in range(len(games)):
+                    print(f"{games[i]['gameDate']}")
+                    print(f"{today}")
                     if f"{games[i]['gameDate']}" == f"{today}":
                         game = games[i]
                         gameID = game['id']
