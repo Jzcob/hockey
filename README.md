@@ -10,4 +10,4 @@ A discord bot that shows NHL team stats that go in-depth to some degree. The bot
 # Milestones
 - Released: `11/01/2023`
 - Verfied: `01/05/2024`
-- 100 servers: Not yet!
+- 100 servers: `01/20/2024`
