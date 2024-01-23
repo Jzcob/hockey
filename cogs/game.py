@@ -143,8 +143,7 @@ class game(commands.Cog):
                 embed.add_field(name="TV Broadcast", value=f"{networks}", inline=False)
                 embed.add_field(name="Game ID", value=gameID, inline=False)
                 embed.set_footer(text=config.footer)
-                await msg.edit(embed=embed, view=view)
-                gameButton.callback = gameButton_callback
+                await msg.edit(embed=embed)
                 return
             homeScore = data2['boxscore']['linescore']['totals']['home']
             awayScore = data2['boxscore']['linescore']['totals']['away']
