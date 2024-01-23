@@ -58,7 +58,6 @@ class thread(commands.Cog):
                     if abbreviation.upper() == team:
                         team = teams[team]
                         break
-                channel = interaction.client.get_channel(channel)
                 today = datetime.now()
                 today = today.strftime("%Y-%m-%d")
                 url = f'https://api-web.nhle.com/v1/club-schedule/{abbreviation}/week/{today}'
@@ -66,11 +65,11 @@ class thread(commands.Cog):
                 data = response.json()
                 games = data['games']
                 for i in range(len(games)):
-                    print(f"{games[i]['gameDate']}")
-                    print(f"{today}")
-                    if f"{games[i]['gameDate']}" == f"{today}":
+                    gameD = games[i]['gameDate']
+                    if gameD == today:
                         game = games[i]
                         gameID = game['id']
+                        break
                     else:
                         return await msg.edit(content=f"**{team}** do not play today!")
                 url2 = f"https://api-web.nhle.com/v1/gamecenter/{gameID}/boxscore"
@@ -88,7 +87,8 @@ class thread(commands.Cog):
                     else: 
                         networks += f"{network} ({countryCode})\n"
                 embed = discord.Embed(title=f"**{away} @ {home}**", description=f"**{team}** game thread!", color=config.color)
-                await channel.create_thread(name=f"{away} @ {home}", message=interaction.user.mention, reason=f"Game Thread for {away} @ {home}", auto_archive_duration=1440, start_message=embed)
+                messageID = await channel.send(content=f"Game Thread for **{away} @ {home}**") 
+                await channel.create_thread(name=f"{away} @ {home}", message=messageID, reason=f"Game Thread for {away} @ {home}", auto_archive_duration=1440)
                 await msg.edit(content=f"Game Thread for **{away} @ {home}** has been created in {channel.mention}!")
                 return
             else:
