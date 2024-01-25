@@ -1,11 +1,13 @@
 import discord
 import asyncio
-from discord.ext import commands
+from discord.ext import commands, tasks
 from discord import app_commands
 import os
 import config
 from dotenv import load_dotenv
+import topgg
 load_dotenv()
+
 
 intents = discord.Intents.default()
 intents.message_content = True
@@ -13,6 +15,15 @@ intents.auto_moderation_configuration = True
 intents.reactions = True
 bot = commands.Bot(command_prefix=';', intents=intents, help_command=None)
 status = discord.Status.online
+bot.topggpy = topgg.DBLClient(bot, os.getenv("topgg_token"), autopost=True)
+
+@tasks.loop(minutes=30)
+async def update_stats():
+    try:
+        await bot.topggpy.post_guild_count()
+    except Exception as e:
+        error_channel = bot.get_channel(1168939285274177627)
+        await error_channel.send(f"Error updating stats: `{e}`")
 
 
 @bot.command()
@@ -69,6 +80,7 @@ async def servers(ctx):
                 membersVC = bot.get_channel(1186445778043031722)
                 await vc.edit(name=f"Servers: {len(bot.guilds)}")
                 await membersVC.edit(name=f"Members: {int(members):,}")
+                await bot.topggpy.post_guild_count()
             except Exception as e:
                 embed = discord.Embed(title="Error", description=f"Something went wrong. `{e}`", color=0xff0000)
                 return await ctx.send(embed=embed)
@@ -113,6 +125,7 @@ async def on_guild_join(guild):
         membersVC = bot.get_channel(1186445778043031722)
         await membersVC.edit(name=f"Members: {int(members):,}")
         await vc.edit(name=f"Servers: {len(bot.guilds)}")
+        await bot.topggpy.post_guild_count()
     except Exception as e:
         print(e)
 
@@ -136,6 +149,7 @@ async def on_guild_remove(guild):
         membersVC = bot.get_channel(1186445778043031722)
         await membersVC.edit(name=f"Members: {int(members):,}")
         await vc.edit(name=f"Servers: {len(bot.guilds)}")
+        await bot.topggpy.post_guild_count()
     except Exception as e:
         print(e)
 
