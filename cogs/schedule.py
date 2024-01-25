@@ -63,7 +63,7 @@ class schedule(commands.Cog):
             await interaction.response.defer()
             msg = await interaction.original_response()
             games = data['games']
-            embed = discord.Embed(title=f"{team} Upcomming Schedule", color=config.color)
+            embed = discord.Embed(title=f"{team} Schedule This Week", color=config.color)
             for i in range(len(games)):
                 gameID = data['games'][i]['id']
                 url2 = f"https://api-web.nhle.com/v1/gamecenter/{gameID}/boxscore"
@@ -73,6 +73,7 @@ class schedule(commands.Cog):
                 away = game2["awayTeam"]["name"]["default"]
                 startTime = games[i]['startTimeUTC']
                 startTime = datetime.strptime(startTime, '%Y-%m-%dT%H:%M:%SZ')
+                startTime = startTime - timedelta(hours=5)
                 start_timestamp = int(startTime.timestamp())
                 embed.add_field(name=f"<t:{start_timestamp}:F>", value=f"{away} @ {home}", inline=False)
             embed.set_thumbnail(url="https://www-league.nhlstatic.com/images/logos/league-dark/133-flat.svg")
