@@ -17,13 +17,13 @@ bot = commands.Bot(command_prefix=';', intents=intents, help_command=None)
 status = discord.Status.online
 #bot.topggpy = topgg.DBLClient(bot=bot,token=os.getenv("topgg-token"), autopost=True, post_shard_count=True)
 
-@tasks.loop(minutes=30)
+"""@tasks.loop(minutes=30)
 async def update_stats():
     try:
         await bot.topggpy.post_guild_count()
     except Exception as e:
         error_channel = bot.get_channel(1168939285274177627)
-        await error_channel.send(f"Error updating stats: `{e}`")
+        await error_channel.send(f"Error updating stats: `{e}`")"""
 
 @bot.command()
 async def sync(ctx) -> None:
@@ -102,7 +102,7 @@ async def load():
             print(f'FOUND: `{filename}`')
 
 async def main():
-    await update_stats.start()
+    #await update_stats.start()
     await load()
     await bot.start(token=os.getenv("token"))
 
