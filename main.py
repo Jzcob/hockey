@@ -15,7 +15,7 @@ intents.auto_moderation_configuration = True
 intents.reactions = True
 bot = commands.Bot(command_prefix=';', intents=intents, help_command=None)
 status = discord.Status.online
-bot.topggpy = topgg.DBLClient(bot, os.getenv("topgg_token"), autopost=True)
+bot.topggpy = topgg.DBLClient(bot, os.getenv("topgg_token"))
 
 @tasks.loop(minutes=30)
 async def update_stats():
@@ -103,6 +103,7 @@ async def load():
             print(f'FOUND: `{filename}`')
 
 async def main():
+    update_stats.start()
     await load()
     await bot.start(token=os.getenv("token"))
 
