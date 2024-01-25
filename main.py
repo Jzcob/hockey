@@ -15,7 +15,7 @@ intents.auto_moderation_configuration = True
 intents.reactions = True
 bot = commands.Bot(command_prefix=';', intents=intents, help_command=None)
 status = discord.Status.online
-bot.topggpy = topgg.DBLClient(bot, os.getenv("topgg-token"))
+#bot.topggpy = topgg.DBLClient(bot=bot,token=os.getenv("topgg-token"), autopost=True, post_shard_count=True)
 
 @tasks.loop(minutes=30)
 async def update_stats():
