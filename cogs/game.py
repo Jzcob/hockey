@@ -112,6 +112,8 @@ class game(commands.Cog):
             response = requests.get(url)
             data = response.json()
             games = data['games']
+            if len(games) == 0:
+                return await msg.edit(content=f"**{team}** do not play today!")
             for i in range(len(games)):
                 if f"{games[i]['gameDate']}" == f"{today}":
                     game = games[i]
