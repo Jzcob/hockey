@@ -5,7 +5,7 @@ from discord import app_commands
 import os
 import config
 from dotenv import load_dotenv
-import topgg
+#import topgg
 load_dotenv()
 
 
@@ -79,7 +79,7 @@ async def servers(ctx):
                 membersVC = bot.get_channel(1186445778043031722)
                 await vc.edit(name=f"Servers: {len(bot.guilds)}")
                 await membersVC.edit(name=f"Members: {int(members):,}")
-                await bot.topggpy.post_guild_count()
+                #await bot.topggpy.post_guild_count()
             except Exception as e:
                 embed = discord.Embed(title="Error", description=f"Something went wrong. `{e}`", color=0xff0000)
                 return await ctx.send(embed=embed)
@@ -125,7 +125,7 @@ async def on_guild_join(guild):
         membersVC = bot.get_channel(1186445778043031722)
         await membersVC.edit(name=f"Members: {int(members):,}")
         await vc.edit(name=f"Servers: {len(bot.guilds)}")
-        await bot.topggpy.post_guild_count()
+        #await bot.topggpy.post_guild_count()
     except Exception as e:
         print(e)
 
@@ -149,7 +149,7 @@ async def on_guild_remove(guild):
         membersVC = bot.get_channel(1186445778043031722)
         await membersVC.edit(name=f"Members: {int(members):,}")
         await vc.edit(name=f"Servers: {len(bot.guilds)}")
-        await bot.topggpy.post_guild_count()
+        #await bot.topggpy.post_guild_count()
     except Exception as e:
         print(e)
 
