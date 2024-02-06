@@ -38,6 +38,7 @@ class teams(commands.Cog):
             "OTT": "Ottawa Senators",
             "PHI": "Philadelphia Flyers",
             "PIT": "Pittsburgh Penguins",
+            "SEA": "Seattle Kraken",
             "SJS": "San Jose Sharks",
             "STL": "St. Louis Blues",
             "TBL": "Tampa Bay Lightning",

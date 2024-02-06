@@ -41,6 +41,7 @@ class GuessTheTeam(commands.Cog):
                 "Ottawa Senators",
                 "Philadelphia Flyers",
                 "Pittsburgh Penguins",
+                "Seattle Kraken"
                 "San Jose Sharks",
                 "St. Louis Blues",
                 "Tampa Bay Lightning",
