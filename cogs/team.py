@@ -43,6 +43,7 @@ class team(commands.Cog):
                 "OTT": "Ottawa Senators",
                 "PHI": "Philadelphia Flyers",
                 "PIT": "Pittsburgh Penguins",
+                "SEA": "Seattle Kraken",
                 "SJS": "San Jose Sharks",
                 "STL": "St. Louis Blues",
                 "TBL": "Tampa Bay Lightning",
@@ -56,8 +57,7 @@ class team(commands.Cog):
                 team = abbreviation.upper()
                 team = teams[team]
             else:    
-                await interaction.response.send_message("Please enter a valid team abbreviation. e.g. `/team BOS`", ephemeral=True)
-                return
+                return await interaction.response.send_message("Please enter a valid team abbreviation. e.g. `/team BOS`", ephemeral=True)
             today = datetime.today().strftime('%Y-%m-%d')
             url = f"https://api-web.nhle.com/v1/standings/{today}"
             r = requests.get(url)
