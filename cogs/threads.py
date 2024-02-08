@@ -17,6 +17,10 @@ class thread(commands.Cog):
     @app_commands.command(name="thread", description="Creates a hockey thread!")
     async def thread(self, interaction: discord.Interaction, abbreviation: str, channel: discord.TextChannel):
         try:
+            if interaction.entitlements.get(interaction.guild.id) is None:
+                return await interaction.response.send_message("You do not have the correct permissions to use this command.", ephemeral=True)
+            elif interaction.entitlements.get(interaction.user.id) == False:
+                return await interaction.response.send_message("You do not have the correct permissions to use this command.", ephemeral=True)
             await interaction.response.defer()
             msg = await interaction.original_response()
             teams = {
@@ -86,7 +90,6 @@ class thread(commands.Cog):
                         networks += f"{network} ({countryCode}) :star:\n "
                     else: 
                         networks += f"{network} ({countryCode})\n"
-                embed = discord.Embed(title=f"**{away} @ {home}**", description=f"**{team}** game thread!", color=config.color)
                 messageID = await channel.send(content=f"Game Thread for **{away} @ {home}**") 
                 await channel.create_thread(name=f"{away} @ {home}", message=messageID, reason=f"Game Thread for {away} @ {home}", auto_archive_duration=1440)
                 await msg.edit(content=f"Game Thread for **{away} @ {home}** has been created in {channel.mention}!")
