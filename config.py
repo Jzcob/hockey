@@ -1,5 +1,4 @@
-from discord.ext import tasks
-from main import bot
+
 
 jacob = 920797181034778655
 dev_server_dev_channel = 1165858822183735316
@@ -50,6 +49,9 @@ washington_capitals_emoji = "<:washingtoncapitals:1178086062518710413>"
 winnipeg_jets_emoji = "<:winnipegjets:1178086107418722434>"
 nhl_logo_emoji = "<:nhl:1165874790117150820>"
 
+
+from discord.ext import tasks
+from main import bot
 premium_users = []
 premium_guilds = []
 premium_users.append(jacob)

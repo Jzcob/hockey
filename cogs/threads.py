@@ -17,7 +17,7 @@ class thread(commands.Cog):
     @app_commands.command(name="thread", description="Creates a hockey thread!")
     async def thread(self, interaction: discord.Interaction, abbreviation: str, channel: discord.TextChannel):
         try:
-            if interaction.user.id in main.premium_users or interaction.guild.id in main.premium_guilds:
+            if interaction.user.id in config.premium_users or interaction.guild.id in config.premium_guilds:
                 pass
             else:
                 return await interaction.response.send_message("You need to be a premium user/guild to use this command!", ephemeral=True)
