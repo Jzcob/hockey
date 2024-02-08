@@ -17,9 +17,9 @@ class thread(commands.Cog):
     @app_commands.command(name="thread", description="Creates a hockey thread!")
     async def thread(self, interaction: discord.Interaction, abbreviation: str, channel: discord.TextChannel):
         try:
-            if interaction.entitlements.get(interaction.guild.id) is None:
+            if self.bot.entitlements.get(interaction.guild.id) is None:
                 return await interaction.response.send_message("You do not have the correct permissions to use this command.", ephemeral=True)
-            elif interaction.entitlements.get(interaction.user.id) == False:
+            elif self.bot.entitlements.get(interaction.user.id) == False:
                 return await interaction.response.send_message("You do not have the correct permissions to use this command.", ephemeral=True)
             await interaction.response.defer()
             msg = await interaction.original_response()
