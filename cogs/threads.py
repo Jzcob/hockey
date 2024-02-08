@@ -2,9 +2,12 @@ import discord
 from discord.ext import commands
 from discord import app_commands
 import config
+import asyncio
 import requests
 from datetime import datetime
 import traceback
+
+current_guilds = {}
 
 class thread(commands.Cog):
     def __init__(self, bot):
@@ -18,7 +21,10 @@ class thread(commands.Cog):
     async def thread(self, interaction: discord.Interaction, abbreviation: str, channel: discord.TextChannel):
         try:
             if interaction.user.id in config.premium_users or interaction.guild.id in config.premium_guilds:
-                pass
+                if interaction.guild.id in current_guilds:
+                    messageID = current_guilds[interaction.guild.id]
+                    message = await channel.fetch_message(messageID)
+                    await message.delete()
             else:
                 return await interaction.response.send_message("You need to be a premium user/guild to use this command!", ephemeral=True)
             await interaction.response.defer()
@@ -93,6 +99,9 @@ class thread(commands.Cog):
                 messageID = await channel.send(content=f"Game Thread for **{away} @ {home}**") 
                 await channel.create_thread(name=f"{away} @ {home}", message=messageID, reason=f"Game Thread for {away} @ {home}", auto_archive_duration=1440)
                 await msg.edit(content=f"Game Thread for **{away} @ {home}** has been created in {channel.mention}!")
+                await asyncio.sleep(5)
+                await msg.delete()
+                current_guilds[interaction.guild.id] = messageID.id
                 return
             else:
                 await msg.edit("Please enter a valid team abbreviation. e.g. `/thread BOS`")

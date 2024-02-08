@@ -49,12 +49,12 @@ washington_capitals_emoji = "<:washingtoncapitals:1178086062518710413>"
 winnipeg_jets_emoji = "<:winnipegjets:1178086107418722434>"
 nhl_logo_emoji = "<:nhl:1165874790117150820>"
 
-
-from discord.ext import tasks
-from main import bot
 premium_users = []
 premium_guilds = []
 premium_users.append(jacob)
+premium_guilds.append(hockey_discord_server)
+from discord.ext import tasks
+from main import bot
 @tasks.loop(minutes=10)
 async def update_premium():
     async for entitlement in bot.entitlements:
