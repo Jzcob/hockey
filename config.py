@@ -1,3 +1,6 @@
+from discord.ext import tasks
+from main import bot
+
 jacob = 920797181034778655
 dev_server_dev_channel = 1165858822183735316
 allowed_channels = [dev_server_dev_channel]
@@ -46,3 +49,14 @@ vegas_golden_knights_emoji = "<:vegasgoldenknights:1178086044931989576>"
 washington_capitals_emoji = "<:washingtoncapitals:1178086062518710413>"
 winnipeg_jets_emoji = "<:winnipegjets:1178086107418722434>"
 nhl_logo_emoji = "<:nhl:1165874790117150820>"
+
+premium_users = []
+premium_guilds = []
+premium_users.append(jacob)
+@tasks.loop(minutes=10)
+async def update_premium():
+    async for entitlement in bot.entitlements:
+        if entitlement.sku_id == 1:
+            premium_users.append(entitlement.user_id)
+        elif entitlement.sku_id == 2:
+            premium_guilds.append(entitlement.guild_id)
