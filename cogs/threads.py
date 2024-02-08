@@ -113,10 +113,10 @@ class thread(commands.Cog):
             await error_channel.send(f"```{string}```")
             await interaction.followup.send("Error with command, Message has been sent to Bot Developers", ephemeral=True)
     
-    @thread.error()
+    """@thread.error()
     async def thread_error(self, ctx, error):
         if isinstance(error, commands.CheckFailure):
-            await ctx.send("You do not have the `manage_threads` permission to use this command!\nThis is also a premium command, you need to be a premium user or guild to use this command!")
+            await ctx.send("You do not have the `manage_threads` permission to use this command!\nThis is also a premium command, you need to be a premium user or guild to use this command!")"""
 
 async def setup(bot):
     await bot.add_cog(thread(bot), guilds=[discord.Object(id=config.hockey_discord_server)])
