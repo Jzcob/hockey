@@ -18,8 +18,7 @@ class thread(commands.Cog):
         print(f"LOADED: `thread.py`")
     
     @app_commands.command(name="thread", description="Creates a hockey thread!")
-    @app_commands.checks.has_permissions(manage_threads=True)
-    async def thread(self, interaction: discord.Interaction, abbreviation: str, channel: discord.TextChannel, today:bool=None):
+    async def thread(self, interaction: discord.Interaction, abbreviation: str, channel: discord.TextChannel):
         try:
             if interaction.user.id in config.premium_users or interaction.guild.id in config.premium_guilds:
                 if interaction.guild.id in current_guilds:
