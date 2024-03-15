@@ -156,7 +156,7 @@ class today(commands.Cog):
     async def team(self, interaction: discord.Interaction):
         try:
             hawaii = pytz.timezone('US/Hawaii')
-            dt = datetime.now(hawaii)
+            dt = datetime.now(hawaii) + timedelta(hours=1)
             today = dt.strftime('%Y-%m-%d')
             url = f"https://api-web.nhle.com/v1/schedule/{today}"
             await interaction.response.defer()
