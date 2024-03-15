@@ -156,7 +156,7 @@ class today(commands.Cog):
     async def team(self, interaction: discord.Interaction):
         try:
             hawaii = pytz.timezone('US/Hawaii')
-            dt = datetime.now(hawaii) + timedelta(hours=1)
+            dt = datetime.now(hawaii)
             today = dt.strftime('%Y-%m-%d')
             url = f"https://api-web.nhle.com/v1/schedule/{today}"
             await interaction.response.defer()
@@ -177,7 +177,7 @@ class today(commands.Cog):
                 game2 = r2.json()
                 startTime = game["startTimeUTC"]
                 startTime = datetime.strptime(startTime, '%Y-%m-%dT%H:%M:%SZ')
-                startTime = startTime - timedelta(hours=5)
+                startTime = startTime - timedelta(hours=4)
                 startTime = startTime.strftime('%I:%M %p')
                 if gameState == "FUT":
                     home = game2["homeTeam"]["name"]["default"]
