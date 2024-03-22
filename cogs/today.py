@@ -187,8 +187,8 @@ class today(commands.Cog):
                     awayString, homeString = strings(awayAbbreviation, homeAbbreviation, home, away)
                     embed.add_field(name=f"{startTime}", value=f"{awayString} @ {homeString}\nGame is scheduled!", inline=False)
                 elif gameState == "FINAL" or gameState == "OFF":
-                    homeScore = game2['boxscore']['linescore']['totals']['home']
-                    awayScore = game2['boxscore']['linescore']['totals']['away']
+                    homeScore = game2['homeTeam']['score']
+                    awayScore = game2['awayTeam']['score']
                     home = game2["homeTeam"]["name"]["default"]
                     away = game2["awayTeam"]["name"]["default"]
                     homeAbbreviation = game2["homeTeam"]["abbrev"]
@@ -197,8 +197,8 @@ class today(commands.Cog):
                     embed.add_field(name=f"Final!", value=f"\n{awayString} @ {homeString}\nScore: {awayScore} | {homeScore}\n", inline=False)
                     embed.set_footer(text=f"ID: {gameID}")
                 elif gameState == "LIVE":
-                    homeScore = game2['boxscore']['linescore']['totals']['home']
-                    awayScore = game2['boxscore']['linescore']['totals']['away']
+                    homeScore = game2['homeTeam']['score']
+                    awayScore = game2['awayTeam']['score']
                     clock = game2['clock']['timeRemaining']
                     clockRunning = game2['clock']['running']
                     clockIntermission = game2['clock']['inIntermission']
