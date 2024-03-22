@@ -104,8 +104,8 @@ class game(commands.Cog):
                 embed.set_footer(text=config.footer)
                 await msg.edit(embed=embed)
                 return
-            homeScore = data2['hometeam']['score']
-            awayScore = data2['awayteam']['score']
+            homeScore = data2['homeTeam']['score']
+            awayScore = data2['awayTeam']['score']
             clock = data2['clock']['timeRemaining']
             clockRunning = data2['clock']['running']
             clockIntermission = data2['clock']['inIntermission']
