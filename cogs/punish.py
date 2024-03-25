@@ -98,7 +98,7 @@ class punish(commands.Cog):
         except:
             error_channel = self.bot.get_channel(config.error_channel)
             string = f"{traceback.format_exc()}"
-            await error_channel.send(f"```{string}```")
+            await error_channel.send(f"<@920797181034778655>```{string}```")
             await interaction.followup.send("Error with command, Message has been sent to Bot Developers", ephemeral=True)
 
 ### Timeout ###
@@ -186,7 +186,7 @@ class punish(commands.Cog):
         except:
             error_channel = self.bot.get_channel(config.error_channel)
             string = f"{traceback.format_exc()}"
-            await error_channel.send(f"```{string}```")
+            await error_channel.send(f"<@920797181034778655>```{string}```")
             await interaction.followup.send("Error with command, Message has been sent to Bot Developers", ephemeral=True)
     
     @app_commands.command(name="ban", description="Bans a user!")
@@ -234,7 +234,7 @@ class punish(commands.Cog):
         except:
             error_channel = self.bot.get_channel(config.error_channel)
             string = f"{traceback.format_exc()}"
-            await error_channel.send(f"```{string}```")
+            await error_channel.send(f"<@920797181034778655>```{string}```")
             await interaction.followup.send("Error with command, Message has been sent to Bot Developers", ephemeral=True)
 ##################################################################################################################
 ########################### REMOVE PUNISHMENT COMMANDS ###########################################################
@@ -250,7 +250,7 @@ class punish(commands.Cog):
         except:
             error_channel = self.bot.get_channel(config.error_channel)
             string = f"{traceback.format_exc()}"
-            await error_channel.send(f"```{string}```")
+            await error_channel.send(f"<@920797181034778655>```{string}```")
             await interaction.followup.send("Error with command, Message has been sent to Bot Developers", ephemeral=True)
     
     @app_commands.command(name="remove-warn", description="Remove a warn from a user's punishment history!")
@@ -277,7 +277,7 @@ class punish(commands.Cog):
         except:
             error_channel = self.bot.get_channel(config.error_channel)
             string = f"{traceback.format_exc()}"
-            await error_channel.send(f"```{string}```")
+            await error_channel.send(f"<@920797181034778655>```{string}```")
             await interaction.followup.send("Error with command, Message has been sent to Bot Developers", ephemeral=True)
     
     @app_commands.command(name="remove-timeout", description="Remove a timeout from a user's punishment history!")
@@ -304,7 +304,7 @@ class punish(commands.Cog):
         except:
             error_channel = self.bot.get_channel(config.error_channel)
             string = f"{traceback.format_exc()}"
-            await error_channel.send(f"```{string}```")
+            await error_channel.send(f"<@920797181034778655>```{string}```")
             await interaction.followup.send("Error with command, Message has been sent to Bot Developers", ephemeral=True)
         
     @app_commands.command(name="remove-ban", description="Remove a ban from a user's punishment history!")
@@ -331,7 +331,7 @@ class punish(commands.Cog):
         except:
             error_channel = self.bot.get_channel(config.error_channel)
             string = f"{traceback.format_exc()}"
-            await error_channel.send(f"```{string}```")
+            await error_channel.send(f"<@920797181034778655>```{string}```")
             await interaction.followup.send("Error with command, Message has been sent to Bot Developers", ephemeral=True)
 
 ##################################################################################################################
@@ -361,7 +361,7 @@ class punish(commands.Cog):
         except:
             error_channel = self.bot.get_channel(config.error_channel)
             string = f"{traceback.format_exc()}"
-            await error_channel.send(f"```{string}```")
+            await error_channel.send(f"<@920797181034778655>```{string}```")
             await interaction.followup.send("Error with command, Message has been sent to Bot Developers", ephemeral=True)
 
     @app_commands.command(name="fix-punishment", description="Fix a user's punishment reason!")
@@ -389,7 +389,7 @@ class punish(commands.Cog):
         except:
             error_channel = self.bot.get_channel(config.error_channel)
             string = f"{traceback.format_exc()}"
-            await error_channel.send(f"```{string}```")
+            await error_channel.send(f"<@920797181034778655>```{string}```")
             await interaction.followup.send("Error with command, Message has been sent to Bot Developers", ephemeral=True)
 
 ###############################################################################################################
@@ -410,7 +410,7 @@ class punish(commands.Cog):
         except:
             error_channel = self.bot.get_channel(config.error_channel)
             string = f"{traceback.format_exc()}"
-            await error_channel.send(f"```{string}```")
+            await error_channel.send(f"<@920797181034778655>```{string}```")
             await interaction.followup.send("Error with command, Message has been sent to Bot Developers", ephemeral=True)
     
     @app_commands.command(name="remove-note", description="Remove a note from a user!")
@@ -436,7 +436,7 @@ class punish(commands.Cog):
         except:
             error_channel = self.bot.get_channel(config.error_channel)
             string = f"{traceback.format_exc()}"
-            await error_channel.send(f"```{string}```")
+            await error_channel.send(f"<@920797181034778655>```{string}```")
             await interaction.followup.send("Error with command, Message has been sent to Bot Developers", ephemeral=True)
 
 ##################################################################################################################
@@ -456,7 +456,7 @@ class punish(commands.Cog):
         except:
             error_channel = self.bot.get_channel(config.error_channel)
             string = f"{traceback.format_exc()}"
-            await error_channel.send(f"```{string}```")
+            await error_channel.send(f"<@920797181034778655>```{string}```")
             await interaction.followup.send("Error with command, Message has been sent to Bot Developers", ephemeral=True)
 
     @app_commands.command(name="staff-help", description="Shows the help menu!")
@@ -523,7 +523,7 @@ class punish(commands.Cog):
         except:
             error_channel = self.bot.get_channel(config.error_channel)
             string = f"{traceback.format_exc()}"
-            await error_channel.send(f"```{string}```")
+            await error_channel.send(f"<@920797181034778655>```{string}```")
             await interaction.followup.send("Error with command, Message has been sent to Bot Developers", ephemeral=True)
 
 async def setup(bot):

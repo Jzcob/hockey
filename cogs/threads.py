@@ -18,6 +18,7 @@ class thread(commands.Cog):
         print(f"LOADED: `thread.py`")
     
     @app_commands.command(name="thread", description="Creates a hockey thread!")
+    @app_commands.checks.has_permissions()
     async def thread(self, interaction: discord.Interaction, abbreviation: str, channel: discord.TextChannel):
         try:
             if interaction.user.id in config.premium_users or interaction.guild.id in config.premium_guilds:
@@ -110,13 +111,15 @@ class thread(commands.Cog):
         except:
             error_channel = self.bot.get_channel(config.error_channel)
             string = f"{traceback.format_exc()}"
-            await error_channel.send(f"```{string}```")
+            await error_channel.send(f"<@920797181034778655>```{string}```")
             await interaction.followup.send("Error with command, Message has been sent to Bot Developers", ephemeral=True)
     
-    """@thread.error()
-    async def thread_error(self, ctx, error):
-        if isinstance(error, commands.CheckFailure):
-            await ctx.send("You do not have the `manage_threads` permission to use this command!\nThis is also a premium command, you need to be a premium user or guild to use this command!")"""
+'''
+    @thread.error()
+    async def thread_error(self, interaction: discord.Interaction, error):
+        if isinstance(error, commands.MissingPermissions):
+            await interaction.response.send_message("You do not have the `manage_threads` permission to use this command!\nThis is also a premium command, you need to be a premium user or guild to use this command!", ephemeral=True)
+'''
 
 async def setup(bot):
     await bot.add_cog(thread(bot), guilds=[discord.Object(id=config.hockey_discord_server)])

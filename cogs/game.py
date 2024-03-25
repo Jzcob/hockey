@@ -135,7 +135,7 @@ class game(commands.Cog):
         except:
             error_channel = self.bot.get_channel(config.error_channel)
             string = f"{traceback.format_exc()}"
-            await error_channel.send(f"```{string}```")
+            await error_channel.send(f"<@920797181034778655>```{string}```")
 
 async def setup(bot):
     await bot.add_cog(game(bot))

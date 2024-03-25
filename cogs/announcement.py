@@ -5,6 +5,7 @@ import requests
 from datetime import datetime
 import json
 import config
+import traceback
 watching = discord.Activity(name="Hockey!", type=discord.ActivityType.watching)
 
 #hello world
@@ -37,7 +38,8 @@ class announcement(commands.Cog):
                 return await interaction.response.send_message("You are not the bot owner!", ephemeral=True)
         except Exception as e:
             error_channel = self.bot.get_channel(config.error_channel)
-            return await error_channel.send(f"Something went wrong! `{e}`")
+            string = f"{traceback.format_exc()}"
+            await error_channel.send(f"<@920797181034778655>```{string}```")
 
 async def setup(bot):
     await bot.add_cog(announcement(bot), guilds=[discord.Object(id=config.hockey_discord_server)])
