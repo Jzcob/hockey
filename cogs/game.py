@@ -89,7 +89,7 @@ class game(commands.Cog):
             for i in range(len(tvBroadcasts)):
                 network = tvBroadcasts[i]['network']
                 countryCode = tvBroadcasts[i]['countryCode']
-                if countryCode == "US" and network == "NESN" and interaction.user.id == config.jacob:
+                if countryCode == "US" and network == "NESN" and interaction.guild.id in config.bruins_servers:
                     networks += f"{network} ({countryCode}) :star:\n "
                 else: 
                     networks += f"{network} ({countryCode})\n"

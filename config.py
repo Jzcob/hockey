@@ -49,6 +49,8 @@ washington_capitals_emoji = "<:washingtoncapitals:1178086062518710413>"
 winnipeg_jets_emoji = "<:winnipegjets:1178086107418722434>"
 nhl_logo_emoji = "<:nhl:1165874790117150820>"
 
+bruins_servers = [hockey_discord_server, 1220512663998693467]
+
 premium_users = []
 premium_guilds = []
 premium_users.append(jacob)
