@@ -150,7 +150,7 @@ class yesterday(commands.Cog):
 
     @commands.Cog.listener()
     async def on_ready(self):
-        print(f"LOADED: `today.py`")
+        print(f"LOADED: `yesterday.py`")
     
     @app_commands.command(name="yesterday", description="Get yesterday's schedule!")
     async def team(self, interaction: discord.Interaction):
@@ -206,4 +206,4 @@ class yesterday(commands.Cog):
 
 
 async def setup(bot):
-    await bot.add_cog(yesterday(bot), guilds=[discord.Object(id=config.hockey_discord_server)])
+    await bot.add_cog(yesterday(bot))
