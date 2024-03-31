@@ -25,6 +25,7 @@ class Help(commands.Cog):
         embed.add_field(name="`/schedule <abbreviation>`", value="Gets the schedule of a NHL Team!", inline=False)
         embed.add_field(name="`/game <abbreviation>`", value="Gets the information of a game!", inline=False)
         embed.add_field(name="`/today`", value="Gets the games of today!", inline=False)
+        embed.add_field(name="`/yesterday`", value="Gets the games of yesterday!", inline=False)
         embed.add_field(name="`/avatar`", value="Gets the avatar of the bot or a user!", inline=False)
         embed.add_field(name="`/info`", value="Shows the info menu!", inline=False)
         embed.add_field(name="`/help`", value="Shows this help menu!", inline=False)
