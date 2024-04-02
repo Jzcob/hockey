@@ -41,7 +41,7 @@ class GuessTheTeam(commands.Cog):
                 "Ottawa Senators",
                 "Philadelphia Flyers",
                 "Pittsburgh Penguins",
-                "Seattle Kraken"
+                "Seattle Kraken",
                 "San Jose Sharks",
                 "St. Louis Blues",
                 "Tampa Bay Lightning",
@@ -52,6 +52,11 @@ class GuessTheTeam(commands.Cog):
                 "Winnipeg Jets"
             ]
             team = random.choice(teams)
+            team2 = random.choice(teams)
+            team3 = random.choice(teams)
+
+            allTeams = [team, team2, team3]
+            team = random.choice(allTeams)
             scramble_team = ''.join(random.sample(team, len(team)))
             embed = discord.Embed(title="Guess The Team", description=f"Guess the team you have 30 seconds!\n\n`{scramble_team}`", color=config.color)
 
