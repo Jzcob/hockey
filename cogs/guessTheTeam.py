@@ -52,6 +52,11 @@ class GuessTheTeam(commands.Cog):
                 "Winnipeg Jets"
             ]
             team = random.choice(teams)
+            team2 = random.choice(teams)
+            team3 = random.choice(teams)
+            team4 = random.choice(teams)
+            team5 = [team, team2, team3, team4]
+            team = random.choice(team5)
             scramble_team = ''.join(random.sample(team, len(team)))
             embed = discord.Embed(title="Guess The Team", description=f"Guess the team you have 30 seconds!\n\n`{scramble_team}`", color=config.color)
 
