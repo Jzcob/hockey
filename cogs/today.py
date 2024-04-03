@@ -196,7 +196,7 @@ class today(commands.Cog):
                     awayString, homeString = strings(awayAbbreviation, homeAbbreviation, home, away)
                     embed.add_field(name=f"Final!", value=f"\n{awayString} @ {homeString}\nScore: {awayScore} | {homeScore}\n", inline=False)
                     embed.set_footer(text=f"ID: {gameID}")
-                elif gameState == "LIVE":
+                elif gameState == "LIVE" or gameState == "CRIT":
                     homeScore = game2['homeTeam']['score']
                     awayScore = game2['awayTeam']['score']
                     clock = game2['clock']['timeRemaining']
