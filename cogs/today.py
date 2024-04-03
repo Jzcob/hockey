@@ -165,10 +165,11 @@ class today(commands.Cog):
             global data
             data = r.json()
             games = data["gameWeek"][0]["games"]
+            numGames = len(games) + 1
             embed = discord.Embed(title=f"Today's Games", description=f"Total games today: {len(games)}", color=config.color)
             embed.set_thumbnail(url="https://www-league.nhlstatic.com/images/logos/league-dark/133-flat.svg")
             embed.set_footer(text=config.footer)
-            for i in range(len(games)):
+            while numGames != 0:
                 game = data["gameWeek"][0]["games"][i]
                 gameState = game["gameState"]
                 gameID = game['id']
@@ -179,6 +180,7 @@ class today(commands.Cog):
                 startTime = datetime.strptime(startTime, '%Y-%m-%dT%H:%M:%SZ')
                 startTime = startTime - timedelta(hours=4)
                 startTime = startTime.strftime('%I:%M %p')
+                numGames -= 1
                 if gameState == "FUT":
                     home = game2["homeTeam"]["name"]["default"]
                     away = game2["awayTeam"]["name"]["default"]
