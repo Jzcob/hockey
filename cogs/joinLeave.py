@@ -52,7 +52,9 @@ class joinLeave(commands.Cog):
     
     @commands.Cog.listener()
     async def on_member_join(self, member: discord.Member):
+        print("1")
         if member.guild.id == config.hockey_discord_server:
+            print("2")
             welcome_channel = self.bot.get_channel(1173831029295951882)
             embed = discord.Embed(title="Welcome to the Hockey Discord Server!", description=f"Welcome to the Hockey Discord Server, {member.mention}!\n\n" + 
             f":mega: Please read the rules in <#1165854571340513292>\n" + 
