@@ -154,9 +154,6 @@ class yesterday(commands.Cog):
     
     @app_commands.command(name="yesterday", description="Get yesterday's schedule!")
     async def team(self, interaction: discord.Interaction):
-        if config.command_log_bool == True:
-            command_log_channel = self.bot.get_channel(config.command_log)
-            await command_log_channel.send(f"`/yesterday` used by {interaction.user.mention} in {interaction.guild.name} at {datetime.now()}\n---")
         try:
             hawaii = pytz.timezone('US/Hawaii')
             dt = datetime.now(hawaii) - timedelta(days=1)

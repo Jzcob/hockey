@@ -15,10 +15,6 @@ class Info(commands.Cog):
     
     @app_commands.command(name="info", description="Shows the info menu!")
     async def info(self, interaction: discord.Interaction):
-        if config.command_log_bool == True:
-            command_log_channel = self.bot.get_channel(config.command_log)
-            import datetime
-            await command_log_channel.send(f"`/info` used by {interaction.user.mention} in {interaction.guild.name} at {datetime.now()}\n---")
         embed = discord.Embed(title="Info Menu", description="Here is the info for this bot!", color=0x00ff00)
         embed.add_field(name="My Privacy Policy", value="https://github.com/Jzcob/hockey/blob/main/SECURITY.md", inline=False)
         embed.add_field(name="My Terms of Service", value="https://github.com/Jzcob/hockey/wiki/Terms-of-Service-for-Hockey-Bot", inline=False)

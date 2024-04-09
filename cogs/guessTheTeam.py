@@ -16,10 +16,6 @@ class GuessTheTeam(commands.Cog):
     
     @app_commands.command(name="guess-the-team", description="Guess the team!")
     async def guessTheTeam(self, interaction: discord.Interaction):
-        if config.command_log_bool == True:
-            command_log_channel = self.bot.get_channel(config.command_log)
-            import datetime
-            await command_log_channel.send(f"`/guess-the-team` used by {interaction.user.mention} in {interaction.guild.name} at {datetime.now()}\n---")
         try:
             teams = [
                 "Anaheim Ducks",
