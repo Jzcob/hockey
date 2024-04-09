@@ -15,6 +15,10 @@ class avatar(commands.Cog):
     
     @app_commands.command(name="avatar", description="Get the avatar of a user! or the bot if no user is specified.")
     async def avatar(self, interaction: discord.Interaction, user: discord.User = None):
+        if config.command_log_bool == True:
+            command_log_channel = self.bot.get_channel(config.command_log)
+            import datetime
+            await command_log_channel.send(f"`/avatar` used by {interaction.user.mention} in {interaction.guild.name} at {datetime.now()}\n---")
         try:
             if user == None:
                 await interaction.response.defer()

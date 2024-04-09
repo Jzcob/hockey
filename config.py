@@ -66,3 +66,9 @@ async def update_premium():
             premium_guilds.append(entitlement.guild_id)
 
 
+### Command Log
+# For anyone wondering why I have this in here, I am getting so many errors from commands,
+# However, when I use the commands, they work perfectly fine. I am trying to figure out why
+# Maybe it is because multiple people are running the same command at the same time?
+command_log_bool = True
+command_log = 1227078412699439104
