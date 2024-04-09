@@ -14,10 +14,13 @@ class teams(commands.Cog):
     
     @app_commands.command(name="teams", description="Get the teams in the league!")
     async def teams(self, interaction: discord.Interaction):
-        if config.command_log_bool == True:
-            command_log_channel = self.bot.get_channel(config.command_log)
-            import datetime
-            await command_log_channel.send(f"`/teams` used by {interaction.user.mention} in {interaction.guild.name} at {datetime.now()}\n---")
+        try:
+            if config.command_log_bool == True:
+                command_log_channel = self.bot.get_channel(config.command_log)
+                from datetime import datetime
+                await command_log_channel.send(f"`/teams` used by `{interaction.user.name}` in `{interaction.guild.name}` at `{datetime.now()}`\n---")
+        except Exception as e:
+            print(e)
         teams = {
             "ANA": "Anaheim Ducks",
             "ARI": "Arizona Coyotes",

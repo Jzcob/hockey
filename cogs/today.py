@@ -156,7 +156,7 @@ class today(commands.Cog):
     async def team(self, interaction: discord.Interaction):
         if config.command_log_bool == True:
             command_log_channel = self.bot.get_channel(config.command_log)
-            await command_log_channel.send(f"`/today` used by {interaction.user.mention} in {interaction.guild.name} at {datetime.now()}\n---")
+            await command_log_channel.send(f"`/today` used by `{interaction.user.name}` in `{interaction.guild.name}` at `{datetime.now()}`\n---")
         try:
             hawaii = pytz.timezone('US/Hawaii')
             dt = datetime.now(hawaii)

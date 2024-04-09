@@ -18,7 +18,7 @@ class schedule(commands.Cog):
     async def schedule(self, interaction: discord.Interaction, abbreviation: str):
         if config.command_log_bool == True:
             command_log_channel = self.bot.get_channel(config.command_log)
-            await command_log_channel.send(f"`/schedule` used by {interaction.user.mention} in {interaction.guild.name} at {datetime.now()}\n---")
+            await command_log_channel.send(f"`/schedule` used by `{interaction.user.name}` in `{interaction.guild.name}` at `{datetime.now()}`\n---")
         teams = {
             "ANA": "Anaheim Ducks",
             "ARI": "Arizona Coyotes",

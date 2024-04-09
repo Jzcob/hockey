@@ -14,6 +14,8 @@ color = 0xffffff
 error_channel = 1166019404870463558
 footer = "Bot created by @jzcob"
 
+command_log_bool = True
+command_log = 1227078412699439104
 
 anahiem_ducks_emoji = "<:anaheimducks:1166050853879296030>"
 arizona_coyotes_emoji = "<:arizonacoyotes:1166050965451968654>"
@@ -64,11 +66,3 @@ async def update_premium():
             premium_users.append(entitlement.user_id)
         elif entitlement.sku_id == 2:
             premium_guilds.append(entitlement.guild_id)
-
-
-### Command Log
-# For anyone wondering why I have this in here, I am getting so many errors from commands,
-# However, when I use the commands, they work perfectly fine. I am trying to figure out why
-# Maybe it is because multiple people are running the same command at the same time?
-command_log_bool = True
-command_log = 1227078412699439104

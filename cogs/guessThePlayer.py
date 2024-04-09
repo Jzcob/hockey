@@ -21,8 +21,8 @@ class guessThePlayer(commands.Cog):
     async def guessThePlayer(self, interaction : discord.Interaction):
         if config.command_log_bool == True:
             command_log_channel = self.bot.get_channel(config.command_log)
-            import datetime
-            await command_log_channel.send(f"`/guess-the-player` used by {interaction.user.mention} in {interaction.guild.name} at {datetime.now()}\n---")
+            from datetime import datetime
+            await command_log_channel.send(f"`/guess-the-player` used by `{interaction.user.name}` in `{interaction.guild.name}` at `{datetime.now()}`\n---")
 
         try:
             await interaction.response.defer()

@@ -21,7 +21,7 @@ class game(commands.Cog):
     async def game(self, interaction: discord.Interaction, abbreviation: str):
         if config.command_log_bool == True:
             command_log_channel = self.bot.get_channel(config.command_log)
-            await command_log_channel.send(f"`/game` used by {interaction.user.mention} in {interaction.guild.name} at {datetime.now()}\n---")
+            await command_log_channel.send(f"`/game` used by `{interaction.user.name}` in `{interaction.guild.name}` at `{datetime.now()}`\n---")
         try:
             await interaction.response.defer()
             msg = await interaction.original_response()
