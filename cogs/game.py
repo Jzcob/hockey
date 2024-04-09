@@ -19,6 +19,9 @@ class game(commands.Cog):
     
     @app_commands.command(name="game", description="Check the information for a game today! (e.g. BOS, NYR, etc.)")
     async def game(self, interaction: discord.Interaction, abbreviation: str):
+        if config.command_log_bool == True:
+            command_log_channel = self.bot.get_channel(config.command_log)
+            await command_log_channel.send(f"`/game` used by {interaction.user.mention} in {interaction.guild.name} at {datetime.now()}\n---")
         try:
             await interaction.response.defer()
             msg = await interaction.original_response()

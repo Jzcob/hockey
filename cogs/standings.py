@@ -16,6 +16,9 @@ class standings(commands.Cog):
     
     @app_commands.command(name="standings", description="Get the standings!")
     async def standings(self, interaction: discord.Interaction):
+        if config.command_log_bool == True:
+            command_log_channel = self.bot.get_channel(config.command_log)
+            await command_log_channel.send(f"`/standings` used by {interaction.user.mention} in {interaction.guild.name} at {datetime.now()}\n---")
         today = datetime.today().strftime('%Y-%m-%d')
         url = f"https://api-web.nhle.com/v1/standings/{today}"
         r = requests.get(url)
