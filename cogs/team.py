@@ -14,7 +14,7 @@ class team(commands.Cog):
     async def on_ready(self):
         print(f"LOADED: `team.py`")
     
-    @app_commands.command(name="team", description="Get the schedule for the week for a team! (e.g. BOS, NYR, etc.)")
+    @app_commands.command(name="team", description="Get the information for a team! (e.g. BOS, NYR, etc.)")
     async def team(self, interaction: discord.Interaction, abbreviation: str):
         if config.command_log_bool == True:
             command_log_channel = self.bot.get_channel(config.command_log)
