@@ -60,7 +60,7 @@ class team(commands.Cog):
                 team = abbreviation.upper()
                 team = teams[team]
             else:    
-                return await msg.edit("Please enter a valid team abbreviation. e.g. `/team BOS`\n`/teams` to view the full list of teams!", ephemeral=True)
+                return await msg.edit("Please enter a valid team abbreviation. e.g. `/team BOS`\n`/teams` to view the full list of teams!")
             today = datetime.today().strftime('%Y-%m-%d')
             url = f"https://api-web.nhle.com/v1/standings/{today}"
             r = requests.get(url)
