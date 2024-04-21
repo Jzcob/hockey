@@ -17,7 +17,7 @@ class avatar(commands.Cog):
     async def avatar(self, interaction: discord.Interaction, user: discord.User = None):
         if config.command_log_bool == True:
             command_log_channel = self.bot.get_channel(config.command_log)
-            import datetime
+            from datetime import datetime
             await command_log_channel.send(f"`/avatar` used by `{interaction.user.name}` in `{interaction.guild.name}` at `{datetime.now()}`\n---")
         try:
             if user == None:

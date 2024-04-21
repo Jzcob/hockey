@@ -7,6 +7,7 @@ import config
 from datetime import datetime, timedelta
 import pytz
 import traceback
+import asyncio
 
 def strings(awayAbbreviation, homeAbbreviation, home, away):
     if awayAbbreviation == "ANA":
@@ -172,6 +173,7 @@ class today(commands.Cog):
             embed.set_thumbnail(url="https://www-league.nhlstatic.com/images/logos/league-dark/133-flat.svg")
             embed.set_footer(text=config.footer)
             for i in range(len(games)):
+                print(i)
                 game = data["gameWeek"][0]["games"][i]
                 gameState = game["gameState"]
                 gameID = game['id']
@@ -221,6 +223,7 @@ class today(commands.Cog):
                     awayAbbreviation = game2["awayTeam"]["abbrev"]
                     awayString, homeString = strings(awayAbbreviation, homeAbbreviation, home, away)
                     embed.add_field(name=f"{startTime}", value=f"{awayString} @ {homeString}\nGame is scheduled!", inline=False)
+                await asyncio.sleep(0.5)
             return await msg.edit(embed=embed)
         except:
             error_channel = self.bot.get_channel(error_channel)
