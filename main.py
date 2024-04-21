@@ -4,12 +4,8 @@ from discord.ext import commands
 import os
 import config
 from dotenv import load_dotenv
-import traceback
-import requests
-from datetime import datetime, timedelta
-import pytz
 
-#import topgg
+import topgg
 load_dotenv()
 
 
@@ -19,7 +15,15 @@ intents.auto_moderation_configuration = True
 intents.reactions = True
 bot = commands.Bot(command_prefix=';', intents=intents, help_command=None)
 status = discord.Status.online
-#bot.topggpy = topgg.DBLClient(bot=bot,token=os.getenv("topgg-token"), autopost=True, post_shard_count=True)
+
+async def topgg_post_stats():
+    while True:
+        try:
+            await bot.topggpy.post_guild_count()
+            print("Posted stats to top.gg")
+        except Exception as e:
+            print(e)
+        await asyncio.sleep(1800)
 
 @bot.command()
 async def sync(ctx) -> None:
