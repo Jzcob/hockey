@@ -19,12 +19,9 @@ class game(commands.Cog):
     
     @app_commands.command(name="game", description="Check the information for a game today! (e.g. BOS, NYR, etc.)")
     async def game(self, interaction: discord.Interaction, abbreviation: str):
-        try:
-            if config.command_log_bool == True:
-                command_log_channel = self.bot.get_channel(config.command_log)
-                await command_log_channel.send(f"`/game` used by `{interaction.user.name}` in `{interaction.guild.name}` at `{datetime.now()}`\n---")
-        except Exception as e:
-            print(e)
+        if config.command_log_bool == True:
+            command_log_channel = self.bot.get_channel(config.command_log)
+            await command_log_channel.send(f"`/game` used by `{interaction.user.name}` in `{interaction.guild.name}` at `{datetime.now()}`\n---")
         try:
             await interaction.response.defer()
             msg = await interaction.original_response()
@@ -79,15 +76,12 @@ class game(commands.Cog):
                 return await msg.edit(content=f"**{team}** do not play today!")
             try:
                 for i in range(len(games)):
-                    print("test")
                     if f"{games[i]['gameDate']}" == f"{today}":
-                        print("test2")
                         game = games[i]
                         gameID = game['id']
                         gameIDs[interaction.user.id] = gameID
                         break
                     else:
-                        print("test3")
                         return await msg.edit(content=f"**{team}** do not play today!")
             except Exception as e:
                 print(e)
