@@ -16,15 +16,6 @@ intents.reactions = True
 bot = commands.Bot(command_prefix=';', intents=intents, help_command=None)
 status = discord.Status.online
 
-async def topgg_post_stats():
-    while True:
-        try:
-            await bot.topggpy.post_guild_count()
-            print("Posted stats to top.gg")
-        except Exception as e:
-            print(e)
-        await asyncio.sleep(1800)
-
 @bot.command()
 async def sync(ctx) -> None:
     if ctx.author.id == config.jacob:
@@ -93,7 +84,10 @@ async def servers(ctx):
 @bot.event
 async def on_ready():
     print(f"Logged on as {bot.user}")
-    
+    while True:
+        bot.topggpy = topgg.DBLClient(bot, os.getenv("topgg-token"), autopost=True, post_shard_count=True)
+        await asyncio.sleep(1800)
+        print("Posted stats to top.gg")
 
 async def load():
     for filename in os.listdir('./cogs'):
@@ -153,8 +147,4 @@ async def on_guild_remove(guild):
     except Exception as e:
         print(e)
 
-
-
-
-asyncio.run(topgg_post_stats())
 asyncio.run(main())
