@@ -22,8 +22,11 @@ class game(commands.Cog):
         print("test")
         try:
             if config.command_log_bool == True:
+                print("1")
                 command_log_channel = self.bot.get_channel(config.command_log)
+                print("2")
                 await command_log_channel.send(f"`/game` used by `{interaction.user.name}` in `{interaction.guild.name}` at `{datetime.now()}`\n---")
+                print("3")
         except Exception as e:
             print(e)
         try:
