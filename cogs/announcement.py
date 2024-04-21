@@ -6,7 +6,7 @@ from datetime import datetime
 import json
 import config
 import traceback
-watching = discord.Activity(name="Hockey!", type=discord.ActivityType.watching)
+watching = discord.Activity(name="THE PLAYOFFS!", type=discord.ActivityType.watching)
 
 #hello world
 class announcement(commands.Cog):
