@@ -156,5 +156,5 @@ async def on_guild_remove(guild):
 
 
 
-
+asyncio.run(topgg_post_stats())
 asyncio.run(main())
