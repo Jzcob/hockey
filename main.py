@@ -63,7 +63,7 @@ async def servers(ctx):
                 for guild in guilds:
                     members += guild.member_count
                     try:
-                        desc += f"ID: {guild.id}, Name: {guild.name}\n"
+                        desc += f"ID: {guild.id}, Members: {guild.member_count},Name: {guild.name}\n"
                     except:
                         desc += ("---Error getting server information---\n")
                 file_path = "server_info.txt"
@@ -75,7 +75,6 @@ async def servers(ctx):
                 membersVC = bot.get_channel(1186445778043031722)
                 await vc.edit(name=f"Servers: {len(bot.guilds)}")
                 await membersVC.edit(name=f"Members: {int(members):,}")
-                #await bot.topggpy.post_guild_count()
             except Exception as e:
                 embed = discord.Embed(title="Error", description=f"Something went wrong. `{e}`", color=0xff0000)
                 return await ctx.send(embed=embed)
