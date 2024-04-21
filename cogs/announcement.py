@@ -22,7 +22,7 @@ class announcement(commands.Cog):
     async def announcement(self, interaction: discord.Interaction, title: str, description: str):
         if config.command_log_bool == True:
             command_log_channel = self.bot.get_channel(config.command_log)
-            await command_log_channel.send(f"`/announce` used by `{interaction.user.name}` in `{interaction.guild.name}` at `{datetime.now()}`\n---")
+            await command_log_channel.send(f"`/announce` used by `{interaction.user.name}` in `{interaction.guild.name}` at `{datetime.now()}` \n---")
         try:
             if interaction.user.id == 920797181034778655:
                 guilds = self.bot.guilds
