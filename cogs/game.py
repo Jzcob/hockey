@@ -84,6 +84,7 @@ class game(commands.Cog):
                         gameIDs[interaction.user.id] = gameID
                         break
                     else:
+                        print("test3")
                         return await msg.edit(content=f"**{team}** do not play today!")
             except Exception as e:
                 print(e)
