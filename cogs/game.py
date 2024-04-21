@@ -19,14 +19,10 @@ class game(commands.Cog):
     
     @app_commands.command(name="game", description="Check the information for a game today! (e.g. BOS, NYR, etc.)")
     async def game(self, interaction: discord.Interaction, abbreviation: str):
-        print("test")
         try:
             if config.command_log_bool == True:
-                print("1")
                 command_log_channel = self.bot.get_channel(config.command_log)
-                print("2")
                 await command_log_channel.send(f"`/game` used by `{interaction.user.name}` in `{interaction.guild.name}` at `{datetime.now()}`\n---")
-                print("3")
         except Exception as e:
             print(e)
         try:
@@ -72,7 +68,6 @@ class game(commands.Cog):
             else:
                 await msg.edit(content="Please enter a valid team abbreviation. e.g. `/game BOS`")
                 return
-            print("test")
             hawaii = pytz.timezone('US/Hawaii')
             dt = datetime.now(hawaii)
             today = dt.strftime('%Y-%m-%d')
