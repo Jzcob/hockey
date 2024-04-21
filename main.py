@@ -17,7 +17,7 @@ intents = discord.Intents.default()
 intents.message_content = True
 intents.auto_moderation_configuration = True
 intents.reactions = True
-bot = commands.Bot(command_prefix=';;', intents=intents, help_command=None)
+bot = commands.Bot(command_prefix=';', intents=intents, help_command=None)
 status = discord.Status.online
 
 def strings(awayAbbreviation, homeAbbreviation, home, away):
