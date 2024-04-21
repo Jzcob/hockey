@@ -87,7 +87,6 @@ async def on_ready():
     while True:
         bot.topggpy = topgg.DBLClient(bot, os.getenv("topgg-token"), autopost=True, post_shard_count=True)
         await asyncio.sleep(1800)
-        print("Posted stats to top.gg")
 
 async def load():
     for filename in os.listdir('./cogs'):
