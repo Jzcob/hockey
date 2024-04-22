@@ -173,7 +173,6 @@ class today(commands.Cog):
             embed.set_thumbnail(url="https://www-league.nhlstatic.com/images/logos/league-dark/133-flat.svg")
             embed.set_footer(text=config.footer)
             for i in range(len(games)):
-                print(i)
                 game = data["gameWeek"][0]["games"][i]
                 gameState = game["gameState"]
                 gameID = game['id']
