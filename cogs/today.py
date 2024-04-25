@@ -222,7 +222,7 @@ class today(commands.Cog):
                     awayAbbreviation = game2["awayTeam"]["abbrev"]
                     awayString, homeString = strings(awayAbbreviation, homeAbbreviation, home, away)
                     embed.add_field(name=f"{startTime}", value=f"{awayString} @ {homeString}\nGame is scheduled!", inline=False)
-                await asyncio.sleep(0.5)
+                await asyncio.sleep(1)
             return await msg.edit(embed=embed)
         except:
             error_channel = self.bot.get_channel(error_channel)
