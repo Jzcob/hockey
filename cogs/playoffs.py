@@ -19,11 +19,12 @@ class playoffs(commands.Cog):
             from datetime import datetime
             await command_log_channel.send(f"`/series` used by `{interaction.user.name}` in `{interaction.guild.name}` at `{datetime.now()}`\n---")
         try:
-            embed = discord.Embed(title="NHL Playoff Series", color=0x00ff00)
-            embed.add_field(name="Round 1", value="**Eastern**\nFlorida Panthers vs Tampa Bay Lightning (4-1)\nBoston Bruins vs Toronto Maple Leafs"+
-                            "\nNew York Rangers vs Washing Capitals (4-0)\nCarolina Hurricanes vs New York Islanders (4-1)\n**Western**\nDallas Stars vs Vegas Golden Knights\n"+
-                            "Winnipeg Jets vs Colorado Avalanche (1-4)\nVancover Canucks vs Nashville Predators\n Edmonton Oilers vs Los Angeles Kings", inline=False)
-            embed.add_field(name="Round 2", value="**Eastern**\nFlordia Panthers vs TBD\nNew York Rangers vs Carolina Hurricanes\n**Western**\nTBD vs Colorado Avalanche", inline=False)
+            embed = discord.Embed(title="NHL Playoff Series", color=0x00ff00, url="https://www.nhl.com/playoffs/2024/bracket")
+            embed.add_field(name="Round 1", value="**Eastern**\nFlorida Panthers vs Tampa Bay Lightning **(4-1)**\nBoston Bruins vs Toronto Maple Leafs **(4-3)**"+
+                            "\nNew York Rangers vs Washing Capitals **(4-0)**\nCarolina Hurricanes vs New York Islanders **(4-1)**\n**Western**\nDallas Stars vs Vegas Golden Knights **(3-3)**\n"+
+                            "Winnipeg Jets vs Colorado Avalanche **(1-4)**\nVancover Canucks vs Nashville Predators **(4-2)**\n Edmonton Oilers vs Los Angeles Kings **(4-1)**", inline=False)
+            embed.add_field(name="Round 2", value="**Eastern**\nFlordia Panthers vs Boston Bruins **(0-0)**\nNew York Rangers vs Carolina Hurricanes\n**Western**\nTBD vs Colorado Avalanche **(0-0)**\n"+
+                            "Vancover Canucks vs Edmonton Oilers **(0-0)**", inline=False)
             embed.add_field(name="Conference Finals", value="**Eastern**\n vs TBD\n**Western**\nTBD vs TBD", inline=False)
             embed.add_field(name="Stanley Cup Finals", value="TBD vs TBD", inline=False)
                 
