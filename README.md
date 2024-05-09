@@ -12,4 +12,5 @@ A discord bot that shows NHL team stats that go in-depth to some degree. The bot
 - Verfied: `01/05/2024`
 - 100 servers: `01/20/2024`
 - 200 servers: `03/26/2024`
-- 300 servers: SoonTM
+- 300 servers: `05/08/2024`
+- 400 servers: Soon!
