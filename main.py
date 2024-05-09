@@ -123,7 +123,7 @@ async def on_guild_join(guild):
         await membersVC.edit(name=f"Members: {int(members):,}")
         await vc.edit(name=f"Servers: {len(bot.guilds)}")
         if len(bot.guilds) % 100 == 0:
-            await join_leave_channel.send("<@920797181034778655> Bot has reached a milestone!")
+            await join_leave_channel.send(f"<@920797181034778655> Bot has reached a milestone of `{len(bot.guilds)} servers!")
     except Exception as e:
         print(e)
 
