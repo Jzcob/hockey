@@ -23,8 +23,8 @@ class playoffs(commands.Cog):
             embed.add_field(name="Round 1", value="**Eastern**\nFlorida Panthers vs Tampa Bay Lightning **(4-1)**\nBoston Bruins vs Toronto Maple Leafs **(4-3)**"+
                             "\nNew York Rangers vs Washing Capitals **(4-0)**\nCarolina Hurricanes vs New York Islanders **(4-1)**\n**Western**\nDallas Stars vs Vegas Golden Knights **(4-3)**\n"+
                             "Winnipeg Jets vs Colorado Avalanche **(1-4)**\nVancover Canucks vs Nashville Predators **(4-2)**\n Edmonton Oilers vs Los Angeles Kings **(4-1)**", inline=False)
-            embed.add_field(name="Round 2", value="**Eastern**\nFlordia Panthers vs Boston Bruins **(0-0)**\nNew York Rangers vs Carolina Hurricanes **(1-0)**\n**Western**\nTBD vs Colorado Avalanche **(0-0)**\n"+
-                            "Vancover Canucks vs Edmonton Oilers **(0-0)**", inline=False)
+            embed.add_field(name="Round 2", value="**Eastern**\nFlordia Panthers vs Boston Bruins **(3-2)**\nNew York Rangers vs Carolina Hurricanes **(3-2)**\n**Western**\nDallas Stars vs Colorado Avalanche **(3-1)**\n"+
+                            "Vancover Canucks vs Edmonton Oilers **(2-2)**", inline=False)
             embed.add_field(name="Conference Finals", value="**Eastern**\n vs TBD\n**Western**\nTBD vs TBD", inline=False)
             embed.add_field(name="Stanley Cup Finals", value="TBD vs TBD", inline=False)
                 
