@@ -110,9 +110,10 @@ async def on_guild_join(guild):
                                             f"Members: {guild.member_count}\n", color=0x00ff00)
         embed.set_thumbnail(url=f"{guild.icon}")
 
-        await join_leave_channel.send(embed=embed)
+        global msg 
+        msg = await join_leave_channel.send(embed=embed)
     except:
-        await join_leave_channel.send("Joined a server but couldn't get server information")
+        msg = await join_leave_channel.send("Joined a server but couldn't get server information")
     try:
         guilds = bot.guilds
         members = 0
@@ -124,6 +125,15 @@ async def on_guild_join(guild):
         await vc.edit(name=f"Servers: {len(bot.guilds)}")
         if len(bot.guilds) % 100 == 0:
             await join_leave_channel.send(f"<@920797181034778655> Bot has reached a milestone of `{len(bot.guilds)}` servers!")
+        try:
+            embed = discord.Embed(title="Thank you for adding me!", description="This is a warning that once the playoffs are over, some of the commands of the bot will be offline until the next season starts. If you have any questions, feel free to join our support server with `/info`\n\n### Commands that will be disabled once the season has ended:\n- `/standings`\n- `/today`\n- `/yesterday`\n- `/game`\n- `/schedule`\n- `/series`")
+            try:
+                await guild.public_updates_channel.send(embed=embed)
+            except Exception as e:
+                await guild.system_channel.send(embed=embed)
+            await msg.add_reaction("👍")
+        except:
+            await msg.add_reaction("👎")
     except Exception as e:
         print(e)
 
