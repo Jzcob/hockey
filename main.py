@@ -121,8 +121,8 @@ async def on_guild_join(guild):
             members += guild.member_count
         vc = bot.get_channel(1173304351872253952)
         membersVC = bot.get_channel(1186445778043031722)
-        await membersVC.edit(name=f"Members: {int(members):,}")
-        await vc.edit(name=f"Servers: {len(bot.guilds)}")
+        await membersVC.edit(name=f"Hockey - Members: {int(members):,}")
+        await vc.edit(name=f"Hockey - Servers: {len(bot.guilds)}")
         if len(bot.guilds) % 100 == 0:
             await join_leave_channel.send(f"<@920797181034778655> Bot has reached a milestone of `{len(bot.guilds)}` servers!")
         try:
@@ -159,8 +159,8 @@ async def on_guild_remove(guild):
             members += guild.member_count
         vc = bot.get_channel(1173304351872253952)
         membersVC = bot.get_channel(1186445778043031722)
-        await membersVC.edit(name=f"Members: {int(members):,}")
-        await vc.edit(name=f"Servers: {len(bot.guilds)}")
+        await membersVC.edit(name=f"Hockey - Members: {int(members):,}")
+        await vc.edit(name=f"Hockey - Servers: {len(bot.guilds)}")
     except Exception as e:
         print(e)
 
