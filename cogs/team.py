@@ -61,8 +61,7 @@ class team(commands.Cog):
                 team = teams[team]
             else:    
                 return await msg.edit(content="Please enter a valid team abbreviation. e.g. `/team BOS`\n`/teams` to view the full list of teams!")
-            today = datetime.today().strftime('%Y-%m-%d')
-            url = f"https://api-web.nhle.com/v1/standings/{today}"
+            url = f"https://api-web.nhle.com/v1/standings/now"
             r = requests.get(url)
             data = r.json()
             for i in range(len(data['standings'])):
