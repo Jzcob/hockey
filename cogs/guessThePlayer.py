@@ -18,7 +18,7 @@ class guessThePlayer(commands.Cog):
     
 
     @app_commands.command(name="guess-the-player", description="Guess the player!")
-    @app_commands.checks.cooldown(1, 60, key=lambda i: (i.guild.id, i.user.id))
+    @app_commands.checks.cooldown(1.0, 5.0, key=lambda i: (i.guild.id))
     async def guessThePlayer(self, interaction : discord.Interaction):
         if config.command_log_bool == True:
             command_log_channel = self.bot.get_channel(config.command_log)
