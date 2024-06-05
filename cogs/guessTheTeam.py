@@ -15,6 +15,7 @@ class GuessTheTeam(commands.Cog):
         print("LOADED: `guessTheTeam.py`")
     
     @app_commands.command(name="guess-the-team", description="Guess the team!")
+    @app_commands.checks.cooldown(1, 60, key=lambda i: (i.guild.id, i.user.id))
     async def guessTheTeam(self, interaction: discord.Interaction):
         if config.command_log_bool == True:
             command_log_channel = self.bot.get_channel(config.command_log)
@@ -78,6 +79,16 @@ class GuessTheTeam(commands.Cog):
             string = f"{traceback.format_exc()}"
             await error_channel.send(f"<@920797181034778655>```{string}```")
             await interaction.followup.send("Error with command, Message has been sent to Bot Developers", ephemeral=True)
+    
+    @guessTheTeam.error
+    async def guessTheTeam_error(self, ctx, error):
+        if isinstance(error, commands.CommandOnCooldown):
+            await ctx.send(f"You're on cooldown! Try again in {error.retry_after:.2f} seconds.")
+        else:
+            error_channel = self.bot.get_channel(config.error_channel)
+            string = f"{traceback.format_exc()}"
+            await error_channel.send(f"<@920797181034778655>```{string}```")
+            await ctx.send("Error with command, Message has been sent to Bot Developers", ephemeral=True)
 
 async def setup(bot):
     await bot.add_cog(GuessTheTeam(bot))
