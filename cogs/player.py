@@ -72,10 +72,6 @@ class player(commands.Cog):
                         birthDate = y['birthDate']
                         birthCity = y['birthCity']['default']
                         birthCountry = y['birthCountry']
-                        drafted = y['draftDetails']['year']
-                        draftedRound = y['draftDetails']['round']
-                        draftedOverall = y['draftDetails']['overallPick']
-                        draftedTeam = y['draftDetails']['teamAbbrev']
                         gamesPlayed = y['featuredStats']['regularSeason']['career']['gamesPlayed']
                         goals = y['featuredStats']['regularSeason']['career']['goals']
                         assists = y['featuredStats']['regularSeason']['career']['assists']
@@ -100,8 +96,6 @@ class player(commands.Cog):
                         embed.add_field(name="Birth Date", value=f"{birthDate}", inline=True)
                         embed.add_field(name="Birth City", value=f"{birthCity}", inline=True)
                         embed.add_field(name="Birth Country", value=f"{birthCountry}", inline=True)
-                        embed.add_field(name="Drafted", value=f"{drafted}", inline=True)
-                        embed.add_field(name="Drafted Team", value=f"{draftedTeam}", inline=True)
                         embed.add_field(name="Games Played", value=f"{gamesPlayed}", inline=True)
                         embed.add_field(name="Goals", value=f"{goals}", inline=True)
                         embed.add_field(name="Assists", value=f"{assists}", inline=True)
@@ -122,10 +116,6 @@ class player(commands.Cog):
                         birthDate = y['birthDate']
                         birthCity = y['birthCity']['default']
                         birthCountry = y['birthCountry']
-                        drafted = y['draftDetails']['year']
-                        draftedRound = y['draftDetails']['round']
-                        draftedOverall = y['draftDetails']['overallPick']
-                        draftedTeam = y['draftDetails']['teamAbbrev']
                         gamesPlayed = y['featuredStats']['regularSeason']['career']['gamesPlayed']
                         goals = y['featuredStats']['regularSeason']['career']['goals']
                         assists = y['featuredStats']['regularSeason']['career']['assists']
@@ -151,10 +141,6 @@ class player(commands.Cog):
                         embed.add_field(name="Birth Date", value=f"{birthDate}", inline=True)
                         embed.add_field(name="Birth City", value=f"{birthCity}", inline=True)
                         embed.add_field(name="Birth Country", value=f"{birthCountry}", inline=True)
-                        embed.add_field(name="Drafted", value=f"{drafted}", inline=True)
-                        embed.add_field(name="Drafted Round", value=f"{draftedRound}", inline=True)
-                        embed.add_field(name="Drafted Overall", value=f"{draftedOverall}", inline=True)
-                        embed.add_field(name="Drafted Team", value=f"{draftedTeam}", inline=True)
                         embed.add_field(name="Games Played", value=f"{gamesPlayed}", inline=True)
                         embed.add_field(name="Goals", value=f"{goals}", inline=True)
                         embed.add_field(name="Assists", value=f"{assists}", inline=True)
@@ -175,10 +161,6 @@ class player(commands.Cog):
                         birthDate = y['birthDate']
                         birthCity = y['birthCity']['default']
                         birthCountry = y['birthCountry']
-                        drafted = y['draftDetails']['year']
-                        draftedRound = y['draftDetails']['round']
-                        draftedOverall = y['draftDetails']['overallPick']
-                        draftedTeam = y['draftDetails']['teamAbbrev']
                         gamesPlayed = y['featuredStats']['regularSeason']['career']['gamesPlayed']
                         playerPosition = y['position']
                         playerNumber = y['sweaterNumber']
@@ -202,10 +184,6 @@ class player(commands.Cog):
                         embed.add_field(name="Birth Date", value=f"{birthDate}", inline=True)
                         embed.add_field(name="Birth City", value=f"{birthCity}", inline=True)
                         embed.add_field(name="Birth Country", value=f"{birthCountry}", inline=True)
-                        embed.add_field(name="Drafted", value=f"{drafted}", inline=True)
-                        embed.add_field(name="Drafted Round", value=f"{draftedRound}", inline=True)
-                        embed.add_field(name="Drafted Overall", value=f"{draftedOverall}", inline=True)
-                        embed.add_field(name="Drafted Team", value=f"{draftedTeam}", inline=True)
                         embed.set_footer(text=f"Player ID: {playerID}")
                         await msg.edit(embed=embed)
                         return
