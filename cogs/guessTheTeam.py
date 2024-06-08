@@ -81,14 +81,8 @@ class GuessTheTeam(commands.Cog):
             await interaction.followup.send("Error with command, Message has been sent to Bot Developers", ephemeral=True)
     
     @guessTheTeam.error
-    async def guessTheTeam_error(self, ctx, error):
-        if isinstance(error, commands.CommandOnCooldown):
-            await ctx.send(f"Command on cooldown! Try again in {error.retry_after:.2f} seconds.")
-        else:
-            error_channel = self.bot.get_channel(config.error_channel)
-            string = f"{traceback.format_exc()}"
-            await error_channel.send(f"<@920797181034778655>```{string}```")
-            await ctx.send("Error with command, Message has been sent to Bot Developers", ephemeral=True)
+    async def guessTheTeam_error(self, interaction: discord.interaction, error):
+        await interaction.respond.send_message(f"Command on cooldown! Try again in {error.retry_after:.2f} seconds.")
 
 async def setup(bot):
     await bot.add_cog(GuessTheTeam(bot))
