@@ -82,7 +82,7 @@ class GuessTheTeam(commands.Cog):
     
     @guessTheTeam.error
     async def guessTheTeam_error(self, interaction: discord.Interaction , error):
-        await interaction.response.send_message(f"Command on cooldown! Try again in {error.retry_after:.2f} seconds.")
+        await interaction.response.send_message(f"Command on cooldown! Try again in {error.retry_after:.2f} seconds.", ephemeral=True)
         
 
 async def setup(bot):

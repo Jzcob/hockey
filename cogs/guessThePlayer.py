@@ -108,8 +108,8 @@ class guessThePlayer(commands.Cog):
             await interaction.followup.send("Error with command, Message has been sent to Bot Developers", ephemeral=True)
     
     @guessThePlayer.error
-    async def guessThePlayer_error(self, ctx , error):
-        await ctx.send(f"Command on cooldown! Try again in {error.retry_after:.2f} seconds.")
+    async def guessThePlayer_error(self, interaction: discord.Interaction , error):
+        await interaction.response.send_message(f"Command on cooldown! Try again in {error.retry_after:.2f} seconds.", ephemeral=True)
         
 
 
