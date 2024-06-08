@@ -109,14 +109,8 @@ class guessThePlayer(commands.Cog):
     
     @guessThePlayer.error
     async def guessThePlayer_error(self, interaction: discord.User, error):
-        if isinstance(error, commands.CommandOnCooldown):
-            await interaction.response.send_message(f"Command is on cooldown! Try again in {error.retry_after:.2f} seconds!", ephemeral=True)
-        else:
-            error_channel = self.bot.get_channel(config.error_channel)
-            string = f"{traceback.format_exc()}"
-            await error_channel.send(f"<@920797181034778655>```{string}```")
-            await interaction.response.send_message("Error with command, Message has been sent to Bot Developers", ephemeral=True)
-            raise error
+        await interaction.response.send_message(f"Command is on cooldown! Try again in {error.retry_after:.2f} seconds!", ephemeral=True)
+        
 
 
 async def setup(bot):
