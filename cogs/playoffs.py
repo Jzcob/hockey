@@ -26,7 +26,7 @@ class playoffs(commands.Cog):
             embed.add_field(name="Round 2", value="**Eastern**\nFlordia Panthers vs Boston Bruins **(4-2)**\nNew York Rangers vs Carolina Hurricanes **(4-2)**\n**Western**\nDallas Stars vs Colorado Avalanche **(4-2)**\n"+
                             "Vancover Canucks vs Edmonton Oilers **(3-4)**", inline=False)
             embed.add_field(name="Conference Finals", value="**Eastern**\nFlordia Panthers vs New York Rangers**(4-2)**\n**Western**\nDallas Stars vs Edmonton Oilers **(2-4)**", inline=False)
-            embed.add_field(name="Stanley Cup Finals", value="Florida Panthers vs Edmonton Oilers **(0-0)**", inline=False)
+            embed.add_field(name="Stanley Cup Finals", value="Florida Panthers vs Edmonton Oilers **(1-0)**", inline=False)
                 
             await interaction.response.send_message(embed=embed)
         except:
