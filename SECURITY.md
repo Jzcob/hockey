@@ -1,22 +1,22 @@
-Effective Date: 11/16/2023.
+Effective Date: 06/08/2024.
 
 This Privacy Policy outlines how our Discord bot ("Hockey") handles and protects user information. We are committed to ensuring the privacy and security of our users and their data. Please read this policy carefully to understand how we collect, use, and disclose information.
 
 1. Information Collection:
 
-Our Discord bot only reads information from 2 of our commands `/guess-the-team` and `/guess-the-player` however the bot does not collect or store any personal information from users. We do not track, record, or retain any user data, including but not limited to names, email addresses, IP addresses, or any other identifiable information.
+Our Discord bot only reads information from 2 of our commands `/guess-the-team` and `/guess-the-player` when the command is used it sends a debug alert to the owner to help with bug fixing. We do track, record, or retain any user data, only including discord names.
 
 2. Information Usage:
 
-As no information is collected, our Discord bot does not use any user data for any purpose. We do not engage in data analytics, profiling, or any form of data processing.
+The information is used soley to know what was sent at the time of the command being ran to help out myself with idenifing bugs in the code that need to be fixed. We do not engage in data analytics, profiling, or any form of data processing.
 
 3. Information Sharing:
 
-Since no user information is collected or stored, we do not share any personal information with third parties. We do not sell, trade, or transfer any data to external entities.
+We do not share any information with third parties. We do not sell, trade, or transfer any data to external entities.
 
 4. Security Measures:
 
-We prioritize the security of our users' information. While our Discord bot does not collect or store any data, we employ industry-standard security measures to protect against unauthorized access, disclosure, or alteration of any potential data transmitted within the bot.
+We prioritize the security of our users' information. The information recorded by the bot is sent to a channel in my discord server that has 2FA on as well as all moderator actions being tracked, we employ industry-standard security measures to protect against unauthorized access, disclosure, or alteration of any potential data transmitted within the bot.
 
 5. Third-Party Links:
 
