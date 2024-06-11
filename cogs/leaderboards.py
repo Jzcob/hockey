@@ -48,7 +48,7 @@ class Leaderboards(commands.Cog):
                 else:
                     lb += f"{i}. `{name}` - `{x[1]}` points\n"
                 i += 1
-            embed.description = f"Points are based on correct guesses from `/guess-the-player`\n\n {lb}"
+            embed.description = f"Points are based on correct guesses from `/guess-the-player`!\n\n {lb}"
             await msg.edit(embed=embed)
             mydb.close()
         except Exception as e:
