@@ -58,7 +58,7 @@ class schedule(commands.Cog):
             team = teams[team]
 
         else:
-            await interaction.response.send_message("Invalid team abbreviation. Please try again. e.g. `/schedule BOS`", ephemeral=True)
+            await interaction.response.send_message("Invalid team abbreviation. `/teams` to see all of the abbreviations!", ephemeral=True)
             return
         try:
             url = f'https://api-web.nhle.com/v1/club-schedule/{abbreviation}/week/now'

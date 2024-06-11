@@ -63,7 +63,7 @@ class game(commands.Cog):
                 team = abbreviation.upper()
                 team = teams[team]
             else:
-                await msg.edit(content="Please enter a valid team abbreviation. e.g. `/game BOS`")
+                await msg.edit(content="Invalid team abbreviation. `/teams` to see all of the abbreviations!")
                 return
             hawaii = pytz.timezone('US/Hawaii')
             dt = datetime.now(hawaii)
