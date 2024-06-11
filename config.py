@@ -10,6 +10,8 @@ owner = 1165854743281799218
 logs = 1168944556927103067
 ticketLog = 1193387303381516319
 
+dev_mode = False
+
 color = 0xffffff
 error_channel = 1166019404870463558
 footer = "Bot created by @jzcob"

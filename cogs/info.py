@@ -19,7 +19,7 @@ class Info(commands.Cog):
             command_log_channel = self.bot.get_channel(config.command_log)
             from datetime import datetime
             await command_log_channel.send(f"`/info` used by `{interaction.user.name}` in `{interaction.guild.name}` at `{datetime.now()}`\n---")
-        embed = discord.Embed(title="Info Menu", description="Here is the info for this bot!", color=0x00ff00)
+        embed = discord.Embed(title="Info Menu", description="Here is the info for this bot!\nAll updates to the bot except for important changes are sent in my discord server.", color=0x00ff00)
         embed.add_field(name="My Privacy Policy", value="https://github.com/Jzcob/hockey/blob/main/SECURITY.md", inline=False)
         embed.add_field(name="My Terms of Service", value="https://github.com/Jzcob/hockey/wiki/Terms-of-Service-for-Hockey-Bot", inline=False)
         embed.add_field(name="NHL Privacy Policy", value="https://www.nhl.com/info/privacy-policy", inline=False)

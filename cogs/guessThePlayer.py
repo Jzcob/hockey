@@ -7,6 +7,8 @@ import random
 import config
 import asyncio
 import traceback
+import mysql.connector
+import os
 
 class guessThePlayer(commands.Cog):
     def __init__(self, bot): 
@@ -94,13 +96,32 @@ class guessThePlayer(commands.Cog):
             elif position == "R":
                 position = "Right Wing"
             await msg.edit(content=f"Guess the player from the `{teams[team]}`! You have 30 seconds! (Hint: Their first name starts with `{firstName[0]}`) (Hint: They play `{position}`)")
-            """if interaction.user.id == config.jacob:
-                await msg.edit(content=f"**DEBUG**: The player is `{fullName}`")"""
+            if config.dev_mode == True:
+                if interaction.user.id in config.devs:
+                    await msg.edit(content=f"**DEBUG**: The player is `{fullName}`")
             def check(message):
                 return message.content.lower() == fullName.lower()
             try:
                 message = await self.bot.wait_for("message", check=check, timeout=30.0)
-                await interaction.followup.send(f"Congratulations, {message.author.mention}! You guessed the Player!")
+                
+                mydb = mysql.connector.connect(
+                    host=os.getenv("db_host"),
+                    user=os.getenv("db_user"),
+                    password=os.getenv("db_password"),
+                    database=os.getenv("db_name")
+                )
+                mycursor = mydb.cursor()
+                mycursor.execute(f"SELECT * FROM users WHERE id = {message.author.id}")
+                myresult = mycursor.fetchone()
+                if myresult == None:
+                    mycursor.execute(f"INSERT INTO users (id, points, allow_leaderboard) VALUES ({message.author.id}, 1, TRUE)")
+                    await interaction.followup.send(f"Congratulations, {message.author.mention}! You guessed the Player! You have been added to the leaderboard!\n**The leaderboard is global across the entire bot. If you wish to not be showed on the leaderboard please use `/leaderboard-status`**")
+                else:
+                    points = myresult[1] + 1
+                    mycursor.execute(f"UPDATE users SET points = {points} WHERE id = {message.author.id}")
+                    await interaction.followup.send(f"Congratulations, {message.author.mention}! You guessed the Player!")
+                mydb.commit()
+                mydb.close()
             except asyncio.TimeoutError:
                 await interaction.followup.send(f"Sorry, time's up!, the correct answer was `{fullName}`.")
         except:

@@ -24,6 +24,8 @@ class Help(commands.Cog):
         embed.add_field(name="`/guess-the-team`", value="Guess the team!", inline=False)
         embed.add_field(name="`/team <abbreviation>`", value="Gets the information of a team!", inline=False)
         embed.add_field(name="`/teams`", value="Gets the all teams in the NHL!", inline=False)
+        embed.add_field(name="`/leaderboard`", value="View the leaderboards!", inline=False)
+        embed.add_field(name="`/leaderboard-status`", value="Toggles if you want to be displayed on the leaderboard!", inline=False)
         embed.add_field(name="`/standings`", value="Gets the standings of the NHL!", inline=False)
         embed.add_field(name="`/series`", value="Gets the playoff series!", inline=False)
         embed.add_field(name="`/schedule <abbreviation>`", value="Gets the schedule of a NHL Team!", inline=False)
