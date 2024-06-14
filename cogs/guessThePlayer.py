@@ -137,9 +137,7 @@ class guessThePlayer(commands.Cog):
     
     @guessThePlayer.error
     async def guessThePlayer_error(self, interaction: discord.Interaction , error):
-        print(used)
         if used.get(interaction.user.id) == True:
-            print("test")
             await interaction.response.send_message("You have already used the command! Please allow the timer to end before using the command again!", ephemeral=True)
             return
         else:
