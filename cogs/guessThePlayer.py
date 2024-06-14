@@ -9,6 +9,8 @@ import asyncio
 import traceback
 import mysql.connector
 import os
+from datetime import datetime
+import time
 
 class guessThePlayer(commands.Cog):
     def __init__(self, bot): 
@@ -95,14 +97,14 @@ class guessThePlayer(commands.Cog):
                 position = "Left Wing"
             elif position == "R":
                 position = "Right Wing"
-            await msg.edit(content=f"Guess the player from the `{teams[team]}`! You have 30 seconds! (Hint: Their first name starts with `{firstName[0]}`) (Hint: They play `{position}`)")
+            await msg.edit(content=f"Guess the player from the `{teams[team]}`! You have 15 seconds! (Hint: Their first name starts with `{firstName[0]}`) (Hint: They play `{position}`)")
             if config.dev_mode == True:
-                if interaction.user.id in config.devs:
+                if interaction.user.id is config.jacob:
                     await msg.edit(content=f"**DEBUG**: The player is `{fullName}`")
             def check(message):
                 return message.content.lower() == fullName.lower()
             try:
-                message = await self.bot.wait_for("message", check=check, timeout=30.0)
+                message = await self.bot.wait_for("message", check=check, timeout=15.0)
                 
                 mydb = mysql.connector.connect(
                     host=os.getenv("db_host"),
@@ -132,7 +134,10 @@ class guessThePlayer(commands.Cog):
     
     @guessThePlayer.error
     async def guessThePlayer_error(self, interaction: discord.Interaction , error):
-        await interaction.response.send_message(f"Command on cooldown! Try again in {error.retry_after:.2f} seconds.", ephemeral=True)
+        now = datetime.now()
+        cmd_cool = int(error.retry_after) + 1
+        new_time = time.mktime(now.timetuple()) + cmd_cool
+        await interaction.response.send_message(f"Command on cooldown! Try again <t:{int(new_time)}:R>.", ephemeral=True)
         
 
 
