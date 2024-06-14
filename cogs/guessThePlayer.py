@@ -12,6 +12,8 @@ import os
 from datetime import datetime
 import time
 
+used = {}
+
 class guessThePlayer(commands.Cog):
     def __init__(self, bot): 
         self.bot = bot
@@ -29,7 +31,7 @@ class guessThePlayer(commands.Cog):
             command_log_channel = self.bot.get_channel(config.command_log)
             from datetime import datetime
             await command_log_channel.send(f"`/guess-the-player` used by `{interaction.user.name}` in `{interaction.guild.name}` at `{datetime.now()}`\n---")
-
+        used.update({interaction.user.id: True})
         try:
             await interaction.response.defer()
             msg = await interaction.original_response()
@@ -131,14 +133,20 @@ class guessThePlayer(commands.Cog):
             string = f"{traceback.format_exc()}"
             await error_channel.send(f"<@920797181034778655>```{string}```")
             await interaction.followup.send("Error with command, Message has been sent to Bot Developers", ephemeral=True)
+        used.pop(interaction.user.id)
     
     @guessThePlayer.error
     async def guessThePlayer_error(self, interaction: discord.Interaction , error):
-        now = datetime.now()
-        cmd_cool = int(error.retry_after) + 1
-        new_time = time.mktime(now.timetuple()) + cmd_cool
-        await interaction.response.send_message(f"Command on cooldown! Try again <t:{int(new_time)}:R>.", ephemeral=True)
-        
+        print(used)
+        if used.get(interaction.user.id) == True:
+            print("test")
+            await interaction.response.send_message("You have already used the command! Please allow the timer to end before using the command again!", ephemeral=True)
+            return
+        else:
+            now = datetime.now()
+            cmd_cool = int(error.retry_after) + 1
+            new_time = time.mktime(now.timetuple()) + cmd_cool
+            await interaction.response.send_message(f"Command on cooldown! Try again <t:{int(new_time)}:R>.", ephemeral=True)
 
 
 async def setup(bot):
