@@ -84,7 +84,11 @@ class guessThePlayer(commands.Cog):
                 randomChoice = random.randint(0, length - 1)
             else:
                 randomChoice = 1
-            personID = x[position][randomChoice]["id"]
+            try:
+                personID = x[position][randomChoice]["id"]
+            except IndexError:
+                personID = x[position][0]["id"]
+                print(personID)
             playerURL = f"https://api-web.nhle.com/v1/player/{personID}/landing"
             response = requests.get(playerURL)
             y = response.json()
