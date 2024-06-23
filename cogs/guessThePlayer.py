@@ -84,11 +84,14 @@ class guessThePlayer(commands.Cog):
                 randomChoice = random.randint(0, length - 1)
             else:
                 randomChoice = 1
+            error_channel = self.bot.get_channel(config.error_channel)
+            await error_channel.send(f"DEBUG FOR JACOB: ```{roster}```")
+            await error_channel.send(f"DEBUG FOR JACOB: ```{x[position]}```")
+            await error_channel.send(f"DEBUG FOR JACOB: ```{randomChoice}```")
             try:
                 personID = x[position][randomChoice]["id"]
-            except IndexError:
+            except:
                 personID = x[position][1]["id"]
-                print(personID)
             playerURL = f"https://api-web.nhle.com/v1/player/{personID}/landing"
             response = requests.get(playerURL)
             y = response.json()
