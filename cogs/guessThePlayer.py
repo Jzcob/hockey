@@ -85,7 +85,7 @@ class guessThePlayer(commands.Cog):
             else:
                 randomChoice = 1
             error_channel = self.bot.get_channel(config.error_channel)
-            await error_channel.send(f"RESPONSE: ```{response}```")
+            print(f"RESPONSE: ```{response}```\n\n\nEND OF RESPONSE")
             await error_channel.send(f"ROSTER: ```{roster}```")
             await error_channel.send(f"CHOICE: ```{randomChoice}```")
             try:
