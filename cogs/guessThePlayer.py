@@ -85,9 +85,6 @@ class guessThePlayer(commands.Cog):
             else:
                 randomChoice = 1
             error_channel = self.bot.get_channel(config.error_channel)
-            print(f"RESPONSE: ```{response}```\n\n\nEND OF RESPONSE")
-            await error_channel.send(f"ROSTER: ```{roster}```")
-            await error_channel.send(f"CHOICE: ```{randomChoice}```")
             try:
                 personID = x[position][randomChoice]["id"]
             except:
