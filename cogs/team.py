@@ -158,9 +158,10 @@ class team(commands.Cog):
                         embed.add_field(name="Points", value=points)
                         embed.add_field(name="Streak", value=f"{streakCode} {streakNumber}")
                         embed.set_footer(text=config.footer)
+                        await msg.edit(embed=embed)
                 except Exception as e:
                     print(e)
-            await msg.edit(embed=embed)
+            
         except:
             error_channel = self.bot.get_channel(config.error_channel)
             string = f"{traceback.format_exc()}"
