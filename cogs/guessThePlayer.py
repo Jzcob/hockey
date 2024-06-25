@@ -91,6 +91,10 @@ class guessThePlayer(commands.Cog):
                 personID = x[position][1]["id"]
             playerURL = f"https://api-web.nhle.com/v1/player/{personID}/landing"
             response = requests.get(playerURL)
+            try:
+                print(response)
+            except:
+                pass
             y = response.json()
             firstName = y["firstName"]['default']
             lastName = y["lastName"]['default']
