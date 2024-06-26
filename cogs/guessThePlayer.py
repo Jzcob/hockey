@@ -81,8 +81,9 @@ class guessThePlayer(commands.Cog):
             position = random.choice(positions)
             roster = x[position]
             length = len(roster)
-            randomChoice = random.randint(0, length - 1)
-            if randomChoice > 0:
+            try:
+                randomChoice = random.randint(0, length - 1)
+            except:
                 randomChoice = 0
             error_channel = self.bot.get_channel(config.error_channel)
             y = x[position][randomChoice]
