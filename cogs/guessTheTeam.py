@@ -25,7 +25,6 @@ class GuessTheTeam(commands.Cog):
         try:
             teams = [
                 "Anaheim Ducks",
-                "Arizona Coyotes",
                 "Boston Bruins",
                 "Buffalo Sabres",
                 "Calgary Flames",

@@ -24,7 +24,6 @@ class team(commands.Cog):
             msg = await interaction.original_response()
             teams = {
                 "ANA": "Anaheim Ducks",
-                "ARI": "Arizona Coyotes",
                 "BOS": "Boston Bruins",
                 "BUF": "Buffalo Sabres",
                 "CGY": "Calgary Flames",
@@ -85,8 +84,6 @@ class team(commands.Cog):
                         embed = discord.Embed(description=f"**{confrence} confrence & {division} division**", color=config.color)
                         if teamAbbreviation == "ANA":
                             embed.title = f"{teamName} ({teamAbbreviation}) {config.anahiem_ducks_emoji}"
-                        elif teamAbbreviation == "ARI":
-                            embed.title = f"{teamName} ({teamAbbreviation}) {config.arizona_coyotes_emoji}"
                         elif teamAbbreviation == "BOS":
                             embed.title = f"{teamName} ({teamAbbreviation}) {config.boston_bruins_emoji}"
                         elif teamAbbreviation == "BUF":

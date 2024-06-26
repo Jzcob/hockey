@@ -23,7 +23,6 @@ class teams(commands.Cog):
             print(e)
         teams = {
             "ANA": "Anaheim Ducks",
-            "ARI": "Arizona Coyotes",
             "BOS": "Boston Bruins",
             "BUF": "Buffalo Sabres",
             "CGY": "Calgary Flames",
@@ -61,8 +60,6 @@ class teams(commands.Cog):
             for team in teams:
                 if team == "ANA":
                     embed.description += f"**{team}** - {teams[team]} {config.anahiem_ducks_emoji}\n"
-                elif team == "ARI":
-                    embed.description += f"**{team}** - {teams[team]} {config.arizona_coyotes_emoji}\n"
                 elif team == "BOS":
                     embed.description += f"**{team}** - {teams[team]} {config.boston_bruins_emoji}\n"
                 elif team == "BUF":

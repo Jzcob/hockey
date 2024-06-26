@@ -24,7 +24,6 @@ class player(commands.Cog):
             msg = await interaction.original_response()
             teams= {
                 "ANA": "Anaheim Ducks",
-                "ARI": "Arizona Coyotes",
                 "BOS": "Boston Bruins",
                 "BUF": "Buffalo Sabres",
                 "CGY": "Calgary Flames",
