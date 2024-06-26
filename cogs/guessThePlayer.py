@@ -93,7 +93,7 @@ class guessThePlayer(commands.Cog):
             response = requests.get(playerURL)
             y = response.json()
             try:
-                print(y)
+                print(f"\n\n\nNEW INSTANCE\n{y}\n\n\n")
             except:
                 pass
             firstName = y["firstName"]['default']
