@@ -71,35 +71,26 @@ class guessThePlayer(commands.Cog):
             }
             
             team = random.choice(list(teams.keys()))
-            
+            await command_log_channel.send(f"Team: {team}---")
             # Get the team name from the abbreviation
             url = f"https://api-web.nhle.com/v1/roster/{team}/current"
+            command_log_channel = self.bot.get_channel(config.command_log)
+            await command_log_channel.send(f"URL: {url}")
             response = requests.get(url)
             x = response.json()
             positions = ["forwards", "defensemen", "goalies"]
             position = random.choice(positions)
             roster = x[position]
             length = len(roster)
-            if length != 0:
-                randomChoice = random.randint(0, length - 1)
-            else:
-                randomChoice = 1
+            randomChoice = random.randint(0, length - 1)
+            if randomChoice > 0:
+                randomChoice = 0
             error_channel = self.bot.get_channel(config.error_channel)
-            try:
-                personID = x[position][randomChoice]["id"]
-            except:
-                personID = x[position][1]["id"]
-            playerURL = f"https://api-web.nhle.com/v1/player/{personID}/landing"
-            response = requests.get(playerURL)
-            y = response.json()
-            try:
-                print(f"\n\n\nNEW INSTANCE\n{y}\n\n\n")
-            except:
-                pass
+            y = x[position][randomChoice]
             firstName = y["firstName"]['default']
             lastName = y["lastName"]['default']
             fullName = f"{firstName} {lastName}"
-            position = y["position"]
+            position = y["positionCode"]
             if position == "G":
                 position = "Goalie"
             elif position == "D":
