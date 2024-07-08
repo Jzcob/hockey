@@ -9,7 +9,7 @@ import traceback
 import random
 
 watching = ["Golf!", "Baseball!"]
-iwatch = random.shuffle(watching)
+iwatch = random.choice(watching)
 
 watching = discord.Activity(name=iwatch, type=discord.ActivityType.watching)
 
