@@ -119,4 +119,4 @@ class weather(commands.Cog):
         except Exception as e:
             return await interaction.response.send_message(f"Error: {e}", ephemeral=True)
 async def setup(bot):
-    await bot.add_cog(weather(bot), guilds=[discord.Object(id=config.hockey_discord_server)])
+    await bot.add_cog(weather(bot))
