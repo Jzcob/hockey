@@ -36,6 +36,9 @@ class Help(commands.Cog):
         embed.add_field(name="`/avatar`", value="Gets the avatar of the bot or a user!", inline=False)
         embed.add_field(name="`/info`", value="Shows the info menu!", inline=False)
         embed.add_field(name="`/help`", value="Shows this help menu!", inline=False)
+        embed.add_field(name="`/weather <city> (state) (country)`", value="Gets the weather/tempature of a city!", inline=False)
+        embed.add_field(name="`/f-to-c <fahrenheit>`", value="Converts fahrenheit to celsius!", inline=False)
+        embed.add_field(name="`/c-to-f <celsius>`", value="Converts celsius to fahrenheit!", inline=False)
         embed.set_footer(text=config.footer)
         await interaction.response.send_message(embed=embed, ephemeral=True)
 
