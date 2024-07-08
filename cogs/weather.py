@@ -18,6 +18,10 @@ class weather(commands.Cog):
     
     @app_commands.command(name="weather", description="This is the weather command")
     async def weather(self, interaction: discord.Interaction, city: str, state: str=None, country: str=None):
+        if config.command_log_bool == True:
+            command_log_channel = self.bot.get_channel(config.command_log)
+            from datetime import datetime
+            await command_log_channel.send(f"`/weather` used by `{interaction.user.name}` in `{interaction.guild.name}` at `{datetime.now()}`\n---")
         try:
             embed = discord.Embed(color=config.color)
             client = interaction.client
