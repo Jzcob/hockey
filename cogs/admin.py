@@ -6,7 +6,12 @@ from datetime import datetime
 import json
 import config
 import traceback
-watching = discord.Activity(name="Golf!", type=discord.ActivityType.watching)
+import random
+
+watching = ["Golf!", "Baseball!"]
+iwatch = random.shuffle(watching)
+
+watching = discord.Activity(name=iwatch, type=discord.ActivityType.watching)
 
 #hello world
 class announcement(commands.Cog):
