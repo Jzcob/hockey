@@ -23,7 +23,7 @@ class avatar(commands.Cog):
             if user == None:
                 await interaction.response.defer()
                 msg = await interaction.original_response()
-                embed = discord.Embed(title="Avatar", url="https://www.craiyon.com/image/srRf0fglTs-NwjWKUC3vNg", color=0x00ff00)
+                embed = discord.Embed(title="Avatar", url="https://www.craiyon.com", color=0x00ff00)
                 embed.set_image(url=self.bot.user.avatar)
                 embed.set_footer(text=f"{config.footer}")
                 await msg.edit(embed=embed)
