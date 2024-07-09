@@ -7,6 +7,7 @@ import os
 from dotenv import load_dotenv
 load_dotenv()
 import requests
+import traceback
 
 class weather(commands.Cog):
     def __init__(self, bot):
@@ -103,9 +104,9 @@ class weather(commands.Cog):
 
             await interaction.response.send_message(embed=embed, ephemeral=True)
         except Exception as e:
-            logs = self.bot.get_channel(config.errorChannel)
-            print(e)
-            await logs.send(f"Weather Command used by {interaction.user}: Error: `{e}`")
+            error_channel = self.bot.get_channel(config.error_channel)
+            string = f"{traceback.format_exc()}"
+            await error_channel.send(f"<@920797181034778655>```{string}```")
         
     @app_commands.command(name="f-to-c", description="Converts Fahrenheit to Celsius!")
     async def fToC(self, interaction : discord.Interaction, fahrenheit: float):
