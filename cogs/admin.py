@@ -8,7 +8,7 @@ import config
 import traceback
 import random
 
-watching = ["Golf!", "Baseball!"]
+watching = ["Golf!", "Baseball!", "NASCAR", "Tennis", "The Olimpics"]
 iwatch = random.choice(watching)
 
 watching = discord.Activity(name=iwatch, type=discord.ActivityType.watching)
