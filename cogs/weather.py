@@ -30,6 +30,7 @@ class weather(commands.Cog):
                 beforeUrl = f"http://api.openweathermap.org/geo/1.0/direct?q={city}&limit=1&appid={os.getenv('openWeatherApiKEY')}"
                 LATLONGget = requests.get(beforeUrl)
                 json_data = json.loads(LATLONGget.text)
+                print(json_data)
                 x = json_data[0]
                 if x['state']:
                     stateX = x['state']
