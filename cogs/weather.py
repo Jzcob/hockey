@@ -27,7 +27,7 @@ class weather(commands.Cog):
             embed = discord.Embed(color=config.color)
             client = interaction.client
             if state == None:
-                beforeUrl = f"http://api.openweathermap.org/geo/1.0/direct?q={city},{country}&limit=1&appid={os.getenv('openWeatherApiKEY')}"
+                beforeUrl = f"http://api.openweathermap.org/geo/1.0/direct?q={city}&limit=1&appid={os.getenv('openWeatherApiKEY')}"
                 LATLONGget = requests.get(beforeUrl)
                 json_data = json.loads(LATLONGget.text)
                 for x in json_data:
@@ -49,7 +49,7 @@ class weather(commands.Cog):
                 else:
                     embed.set_author(name=f"{name}, {country}", url=googleURL, icon_url=client.user.avatar)
             else:
-                beforeUrl = f"http://api.openweathermap.org/geo/1.0/direct?q={city},{state},{country}&limit=1&appid={os.getenv('openWeatherApiKEY')}"
+                beforeUrl = f"http://api.openweathermap.org/geo/1.0/direct?q={city},{state}&limit=1&appid={os.getenv('openWeatherApiKEY')}"
             
                 LATLONGget = requests.get(beforeUrl)
                 json_data = json.loads(LATLONGget.text)
