@@ -30,18 +30,20 @@ class weather(commands.Cog):
                 beforeUrl = f"http://api.openweathermap.org/geo/1.0/direct?q={city}&limit=1&appid={os.getenv('openWeatherApiKEY')}"
                 LATLONGget = requests.get(beforeUrl)
                 json_data = json.loads(LATLONGget.text)
-                for x in json_data:
-                    if x[4]:
-                        stateX = x['state']
-                        lat = x['lat']
-                        lon = x['lon']
-                        name = x['name']
-                        country = x['country']
-                    else:
-                        lat = x['lat']
-                        lon = x['lon']
-                        name = x['name']
-                        country = x['country']
+                x = json_data[0]
+                if x['state']:
+                    stateX = x['state']
+                    lat = x['lat']
+                    lon = x['lon']
+                    name = x['name']
+                    country = x['country']
+                    yes = True
+                else:
+                    lat = x['lat']
+                    lon = x['lon']
+                    name = x['name']
+                    country = x['country']
+                googleURL = f"https://www.google.com/maps/@{lat},{lon}"
                 if yes:
                     embed.set_author(name=f"{name}, {stateX} {country}", url=googleURL, icon_url=client.user.avatar)
                 else:
