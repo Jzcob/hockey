@@ -51,6 +51,7 @@ class GuessTheTeam(commands.Cog):
                 "St. Louis Blues",
                 "Tampa Bay Lightning",
                 "Toronto Maple Leafs",
+                "Utah Hockey Club",
                 "Vancouver Canucks",
                 "Vegas Golden Knights",
                 "Washington Capitals",

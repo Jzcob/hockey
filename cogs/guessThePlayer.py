@@ -63,6 +63,7 @@ class guessThePlayer(commands.Cog):
                 "STL": "St. Louis Blues",
                 "TBL": "Tampa Bay Lightning",
                 "TOR": "Toronto Maple Leafs",
+                "UTA": "Utah Hockey Club",
                 "VAN": "Vancouver Canucks",
                 "VGK": "Vegas Golden Knights",
                 "WSH": "Washington Capitals",
@@ -73,7 +74,8 @@ class guessThePlayer(commands.Cog):
             # Get the team name from the abbreviation
             url = f"https://api-web.nhle.com/v1/roster/{team}/current"
             command_log_channel = self.bot.get_channel(config.command_log)
-            await command_log_channel.send(f"URL: {url}\n---")
+            if config.command_log_bool == True:
+                await command_log_channel.send(f"URL: {url}\n---")
             response = requests.get(url)
             x = response.json()
             positions = ["forwards", "defensemen", "goalies"]
