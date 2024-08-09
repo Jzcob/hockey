@@ -111,6 +111,8 @@ class teams(commands.Cog):
                     embed.description += f"**{team}** - {teams[team]} {config.tampa_bay_lightning_emoji}\n"
                 elif team == "TOR":
                     embed.description += f"**{team}** - {teams[team]} {config.toronto_maple_leafs_emoji}\n"
+                elif team == "UTA":
+                    embed.description += f"**{team}** - {teams[team]} {config.utah_hockey_club_emoji}\n"
                 elif team == "VAN":
                     embed.description += f"**{team}** - {teams[team]} {config.vancouver_canucks_emoji}\n"
                 elif team == "VGK":

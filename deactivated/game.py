@@ -27,7 +27,6 @@ class game(commands.Cog):
             msg = await interaction.original_response()
             teams = {
                 "ANA": "Anaheim Ducks",
-                "ARI": "Arizona Coyotes",
                 "BOS": "Boston Bruins",
                 "BUF": "Buffalo Sabres",
                 "CGY": "Calgary Flames",
@@ -54,6 +53,7 @@ class game(commands.Cog):
                 "STL": "St. Louis Blues",
                 "TBL": "Tampa Bay Lightning",
                 "TOR": "Toronto Maple Leafs",
+                "UTA": "Utah Hockey Club",
                 "VAN": "Vancouver Canucks",
                 "VGK": "Vegas Golden Knights",
                 "WSH": "Washington Capitals",

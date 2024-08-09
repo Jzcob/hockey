@@ -137,6 +137,8 @@ class team(commands.Cog):
                             embed.title = f"{teamName} ({teamAbbreviation}) {config.tampa_bay_lightning_emoji}"
                         elif teamAbbreviation == "TOR":
                             embed.title = f"{teamName} ({teamAbbreviation}) {config.toronto_maple_leafs_emoji}"
+                        elif teamAbbreviation == "UTA":
+                            embed.title = f"{teamName} ({teamAbbreviation}) {config.utah_hockey_club_emoji}"
                         elif teamAbbreviation == "VAN":
                             embed.title = f"{teamName} ({teamAbbreviation}) {config.vancouver_canucks_emoji}"
                         elif teamAbbreviation == "VGK":

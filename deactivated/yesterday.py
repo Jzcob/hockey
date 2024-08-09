@@ -12,8 +12,6 @@ import asyncio
 def strings(awayAbbreviation, homeAbbreviation, home, away):
     if awayAbbreviation == "ANA":
         awayString = f"{config.anahiem_ducks_emoji} {away}"
-    elif awayAbbreviation == "ARI":
-        awayString = f"{config.arizona_coyotes_emoji} {away}"
     elif awayAbbreviation == "BOS":
         awayString = f"{config.boston_bruins_emoji} {away}"
     elif awayAbbreviation == "BUF":
@@ -66,6 +64,8 @@ def strings(awayAbbreviation, homeAbbreviation, home, away):
         awayString = f"{config.tampa_bay_lightning_emoji} {away}"
     elif awayAbbreviation == "TOR":
         awayString = f"{config.toronto_maple_leafs_emoji} {away}"
+    elif awayAbbreviation == "UTA":
+        awayString = f"{config.utah_hockey_club_emoji} {away}"
     elif awayAbbreviation == "VAN":
         awayString = f"{config.vancouver_canucks_emoji} {away}"
     elif awayAbbreviation == "VGK":
@@ -78,8 +78,6 @@ def strings(awayAbbreviation, homeAbbreviation, home, away):
         awayString = f"{away}"
     if homeAbbreviation == "ANA":
         homeString = f"{home} {config.anahiem_ducks_emoji}"
-    elif homeAbbreviation == "ARI":
-        homeString = f"{home} {config.arizona_coyotes_emoji}"
     elif homeAbbreviation == "BOS":
         homeString = f"{home} {config.boston_bruins_emoji}"
     elif homeAbbreviation == "BUF":
@@ -132,6 +130,8 @@ def strings(awayAbbreviation, homeAbbreviation, home, away):
         homeString = f"{home} {config.tampa_bay_lightning_emoji}"
     elif homeAbbreviation == "TOR":
         homeString = f"{home} {config.toronto_maple_leafs_emoji}"
+    elif homeAbbreviation == "UTA":
+        homeString = f"{home} {config.utah_hockey_club_emoji}"
     elif homeAbbreviation == "VAN":
         homeString = f"{home} {config.vancouver_canucks_emoji}"
     elif homeAbbreviation == "VGK":

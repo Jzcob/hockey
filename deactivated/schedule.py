@@ -21,7 +21,6 @@ class schedule(commands.Cog):
             await command_log_channel.send(f"`/schedule` used by `{interaction.user.name}` in `{interaction.guild.name}` team `{abbreviation}` at `{datetime.now()}`\n---")
         teams = {
             "ANA": "Anaheim Ducks",
-            "ARI": "Arizona Coyotes",
             "BOS": "Boston Bruins",
             "BUF": "Buffalo Sabres",
             "CGY": "Calgary Flames",
@@ -48,6 +47,7 @@ class schedule(commands.Cog):
             "STL": "St. Louis Blues",
             "TBL": "Tampa Bay Lightning",
             "TOR": "Toronto Maple Leafs",
+            "UTA": "Utah Hockey Club",
             "VAN": "Vancouver Canucks",
             "VGK": "Vegas Golden Knights",
             "WSH": "Washington Capitals",
