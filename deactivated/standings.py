@@ -85,4 +85,4 @@ class standings(commands.Cog):
 
 
 async def setup(bot):
-    await bot.add_cog(standings(bot))
+    await bot.add_cog(standings(bot), guilds=[discord.Object(id=config.hockey_discord_server)])

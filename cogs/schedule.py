@@ -89,4 +89,4 @@ class schedule(commands.Cog):
             await error_channel.send(f"<@920797181034778655>```{string}```")
             await interaction.followup.send("Error with command, Message has been sent to Bot Developers", ephemeral=True)
 async def setup(bot):
-    await bot.add_cog(schedule(bot))
+    await bot.add_cog(schedule(bot), guilds=[discord.Object(id=config.hockey_discord_server)])
