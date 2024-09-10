@@ -1,17 +1,11 @@
 import discord
 from discord import app_commands
 from discord.ext import commands
-import requests
 from datetime import datetime
-import json
 import config
 import traceback
-import random
 
-watching = ["Golf!", "Baseball!", "NASCAR", "Tennis"]
-iwatch = random.choice(watching)
-
-watching = discord.Activity(name=iwatch, type=discord.ActivityType.watching)
+watching = discord.Activity(name="Hockey!", type=discord.ActivityType.playing)
 
 #hello world
 class announcement(commands.Cog):

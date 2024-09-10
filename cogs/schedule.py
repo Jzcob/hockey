@@ -67,7 +67,7 @@ class schedule(commands.Cog):
             await interaction.response.defer()
             msg = await interaction.original_response()
             games = data['games']
-            embed = discord.Embed(title=f"{team} Schedule This Week", color=config.color)
+            embed = discord.Embed(title=f"{team} Schedule For Week 1", color=config.color)
             for i in range(len(games)):
                 gameID = data['games'][i]['id']
                 url2 = f"https://api-web.nhle.com/v1/gamecenter/{gameID}/boxscore"
@@ -89,4 +89,4 @@ class schedule(commands.Cog):
             await error_channel.send(f"<@920797181034778655>```{string}```")
             await interaction.followup.send("Error with command, Message has been sent to Bot Developers", ephemeral=True)
 async def setup(bot):
-    await bot.add_cog(schedule(bot), guilds=[discord.Object(id=config.hockey_discord_server)])
+    await bot.add_cog(schedule(bot))
