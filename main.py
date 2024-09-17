@@ -4,10 +4,6 @@ from discord.ext import commands
 import os
 import config
 from dotenv import load_dotenv
-import traceback
-import requests
-from datetime import datetime, timedelta
-import pytz
 
 import topgg
 load_dotenv()
