@@ -67,7 +67,7 @@ class schedule(commands.Cog):
             await interaction.response.defer()
             msg = await interaction.original_response()
             games = data['games']
-            embed = discord.Embed(title=f"{team} Schedule For Week 1", color=config.color)
+            embed = discord.Embed(title=f"{team}'s schedule!", color=config.color)
             for i in range(len(games)):
                 gameID = data['games'][i]['id']
                 url2 = f"https://api-web.nhle.com/v1/gamecenter/{gameID}/boxscore"
