@@ -125,10 +125,16 @@ class player(commands.Cog):
                         birthDate = y['birthDate']
                         birthCity = y['birthCity']['default']
                         birthCountry = y['birthCountry']
-                        gamesPlayed = y['featuredStats']['regularSeason']['career']['gamesPlayed']
-                        goals = y['featuredStats']['regularSeason']['career']['goals']
-                        assists = y['featuredStats']['regularSeason']['career']['assists']
-                        points = y['featuredStats']['regularSeason']['career']['points']
+                        try:
+                            gamesPlayed = y['featuredStats']['regularSeason']['career']['gamesPlayed']
+                            goals = y['featuredStats']['regularSeason']['career']['goals']
+                            assists = y['featuredStats']['regularSeason']['career']['assists']
+                            points = y['featuredStats']['regularSeason']['career']['points']
+                        except:
+                            gamesPlayed = "N/A"
+                            goals = "N/A"
+                            assists = "N/A"
+                            points = "N/A"
                         playerPosition = y['position']
                         playerNumber = y['sweaterNumber']
                         headshot = y['headshot']
@@ -173,7 +179,10 @@ class player(commands.Cog):
                         birthDate = y['birthDate']
                         birthCity = y['birthCity']['default']
                         birthCountry = y['birthCountry']
-                        gamesPlayed = y['featuredStats']['regularSeason']['career']['gamesPlayed']
+                        try:
+                            gamesPlayed = y['featuredStats']['regularSeason']['career']['gamesPlayed']
+                        except:
+                            gamesPlayed = "N/A"
                         playerPosition = y['position']
                         playerNumber = y['sweaterNumber']
                         headshot = y['headshot']
