@@ -83,7 +83,10 @@ class player(commands.Cog):
                             assists = "N/A"
                             points = "N/A"
                         playerPosition = y['position']
-                        playerNumber = y['sweaterNumber']
+                        try:
+                            playerNumber = y['sweaterNumber']
+                        except:
+                            playerNumber = "N/A"
                         headshot = y['headshot']
                         embed = discord.Embed(title=f"{fullName}", color=config.color, url=f"https://www.nhl.com/player/{playerID}")
                         embed.set_thumbnail(url=headshot)
@@ -136,7 +139,10 @@ class player(commands.Cog):
                             assists = "N/A"
                             points = "N/A"
                         playerPosition = y['position']
-                        playerNumber = y['sweaterNumber']
+                        try:
+                            playerNumber = y['sweaterNumber']
+                        except:
+                            playerNumber = "N/A"
                         headshot = y['headshot']
                         embed = discord.Embed(title=f"{fullName}", color=config.color, url=f"https://www.nhl.com/player/{playerID}")
                         embed.set_thumbnail(url=headshot)
@@ -184,7 +190,10 @@ class player(commands.Cog):
                         except:
                             gamesPlayed = "N/A"
                         playerPosition = y['position']
-                        playerNumber = y['sweaterNumber']
+                        try:
+                            playerNumber = y['sweaterNumber']
+                        except:
+                            playerNumber = "N/A"
                         headshot = y['headshot']
                         embed = discord.Embed(title=f"{fullName}", color=config.color, url=f"https://www.nhl.com/player/{playerID}")
                         embed.set_thumbnail(url=headshot)
