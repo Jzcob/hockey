@@ -91,9 +91,10 @@ class player(commands.Cog):
                         embed = discord.Embed(title=f"{fullName}", color=config.color, url=f"https://www.nhl.com/player/{playerID}")
                         embed.set_thumbnail(url=headshot)
                         try:
-                            embed.set_author(icon_url=interaction.user.avatar.url, name="NHL Player Information")
+                            avatar = interaction.user.avatar.url
                         except:
-                            embed.set_author(icon_url=self.bot.user.avatar, name="NHL Player Information")
+                            avatar = self.bot.user.avatar.url
+                        embed.set_author(icon_url=avatar, name="NHL Player Information")
                         if playerPosition == "G":
                             playerPosition = "Goalie"
                         elif playerPosition == "D":
@@ -147,9 +148,10 @@ class player(commands.Cog):
                         embed = discord.Embed(title=f"{fullName}", color=config.color, url=f"https://www.nhl.com/player/{playerID}")
                         embed.set_thumbnail(url=headshot)
                         try:
-                            embed.set_author(icon_url=interaction.user.avatar.url, name="NHL Player Information")
+                            avatar = interaction.user.avatar.url
                         except:
-                            embed.set_author(icon_url=self.bot.user.avatar, name="NHL Player Information")
+                            avatar = self.bot.user.avatar.url
+                        embed.set_author(icon_url=avatar, name="NHL Player Information")
                         if playerPosition == "G":
                             playerPosition = "Goalie"
                         elif playerPosition == "D":
@@ -198,9 +200,10 @@ class player(commands.Cog):
                         embed = discord.Embed(title=f"{fullName}", color=config.color, url=f"https://www.nhl.com/player/{playerID}")
                         embed.set_thumbnail(url=headshot)
                         try:
-                            embed.set_author(icon_url=interaction.user.avatar.url, name="NHL Player Information")
+                            avatar = interaction.user.avatar.url
                         except:
-                            embed.set_author(icon_url=self.bot.user.avatar, name="NHL Player Information")
+                            avatar = self.bot.user.avatar.url
+                        embed.set_author(icon_url=avatar, name="NHL Player Information")
                         if playerPosition == "G":
                             playerPosition = "Goalie"
                         elif playerPosition == "D":

@@ -121,7 +121,11 @@ class teams(commands.Cog):
                     embed.description += f"**{team}** - {teams[team]} {config.washington_capitals_emoji}\n"
                 elif team == "WPG":
                     embed.description += f"**{team}** - {teams[team]} {config.winnipeg_jets_emoji}\n"
-            embed.set_author(icon_url=interaction.user.avatar.url, name="NHL Bot")
+            try:
+                avatar = interaction.user.avatar.url
+            except:
+                avatar = self.bot.user.avatar.url
+            embed.set_author(icon_url=avatar, name="NHL Bot")
             embed.set_footer(text=config.footer)
             await interaction.response.send_message(embed=embed, ephemeral=True)
             return
