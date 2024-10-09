@@ -14,11 +14,17 @@ class avatar(commands.Cog):
         print(f"LOADED: `avatar.py`")
     
     @app_commands.command(name="avatar", description="Get the avatar of a user! or the bot if no user is specified.")
+    @app_commands.allowed_installs(guilds=True, users=True)
     async def avatar(self, interaction: discord.Interaction, user: discord.User = None):
         if config.command_log_bool == True:
             command_log_channel = self.bot.get_channel(config.command_log)
             from datetime import datetime
-            await command_log_channel.send(f"`/avatar` used by `{interaction.user.name}` in `{interaction.guild.name}` at `{datetime.now()}`\n---")
+            if interaction.guild == None:
+                await command_log_channel.send(f"`/avatar` used by `{interaction.user.name}` in DMs at `{datetime.now()}`\n---")
+            elif interaction.guild.name == "":
+                await command_log_channel.send(f"`/avatar` used by `{interaction.user.name}` in an unknown server at `{datetime.now()}`\n---")
+            else:
+                await command_log_channel.send(f"`/avatar` used by `{interaction.user.name}` in `{interaction.guild.name}` at `{datetime.now()}`\n---")
         try:
             if user == None:
                 await interaction.response.defer()

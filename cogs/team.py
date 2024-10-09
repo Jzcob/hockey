@@ -15,10 +15,16 @@ class team(commands.Cog):
         print(f"LOADED: `team.py`")
     
     @app_commands.command(name="team", description="Get the information for a team! (e.g. BOS, NYR, etc.)")
+    @app_commands.allowed_installs(guilds=True, users=True)
     async def team(self, interaction: discord.Interaction, abbreviation: str):
         if config.command_log_bool == True:
             command_log_channel = self.bot.get_channel(config.command_log)
-            await command_log_channel.send(f"`/team` used by `{interaction.user.name}` in `{interaction.guild.name}` team `{abbreviation}` at `{datetime.now()}`\n---")
+            if interaction.guild == None:
+                await command_log_channel.send(f"`/team` used by `{interaction.user.name}` in DMs at `{datetime.now()}`\n---")
+            elif interaction.guild.name == "":
+                await command_log_channel.send(f"`/team` used by `{interaction.user.name}` in an unknown server at `{datetime.now()}`\n---")
+            else:
+                await command_log_channel.send(f"`/team` used by `{interaction.user.name}` in `{interaction.guild.name}` team `{abbreviation}` at `{datetime.now()}`\n---")
         try:
             await interaction.response.defer()
             msg = await interaction.original_response()

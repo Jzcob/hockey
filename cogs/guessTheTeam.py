@@ -15,13 +15,19 @@ class GuessTheTeam(commands.Cog):
         print("LOADED: `guessTheTeam.py`")
     
     @app_commands.command(name="guess-the-team", description="Guess the team!")
+    @app_commands.allowed_installs(guilds=True, users=True)
     @app_commands.checks.cooldown(1.0, 5.0, key=lambda i: (i.guild.id))
     @app_commands.checks.cooldown(1.0, 60.0, key=lambda i: (i.user.id))
     async def guessTheTeam(self, interaction: discord.Interaction):
         if config.command_log_bool == True:
             command_log_channel = self.bot.get_channel(config.command_log)
             from datetime import datetime
-            await command_log_channel.send(f"`/guess-the-team` used by `{interaction.user.name}` in `{interaction.guild.name}` at `{datetime.now()}`\n---")
+            if interaction.guild == None:
+                await command_log_channel.send(f"`/guess-the-team` used by `{interaction.user.name}` in DMs at `{datetime.now()}`\n---")
+            elif interaction.guild.name == "":
+                await command_log_channel.send(f"`/guess-the-team` used by `{interaction.user.name}` in an unknown server at `{datetime.now()}`\n---")
+            else:
+                await command_log_channel.send(f"`/guess-the-team` used by `{interaction.user.name}` in `{interaction.guild.name}` at `{datetime.now()}`\n---")
         try:
             teams = [
                 "Anaheim Ducks",

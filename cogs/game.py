@@ -21,7 +21,12 @@ class game(commands.Cog):
     async def game(self, interaction: discord.Interaction, abbreviation: str):
         if config.command_log_bool == True:
             command_log_channel = self.bot.get_channel(config.command_log)
-            await command_log_channel.send(f"`/game` used by `{interaction.user.name}` in `{interaction.guild.name}` team `{abbreviation}` at `{datetime.now()}`\n---")
+            if interaction.guild == None:
+                await command_log_channel.send(f"`/game` used by `{interaction.user.name}` in DMs at `{datetime.now()}`\n---")
+            elif interaction.guild.name == "":
+                await command_log_channel.send(f"`/game` used by `{interaction.user.name}` in an unknown server at `{datetime.now()}`\n---")
+            else:
+                await command_log_channel.send(f"`/game` used by `{interaction.user.name}` in `{interaction.guild.name}` team `{abbreviation}` at `{datetime.now()}`\n---")
         try:
             await interaction.response.defer()
             msg = await interaction.original_response()
@@ -142,6 +147,12 @@ class game(commands.Cog):
             error_channel = self.bot.get_channel(config.error_channel)
             string = f"{traceback.format_exc()}"
             await error_channel.send(f"<@920797181034778655>```{string}```")
+
+    @game.error
+    async def game_error(self, interaction: discord.Interaction, error):
+        interaction.response.send_message("Error with command, Message has been sent to Bot Developers", ephemeral=True)
+        error_channel = self.bot.get_channel(config.error_channel)
+        await error_channel.send(f"<@920797181034778655>```{error}```")
 
 async def setup(bot):
     await bot.add_cog(game(bot))

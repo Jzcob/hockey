@@ -24,13 +24,19 @@ class guessThePlayer(commands.Cog):
     
 
     @app_commands.command(name="guess-the-player", description="Guess the player!")
+    @app_commands.allowed_installs(guilds=True, users=True)
     @app_commands.checks.cooldown(1.0, 15.0, key=lambda i: (i.guild.id))
     @app_commands.checks.cooldown(1.0, 60.0, key=lambda i: (i.user.id))
     async def guessThePlayer(self, interaction : discord.Interaction):
         if config.command_log_bool == True:
             command_log_channel = self.bot.get_channel(config.command_log)
             from datetime import datetime
-            await command_log_channel.send(f"`/guess-the-player` used by `{interaction.user.name}` in `{interaction.guild.name}` at `{datetime.now()}`\n---")
+            if interaction.guild == None:
+                await command_log_channel.send(f"`/guess-the-player` used by `{interaction.user.name}` in DMs at `{datetime.now()}`\n---")
+            elif interaction.guild.name == "":
+                await command_log_channel.send(f"`/guess-the-player` used by `{interaction.user.name}` in an unknown server at `{datetime.now()}`\n---")
+            else:
+                await command_log_channel.send(f"`/guess-the-player` used by `{interaction.user.name}` in `{interaction.guild.name}` at `{datetime.now()}`\n---")
         used.update({interaction.user.id: True})
         try:
             await interaction.response.defer()

@@ -15,10 +15,16 @@ class standings(commands.Cog):
         print(f"LOADED: `standings.py`")
     
     @app_commands.command(name="standings", description="Get the standings!")
+    @app_commands.allowed_installs(guilds=True, users=True)
     async def standings(self, interaction: discord.Interaction):
         if config.command_log_bool == True:
             command_log_channel = self.bot.get_channel(config.command_log)
-            await command_log_channel.send(f"`/standings` used by `{interaction.user.name}` in `{interaction.guild.name}` at `{datetime.now()}`\n---")
+            if interaction.guild == None:
+                await command_log_channel.send(f"`/standings` used by `{interaction.user.name}` in DMs at `{datetime.now()}`\n---")
+            elif interaction.guild.name == "":
+                await command_log_channel.send(f"`/standings` used by `{interaction.user.name}` in an unknown server at `{datetime.now()}`\n---")
+            else:
+                await command_log_channel.send(f"`/standings` used by `{interaction.user.name}` in `{interaction.guild.name}` at `{datetime.now()}`\n---")
         today = datetime.today().strftime('%Y-%m-%d')
         url = f"https://api-web.nhle.com/v1/standings/{today}"
         r = requests.get(url)
