@@ -15,6 +15,7 @@ class Info(commands.Cog):
     
     @app_commands.command(name="info", description="Shows the info menu!")
     @app_commands.allowed_installs(guilds=True, users=True)
+    @app_commands.allowed_contexts(guilds=True, dms=True, private_channels=True)
     async def info(self, interaction: discord.Interaction):
         if config.command_log_bool == True:
             command_log_channel = self.bot.get_channel(config.command_log)

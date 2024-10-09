@@ -18,6 +18,8 @@ class game(commands.Cog):
         print(f"LOADED: `game.py`")
     
     @app_commands.command(name="game", description="Check the information for a game today! (e.g. BOS, NYR, etc.)")
+    @app_commands.allowed_installs(guilds=True, users=True)
+    @app_commands.allowed_contexts(guilds=True, dms=True, private_channels=True)
     async def game(self, interaction: discord.Interaction, abbreviation: str):
         if config.command_log_bool == True:
             command_log_channel = self.bot.get_channel(config.command_log)

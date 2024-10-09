@@ -14,6 +14,7 @@ class teams(commands.Cog):
     
     @app_commands.command(name="teams", description="Get the teams in the league!")
     @app_commands.allowed_installs(guilds=True, users=True)
+    @app_commands.allowed_contexts(guilds=True, dms=True, private_channels=True)
     async def teams(self, interaction: discord.Interaction):
         try:
             if config.command_log_bool == True:

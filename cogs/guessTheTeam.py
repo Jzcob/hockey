@@ -16,6 +16,7 @@ class GuessTheTeam(commands.Cog):
     
     @app_commands.command(name="guess-the-team", description="Guess the team!")
     @app_commands.allowed_installs(guilds=True, users=True)
+    @app_commands.allowed_contexts(guilds=True, dms=True, private_channels=True)
     @app_commands.checks.cooldown(1.0, 5.0, key=lambda i: (i.guild.id))
     @app_commands.checks.cooldown(1.0, 60.0, key=lambda i: (i.user.id))
     async def guessTheTeam(self, interaction: discord.Interaction):

@@ -16,6 +16,7 @@ class schedule(commands.Cog):
     
     @app_commands.command(name="schedule", description="Get the schedule for the week for a team! (e.g. BOS, NYR, etc.)")
     @app_commands.allowed_installs(guilds=True, users=True)
+    @app_commands.allowed_contexts(guilds=True, dms=True, private_channels=True)
     async def schedule(self, interaction: discord.Interaction, abbreviation: str):
         if config.command_log_bool == True:
             command_log_channel = self.bot.get_channel(config.command_log)

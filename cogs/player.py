@@ -16,6 +16,7 @@ class player(commands.Cog):
     
     @app_commands.command(name="player", description="Gets the information of a player!")
     @app_commands.allowed_installs(guilds=True, users=True)
+    @app_commands.allowed_contexts(guilds=True, dms=True, private_channels=True)
     async def player(self, interaction: discord.Interaction, name: str):
         if config.command_log_bool == True:
             command_log_channel = self.bot.get_channel(config.command_log)
