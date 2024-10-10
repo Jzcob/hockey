@@ -153,12 +153,21 @@ class today(commands.Cog):
     @commands.Cog.listener()
     async def on_ready(self):
         print(f"LOADED: `today.py`")
+
+
     
     @app_commands.command(name="today", description="Get today's schedule!")
-    async def team(self, interaction: discord.Interaction):
+    @app_commands.allowed_installs(guilds=True, users=True)
+    @app_commands.allowed_contexts(guilds=True, dms=True, private_channels=True)
+    async def today(self, interaction: discord.Interaction):
         if config.command_log_bool == True:
             command_log_channel = self.bot.get_channel(config.command_log)
-            await command_log_channel.send(f"`/today` used by `{interaction.user.name}` in `{interaction.guild.name}` at `{datetime.now()}`\n---")
+            if interaction.guild == None:
+                await command_log_channel.send(f"`/today` used by `{interaction.user.name}` in DMs at `{datetime.now()}`\n---")
+            elif interaction.guild.name == "":
+                await command_log_channel.send(f"`/today` used by `{interaction.user.name}` in an unknown server at `{datetime.now()}`\n---")
+            else:
+                await command_log_channel.send(f"`/today` used by `{interaction.user.name}` in `{interaction.guild.name}` at `{datetime.now()}`\n---")
         try:
             hawaii = pytz.timezone('US/Hawaii')
             dt = datetime.now(hawaii)
@@ -229,6 +238,17 @@ class today(commands.Cog):
             string = f"{traceback.format_exc()}"
             await error_channel.send(f"<@920797181034778655>```{string}```")
             await interaction.followup.send("Error with command, Message has been sent to Bot Developers", ephemeral=True)
+    
+    @today.error
+    async def today_error(self, ctx, error):
+        if isinstance(error, commands.CommandOnCooldown):
+            await ctx.send(f"Command is on cooldown! Try again in {error.retry_after:.2f} seconds.")
+        else:
+            error_channel = self.bot.get_channel(config.error_channel)
+            string = f"{traceback.format_exc()}"
+            await error_channel.send(f"<@920797181034778655>```{string}```")
+            await ctx.send("Error with command, Message has been sent to Bot Developers")
+    
 
 
 async def setup(bot):

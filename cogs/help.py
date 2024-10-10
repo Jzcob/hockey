@@ -12,11 +12,18 @@ class Help(commands.Cog):
         print(f"LOADED: `help.py`")
     
     @app_commands.command(name="help", description="Shows the help menu!")
+    @app_commands.allowed_installs(guilds=True, users=True)
+    @app_commands.allowed_contexts(guilds=True, dms=True, private_channels=True)
     async def help(self, interaction: discord.Interaction):
         if config.command_log_bool == True:
             command_log_channel = self.bot.get_channel(config.command_log)
             from datetime import datetime
-            await command_log_channel.send(f"`/help` used by `{interaction.user.name}` in `{interaction.guild.name}` at `{datetime.now()}`\n---")
+            if interaction.guild == None:
+                await command_log_channel.send(f"`/help` used by `{interaction.user.name}` in DMs at `{datetime.now()}`\n---")
+            elif interaction.guild.name == "":
+                await command_log_channel.send(f"`/help` used by `{interaction.user.name}` in an unknown server at `{datetime.now()}`\n---")
+            else: 
+                await command_log_channel.send(f"`/help` used by `{interaction.user.name}` in `{interaction.guild.name}` at `{datetime.now()}`\n---")
         embed = discord.Embed(title="Help Menu", description="Here are the commands you can use with this bot!\n\n<> = Required\n() = Not Required\n\nHave any questions?\nhttps://discord.gg/W5Jx5QSZCb", color=config.color)
         embed.set_thumbnail(url="https://cdn.discordapp.com/attachments/1156254139966292099/1156254690573557920/61487dbbd329bb0004dbd335.png?ex=65144d98&is=6512fc18&hm=a2d4ae15d46d52bdf2e15ee6feea5042323d96b706ba03586b477b262f7af48b&")
         embed.add_field(name="`/player <name>`", value="Gets the information of a player!", inline=False)

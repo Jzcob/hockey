@@ -15,10 +15,17 @@ class player(commands.Cog):
         print(f"LOADED: `player.py`")
     
     @app_commands.command(name="player", description="Gets the information of a player!")
+    @app_commands.allowed_installs(guilds=True, users=True)
+    @app_commands.allowed_contexts(guilds=True, dms=True, private_channels=True)
     async def player(self, interaction: discord.Interaction, name: str):
         if config.command_log_bool == True:
             command_log_channel = self.bot.get_channel(config.command_log)
-            await command_log_channel.send(f"`/player` used by `{interaction.user.name}` in `{interaction.guild.name}` player requested `{name}` at `{datetime.now()}`\n---")
+            if interaction.guild == None:
+                await command_log_channel.send(f"`/player` used by `{interaction.user.name}` in DMs at `{datetime.now()}`\n---")
+            elif interaction.guild.name == "":
+                await command_log_channel.send(f"`/player` used by `{interaction.user.name}` in an unknown server at `{datetime.now()}`\n---")
+            else:
+                await command_log_channel.send(f"`/player` used by `{interaction.user.name}` in `{interaction.guild.name}` player requested `{name}` at `{datetime.now()}`\n---")
         try:
             await interaction.response.defer()
             msg = await interaction.original_response()
