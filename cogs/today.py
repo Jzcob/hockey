@@ -2,12 +2,13 @@ import discord
 from discord import app_commands
 from discord.ext import commands
 import requests
-from datetime import datetime
 import config
 from datetime import datetime, timedelta
 import pytz
 import traceback
 import asyncio
+
+
 
 def strings(awayAbbreviation, homeAbbreviation, home, away):
     if awayAbbreviation == "ANA":
@@ -199,7 +200,6 @@ class today(commands.Cog):
                     awayAbbreviation = game2["awayTeam"]["abbrev"]
                     awayString, homeString = strings(awayAbbreviation, homeAbbreviation, home, away)
                     embed.add_field(name=f"Final!", value=f"\n{awayString} @ {homeString}\nScore: {awayScore} | {homeScore}\n", inline=False)
-                    embed.set_footer(text=f"ID: {gameID}")
                 elif gameState == "LIVE" or gameState == "CRIT":
                     homeScore = game2['homeTeam']['score']
                     awayScore = game2['awayTeam']['score']
