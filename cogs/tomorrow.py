@@ -167,7 +167,7 @@ class tomorrow(commands.Cog):
                 await command_log_channel.send(f"`/tomorrow` used by `{interaction.user.name}` in `{interaction.guild.name}` at `{datetime.now()}`\n---")
         try:
             hawaii = pytz.timezone('US/Hawaii')
-            dt = datetime.now(hawaii) - timedelta(days=-1)
+            dt = datetime.now(hawaii) + timedelta(days=1)
             today = dt.strftime('%Y-%m-%d')
             url = f"https://api-web.nhle.com/v1/schedule/{today}"
             await interaction.response.defer()
@@ -218,4 +218,4 @@ class tomorrow(commands.Cog):
 
 
 async def setup(bot):
-    await bot.add_cog(tomorrow(bot), guilds=[discord.Object(id=config.hockey_discord_server)])
+    await bot.add_cog(tomorrow(bot))
