@@ -151,20 +151,20 @@ class tomorrow(commands.Cog):
 
     @commands.Cog.listener()
     async def on_ready(self):
-        print(f"LOADED: `yesterday.py`")
+        print(f"LOADED: `tomorrow.py`")
     
-    @app_commands.command(name="yesterday", description="Get yesterday's schedule!")
+    @app_commands.command(name="tomorrow", description="Get tomorrow's schedule!")
     @app_commands.allowed_installs(guilds=True, users=True)
     @app_commands.allowed_contexts(guilds=True, dms=True, private_channels=True)
     async def team(self, interaction: discord.Interaction):
         if config.command_log_bool == True:
             command_log_channel = self.bot.get_channel(config.command_log)
             if interaction.guild == None:
-                await command_log_channel.send(f"`/yesterday` used by `{interaction.user.name}` in DMs at `{datetime.now()}`\n---")
+                await command_log_channel.send(f"`/tomorrow` used by `{interaction.user.name}` in DMs at `{datetime.now()}`\n---")
             elif interaction.guild.name == "":
-                await command_log_channel.send(f"`/yesterday` used by `{interaction.user.name}` in an unknown server at `{datetime.now()}`\n---")
+                await command_log_channel.send(f"`/tomorrow` used by `{interaction.user.name}` in an unknown server at `{datetime.now()}`\n---")
             else:
-                await command_log_channel.send(f"`/yesterday` used by `{interaction.user.name}` in `{interaction.guild.name}` at `{datetime.now()}`\n---")
+                await command_log_channel.send(f"`/tomorrow` used by `{interaction.user.name}` in `{interaction.guild.name}` at `{datetime.now()}`\n---")
         try:
             hawaii = pytz.timezone('US/Hawaii')
             dt = datetime.now(hawaii) - timedelta(days=-1)
@@ -176,7 +176,7 @@ class tomorrow(commands.Cog):
             global data
             data = r.json()
             games = data["gameWeek"][0]["games"]
-            embed = discord.Embed(title=f"Yesterday's Games", description=f"Total games yesterday: {len(games)}", color=config.color)
+            embed = discord.Embed(title=f"Tomorrow's Games", description=f"Total games tomorrow: {len(games)}", color=config.color)
             embed.set_thumbnail(url="https://www-league.nhlstatic.com/images/logos/league-dark/133-flat.svg")
             embed.set_footer(text=config.footer)
             for i in range(len(games)):
