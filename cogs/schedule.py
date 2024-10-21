@@ -84,7 +84,7 @@ class schedule(commands.Cog):
                 away = game2["awayTeam"]["name"]["default"]
                 startTime = games[i]['startTimeUTC']
                 startTime = datetime.strptime(startTime, '%Y-%m-%dT%H:%M:%SZ')
-                startTime = startTime - timedelta(hours=5)
+                startTime = startTime - timedelta(hours=4)
                 start_timestamp = int(startTime.timestamp())
                 embed.add_field(name=f"<t:{start_timestamp}:F>", value=f"{away} @ {home}", inline=False)
             embed.set_thumbnail(url="https://www-league.nhlstatic.com/images/logos/league-dark/133-flat.svg")
