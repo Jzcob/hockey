@@ -35,7 +35,7 @@ def strings(name):
         string = f"{config.los_angeles_kings_emoji} {name}"
     elif name == "Minnesota Wild":
         string = f"{config.minnesota_wild_emoji} {name}"
-    elif name == "Montreal Canadiens":
+    elif name == "Montréal Canadiens":
         string = f"{config.montreal_canadiens_emoji} {name}"
     elif name == "Nashville Predators":
         string = f"{config.nashville_predators_emoji} {name}"
