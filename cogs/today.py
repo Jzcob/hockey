@@ -153,8 +153,6 @@ class today(commands.Cog):
     @commands.Cog.listener()
     async def on_ready(self):
         print(f"LOADED: `today.py`")
-
-
     
     @app_commands.command(name="today", description="Get today's schedule!")
     @app_commands.allowed_installs(guilds=True, users=True)

@@ -146,6 +146,8 @@ async def on_guild_remove(guild):
     except Exception as e:
         print(e)
 
+
+
 asyncio.run(main())
 
 
