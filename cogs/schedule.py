@@ -80,8 +80,8 @@ class schedule(commands.Cog):
                 url2 = f"https://api-web.nhle.com/v1/gamecenter/{gameID}/boxscore"
                 r2 = requests.get(url2)
                 game2 = r2.json()
-                home = game2["homeTeam"]["name"]["default"]
-                away = game2["awayTeam"]["name"]["default"]
+                home = game2["homeTeam"]["commonName"]["default"]
+                away = game2["awayTeam"]["commonName"]["default"]
                 startTime = games[i]['startTimeUTC']
                 startTime = datetime.strptime(startTime, '%Y-%m-%dT%H:%M:%SZ')
                 startTime = startTime - timedelta(hours=4)

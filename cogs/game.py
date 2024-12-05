@@ -95,8 +95,8 @@ class game(commands.Cog):
             url2 = f"https://api-web.nhle.com/v1/gamecenter/{gameID}/boxscore"
             response2 = requests.get(url2)
             data2 = response2.json()
-            home = data2['homeTeam']['name']['default']
-            away = data2['awayTeam']['name']['default']
+            home = data2['homeTeam']['commonName']['default']
+            away = data2['awayTeam']['commonName']['default']
             tvBroadcasts= data2['tvBroadcasts']
             networks = ""
             for i in range(len(tvBroadcasts)):
