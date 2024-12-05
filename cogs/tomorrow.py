@@ -188,22 +188,22 @@ class tomorrow(commands.Cog):
                 game2 = r2.json()
                 startTime = game["startTimeUTC"]
                 startTime = datetime.strptime(startTime, '%Y-%m-%dT%H:%M:%SZ')
-                startTime = startTime - timedelta(hours=4)
+                startTime = startTime - timedelta(hours=5)
                 startTime = startTime.strftime('%I:%M %p')
             
                 if gameState == "FINAL" or gameState == "OFF":
                     homeScore = game2['homeTeam']['score']
                     awayScore = game2['awayTeam']['score']
-                    home = game2["homeTeam"]["name"]["default"]
-                    away = game2["awayTeam"]["name"]["default"]
+                    home = game2["homeTeam"]["commonName"]["default"]
+                    away = game2["awayTeam"]["commonName"]["default"]
                     homeAbbreviation = game2["homeTeam"]["abbrev"]
                     awayAbbreviation = game2["awayTeam"]["abbrev"]
                     awayString, homeString = strings(awayAbbreviation, homeAbbreviation, home, away)
                     embed.add_field(name=f"Final!", value=f"\n{awayString} @ {homeString}\nScore: {awayScore} | {homeScore}\n", inline=False)
                     embed.set_footer(text=f"ID: {gameID}")
                 else:
-                    home = game2["homeTeam"]["name"]["default"]
-                    away = game2["awayTeam"]["name"]["default"]
+                    home = game2["homeTeam"]["commonName"]["default"]
+                    away = game2["awayTeam"]["commonName"]["default"]
                     homeAbbreviation = game2["homeTeam"]["abbrev"]
                     awayAbbreviation = game2["awayTeam"]["abbrev"]
                     awayString, homeString = strings(awayAbbreviation, homeAbbreviation, home, away)

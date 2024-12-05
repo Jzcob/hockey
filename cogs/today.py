@@ -192,8 +192,8 @@ class today(commands.Cog):
                 startTime = startTime - timedelta(hours=4)
                 startTime = startTime.strftime('%I:%M %p')
                 if gameState == "FUT":
-                    home = game2["homeTeam"]["name"]["default"]
-                    away = game2["awayTeam"]["name"]["default"]
+                    home = game2["homeTeam"]["commonName"]["default"]
+                    away = game2["awayTeam"]["commonName"]["default"]
                     homeAbbreviation = game2["homeTeam"]["abbrev"]
                     awayAbbreviation = game2["awayTeam"]["abbrev"]
                     awayString, homeString = strings(awayAbbreviation, homeAbbreviation, home, away)
@@ -201,8 +201,8 @@ class today(commands.Cog):
                 elif gameState == "FINAL" or gameState == "OFF":
                     homeScore = game2['homeTeam']['score']
                     awayScore = game2['awayTeam']['score']
-                    home = game2["homeTeam"]["name"]["default"]
-                    away = game2["awayTeam"]["name"]["default"]
+                    home = game2["homeTeam"]["commonName"]["default"]
+                    away = game2["awayTeam"]["commonName"]["default"]
                     homeAbbreviation = game2["homeTeam"]["abbrev"]
                     awayAbbreviation = game2["awayTeam"]["abbrev"]
                     awayString, homeString = strings(awayAbbreviation, homeAbbreviation, home, away)
@@ -213,8 +213,8 @@ class today(commands.Cog):
                     clock = game2['clock']['timeRemaining']
                     clockRunning = game2['clock']['running']
                     clockIntermission = game2['clock']['inIntermission']
-                    home = game2["homeTeam"]["name"]["default"]
-                    away = game2["awayTeam"]["name"]["default"]
+                    home = game2["homeTeam"]["commonName"]["default"]
+                    away = game2["awayTeam"]["commonName"]["default"]
                     homeAbbreviation = game2["homeTeam"]["abbrev"]
                     awayAbbreviation = game2["awayTeam"]["abbrev"]
                     awayString, homeString = strings(awayAbbreviation, homeAbbreviation, home, away)
@@ -223,8 +223,8 @@ class today(commands.Cog):
                     if clockIntermission == True:
                         embed.add_field(name=f"Intermission!", value=f"{awayString} @ {homeString}\nScore: {awayScore} | {homeScore}", inline=False)
                 else:
-                    home = game2["homeTeam"]["name"]["default"]
-                    away = game2["awayTeam"]["name"]["default"]
+                    home = game2["homeTeam"]["commonName"]["default"]
+                    away = game2["awayTeam"]["commonName"]["default"]
                     homeAbbreviation = game2["homeTeam"]["abbrev"]
                     awayAbbreviation = game2["awayTeam"]["abbrev"]
                     awayString, homeString = strings(awayAbbreviation, homeAbbreviation, home, away)
