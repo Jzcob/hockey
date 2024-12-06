@@ -105,7 +105,7 @@ class game(commands.Cog):
                 if interaction.guild.id in config.bruins_servers:
                     if network == "NESN":
                         countryCode = tvBroadcasts[i]['countryCode']
-                        networks += f"{network} ({countryCode})\n"
+                        networks += f"⭐ {network} ({countryCode}) ⭐\n"
                 else:
                     countryCode = tvBroadcasts[i]['countryCode']
                     networks += f"{network} ({countryCode})\n"
