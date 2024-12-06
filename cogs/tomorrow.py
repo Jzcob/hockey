@@ -189,6 +189,7 @@ class tomorrow(commands.Cog):
                 startTime = game["startTimeUTC"]
                 startTime = datetime.strptime(startTime, '%Y-%m-%dT%H:%M:%SZ')
                 startTime = startTime - timedelta(hours=5)
+                timestampUTC = int(round(startTime.timestamp()))
                 startTime = startTime.strftime('%I:%M %p')
             
                 if gameState == "FINAL" or gameState == "OFF":
@@ -207,7 +208,7 @@ class tomorrow(commands.Cog):
                     homeAbbreviation = game2["homeTeam"]["abbrev"]
                     awayAbbreviation = game2["awayTeam"]["abbrev"]
                     awayString, homeString = strings(awayAbbreviation, homeAbbreviation, home, away)
-                    embed.add_field(name=f"{startTime}", value=f"{awayString} @ {homeString}\nGame is scheduled!", inline=False)
+                    embed.add_field(name=f"<t:{timestampUTC}:t>", value=f"{awayString} @ {homeString}\nGame is scheduled!", inline=False)
                 await asyncio.sleep(0.5)
             return await msg.edit(embed=embed)
         except:
