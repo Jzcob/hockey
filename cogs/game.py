@@ -99,10 +99,16 @@ class game(commands.Cog):
             away = data2['awayTeam']['commonName']['default']
             tvBroadcasts= data2['tvBroadcasts']
             networks = ""
+            
             for i in range(len(tvBroadcasts)):
                 network = tvBroadcasts[i]['network']
-                countryCode = tvBroadcasts[i]['countryCode']
-                networks += f"{network} ({countryCode})\n"
+                if interaction.guild.id in config.bruins_servers:
+                    if network == "NESN":
+                        countryCode = tvBroadcasts[i]['countryCode']
+                        networks += f"{network} ({countryCode})\n"
+                else:
+                    countryCode = tvBroadcasts[i]['countryCode']
+                    networks += f"{network} ({countryCode})\n"
             if game['gameState'] == "FUT" or game['gameState'] == "PRE":
                 startTime = data2["startTimeUTC"]
                 startTime = datetime.strptime(startTime, '%Y-%m-%dT%H:%M:%SZ')
