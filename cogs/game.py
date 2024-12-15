@@ -21,137 +21,119 @@ class game(commands.Cog):
     @app_commands.allowed_installs(guilds=True, users=True)
     @app_commands.allowed_contexts(guilds=True, dms=True, private_channels=True)
     async def game(self, interaction: discord.Interaction, abbreviation: str):
-        if config.command_log_bool == True:
+        if config.command_log_bool:
             command_log_channel = self.bot.get_channel(config.command_log)
-            if interaction.guild == None:
-                await command_log_channel.send(f"`/game` used by `{interaction.user.name}` in DMs at `{datetime.now()}`\n---")
-            elif interaction.guild.name == "":
-                await command_log_channel.send(f"`/game` used by `{interaction.user.name}` in an unknown server at `{datetime.now()}`\n---")
-            else:
-                await command_log_channel.send(f"`/game` used by `{interaction.user.name}` in `{interaction.guild.name}` team `{abbreviation}` at `{datetime.now()}`\n---")
+            guild_name = interaction.guild.name if interaction.guild else "DMs"
+            await command_log_channel.send(
+                f"`/game` used by `{interaction.user.name}` in `{guild_name}` team `{abbreviation}` at `{datetime.now()}`\n---"
+            )
         try:
             await interaction.response.defer()
-            msg = await interaction.original_response()
             teams = {
-                "ANA": "Anaheim Ducks",
-                "BOS": "Boston Bruins",
-                "BUF": "Buffalo Sabres",
-                "CGY": "Calgary Flames",
-                "CAR": "Carolina Hurricanes",
-                "CHI": "Chicago Blackhawks",
-                "COL": "Colorado Avalanche",
-                "CBJ": "Columbus Blue Jackets",
-                "DAL": "Dallas Stars",
-                "DET": "Detroit Red Wings",
-                "EDM": "Edmonton Oilers",
-                "FLA": "Florida Panthers",
-                "LAK": "Los Angeles Kings",
-                "MIN": "Minnesota Wild",
-                "MTL": "Montreal Canadiens",
-                "NSH": "Nashville Predators",
-                "NJD": "New Jersey Devils",
-                "NYI": "New York Islanders",
-                "NYR": "New York Rangers",
-                "OTT": "Ottawa Senators",
-                "PHI": "Philadelphia Flyers",
-                "PIT": "Pittsburgh Penguins",
-                "SJS": "San Jose Sharks",
-                "SEA": "Seattle Kraken",   
-                "STL": "St. Louis Blues",
-                "TBL": "Tampa Bay Lightning",
-                "TOR": "Toronto Maple Leafs",
-                "UTA": "Utah Hockey Club",
-                "VAN": "Vancouver Canucks",
-                "VGK": "Vegas Golden Knights",
-                "WSH": "Washington Capitals",
-                "WPG": "Winnipeg Jets"
+                "ANA": "Anaheim Ducks", "BOS": "Boston Bruins", "BUF": "Buffalo Sabres",
+                "CGY": "Calgary Flames", "CAR": "Carolina Hurricanes", "CHI": "Chicago Blackhawks",
+                "COL": "Colorado Avalanche", "CBJ": "Columbus Blue Jackets", "DAL": "Dallas Stars",
+                "DET": "Detroit Red Wings", "EDM": "Edmonton Oilers", "FLA": "Florida Panthers",
+                "LAK": "Los Angeles Kings", "MIN": "Minnesota Wild", "MTL": "Montreal Canadiens",
+                "NSH": "Nashville Predators", "NJD": "New Jersey Devils", "NYI": "New York Islanders",
+                "NYR": "New York Rangers", "OTT": "Ottawa Senators", "PHI": "Philadelphia Flyers",
+                "PIT": "Pittsburgh Penguins", "SJS": "San Jose Sharks", "SEA": "Seattle Kraken",
+                "STL": "St. Louis Blues", "TBL": "Tampa Bay Lightning", "TOR": "Toronto Maple Leafs",
+                "UTA": "Utah Hockey Club", "VAN": "Vancouver Canucks", "VGK": "Vegas Golden Knights",
+                "WSH": "Washington Capitals", "WPG": "Winnipeg Jets"
             }
-            if abbreviation.upper() in teams:
-                team = abbreviation.upper()
-                team = teams[team]
-            else:
-                await msg.edit(content="Invalid team abbreviation. `/teams` to see all of the abbreviations!")
+
+            abbreviation = abbreviation.upper()
+            if abbreviation not in teams:
+                await interaction.followup.send(
+                    "Invalid team abbreviation. Use `/teams` to see all of the abbreviations!"
+                )
                 return
+
+            team_name = teams[abbreviation]
             hawaii = pytz.timezone('US/Hawaii')
-            dt = datetime.now(hawaii)
-            today = dt.strftime('%Y-%m-%d')
+            today = datetime.now(hawaii).strftime('%Y-%m-%d')
             url = f'https://api-web.nhle.com/v1/club-schedule/{abbreviation}/week/{today}'
+            
             response = requests.get(url)
+            if response.status_code != 200:
+                await interaction.followup.send(f"Failed to fetch schedule data for `{team_name}`.")
+                return
+
             data = response.json()
-            games = data['games']
-            if len(games) == 0:
-                return await msg.edit(content=f"**{team}** do not play today!")
-            try:
-                for i in range(len(games)):
-                    if f"{games[i]['gameDate']}" == f"{today}":
-                        game = games[i]
-                        gameID = game['id']
-                        gameIDs[interaction.user.id] = gameID
-                        break
-                    else:
-                        return await msg.edit(content=f"**{team}** do not play today!")
-            except Exception as e:
-                print(e)
+            games = data.get('games', [])
+            if not games:
+                await interaction.followup.send(f"**{team_name}** do not play today!")
+                return
+
+            game = next((g for g in games if g.get('gameDate') == today), None)
+            if not game:
+                await interaction.followup.send(f"**{team_name}** do not play today!")
+                return
+
+            gameID = game.get('id')
+            if not gameID:
+                await interaction.followup.send("Could not retrieve game details. Please try again later.")
+                return
+
             url2 = f"https://api-web.nhle.com/v1/gamecenter/{gameID}/boxscore"
             response2 = requests.get(url2)
+            if response2.status_code != 200:
+                await interaction.followup.send("Failed to fetch game details. Please try again later.")
+                return
+
             data2 = response2.json()
-            home = data2['homeTeam']['commonName']['default']
-            away = data2['awayTeam']['commonName']['default']
-            tvBroadcasts= data2['tvBroadcasts']
-            networks = ""
-            
-            for i in range(len(tvBroadcasts)):
-                network = tvBroadcasts[i]['network']
-                if interaction.guild.id in config.bruins_servers:
-                    if network == "NESN":
-                        countryCode = tvBroadcasts[i]['countryCode']
-                        networks += f"⭐ {network} ({countryCode}) ⭐\n"
-                else:
-                    countryCode = tvBroadcasts[i]['countryCode']
-                    networks += f"{network} ({countryCode})\n"
-            if game['gameState'] == "FUT" or game['gameState'] == "PRE":
-                startTime = data2["startTimeUTC"]
-                startTime = datetime.strptime(startTime, '%Y-%m-%dT%H:%M:%SZ')
-                startTime = startTime - timedelta(hours=5)
-                startTime = startTime.strftime('%I:%M %p')
-                embed = discord.Embed(title=f"{away} @ {home}", description=f"Game is scheduled! for {startTime}", color=config.color)
-                embed.add_field(name="TV Broadcast", value=f"{networks}", inline=False)
-                embed.add_field(name="Game ID", value=gameID, inline=False)
-                embed.set_footer(text=config.footer)
-                await msg.edit(embed=embed)
-                return
-            homeScore = data2['homeTeam']['score']
-            awayScore = data2['awayTeam']['score']
-            clock = data2['clock']['timeRemaining']
-            clockRunning = data2['clock']['running']
-            clockIntermission = data2['clock']['inIntermission']
-            homeShots = 0
-            awayShots = 0
-            if game['gameState'] == "FINAL" or game['gameState'] == "OFF":
-                embed = discord.Embed(title=f"{away} @ {home}", description=f"Final!\nScore: {awayScore} | {homeScore}", color=config.color)
-                
-                embed.set_footer(text=config.footer)
-                await msg.edit(embed=embed)
-                return
-            embed = discord.Embed(title=f"{away} @ {home}", description=f"{awayScore} - {homeScore}", color=config.color)
-            
-            homeShots = data2['homeTeam']['sog']
-            awayShots = data2['awayTeam']['sog']
-            embed.description = f"GAME IS LIVE!!!\n\nScore: {awayScore} - {homeScore}\nShots: {awayShots} - {homeShots}"
-            if clockRunning == True:
-                embed.add_field(name="Clock", value=f"{clock}\nRunning", inline=False)
+            home = data2.get('homeTeam', {}).get('commonName', {}).get('default', 'Unknown Team')
+            away = data2.get('awayTeam', {}).get('commonName', {}).get('default', 'Unknown Team')
+            tvBroadcasts = data2.get('tvBroadcasts', [])
+            networks = "\n".join(
+                f"{b['network']} ({b.get('countryCode', 'Unknown')})"
+                for b in tvBroadcasts
+                if not (interaction.guild and interaction.guild.id in config.bruins_servers and b['network'] != "NESN")
+            )
+
+            if game['gameState'] in ["FUT", "PRE"]:
+                startTime = datetime.strptime(
+                    data2.get("startTimeUTC", ""), '%Y-%m-%dT%H:%M:%SZ'
+                ) - timedelta(hours=5)
+                startTimeFormatted = startTime.strftime('%I:%M %p')
+                embed = discord.Embed(
+                    title=f"{away} @ {home}",
+                    description=f"Game is scheduled for {startTimeFormatted}",
+                    color=config.color
+                )
+            elif game['gameState'] in ["FINAL", "OFF"]:
+                homeScore = data2.get('homeTeam', {}).get('score', 0)
+                awayScore = data2.get('awayTeam', {}).get('score', 0)
+                embed = discord.Embed(
+                    title=f"{away} @ {home}",
+                    description=f"Final!\nScore: {awayScore} | {homeScore}",
+                    color=config.color
+                )
             else:
-                embed.add_field(name="Clock", value=f"{clock}", inline=False)
-            if clockIntermission == True:
-                embed.add_field(name="Clock", value=f"Intermission", inline=False)
-            embed.set_footer(text=config.footer)
-            embed.add_field(name="TV Broadcast", value=f"{networks}", inline=False)
+                homeScore = data2.get('homeTeam', {}).get('score', 0)
+                awayScore = data2.get('awayTeam', {}).get('score', 0)
+                homeShots = data2.get('homeTeam', {}).get('sog', 0)
+                awayShots = data2.get('awayTeam', {}).get('sog', 0)
+                clock = data2.get('clock', {}).get('timeRemaining', 'Unknown Time')
+                clockRunning = data2.get('clock', {}).get('running', False)
+                clockIntermission = data2.get('clock', {}).get('inIntermission', False)
+                embed = discord.Embed(
+                    title=f"{away} @ {home}",
+                    description=f"GAME IS LIVE!!!\n\nScore: {awayScore} - {homeScore}\nShots: {awayShots} - {homeShots}",
+                    color=config.color
+                )
+                embed.add_field(name="Clock", value="Intermission" if clockIntermission else f"{clock}\n{'Running' if clockRunning else ''}", inline=False)
+
+            embed.add_field(name="TV Broadcast", value=networks, inline=False)
             embed.add_field(name="Game ID", value=gameID, inline=False)
-            await msg.edit(embed=embed)
-        except:
+            embed.set_footer(text=config.footer)
+
+            await interaction.followup.send(embed=embed)
+        except Exception as e:
             error_channel = self.bot.get_channel(config.error_channel)
-            string = f"{traceback.format_exc()}"
-            await error_channel.send(f"<@920797181034778655>```{string}```")
+            await error_channel.send(f"<@920797181034778655>```{traceback.format_exc()}```")
+
 
     @game.error
     async def game_error(self, interaction: discord.Interaction, error):

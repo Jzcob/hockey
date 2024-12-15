@@ -3,6 +3,7 @@ from discord.ext import commands
 from discord import app_commands
 import config
 import traceback
+from datetime import datetime
 
 
 class avatar(commands.Cog):
@@ -13,39 +14,41 @@ class avatar(commands.Cog):
     async def on_ready(self):
         print(f"LOADED: `avatar.py`")
     
-    @app_commands.command(name="avatar", description="Get the avatar of a user! or the bot if no user is specified.")
+    @app_commands.command(name="avatar", description="Get the avatar of a user! Or the bot if no user is specified.")
     @app_commands.allowed_installs(guilds=True, users=True)
     @app_commands.allowed_contexts(guilds=True, dms=True, private_channels=True)
     async def avatar(self, interaction: discord.Interaction, user: discord.User = None):
-        if config.command_log_bool == True: 
-            command_log_channel = self.bot.get_channel(config.command_log)
-            from datetime import datetime
-            if interaction.guild == None:
-                await command_log_channel.send(f"`/avatar` used by `{interaction.user.name}` in DMs at `{datetime.now()}`\n---")
-            elif interaction.guild.name == "":
-                await command_log_channel.send(f"`/avatar` used by `{interaction.user.name}` in an unknown server at `{datetime.now()}`\n---")
-            else:
-                await command_log_channel.send(f"`/avatar` used by `{interaction.user.name}` in `{interaction.guild.name}` at `{datetime.now()}`\n---")
+        if config.command_log_bool:
+            try:
+                command_log_channel = self.bot.get_channel(config.command_log)
+                guild_name = interaction.guild.name if interaction.guild else "DMs"
+                await command_log_channel.send(
+                    f"`/avatar` used by `{interaction.user.name}` in `{guild_name}` at `{datetime.now()}`\n---"
+                )
+            except Exception as e:
+                print(f"Logging failed: {e}")
+        
         try:
-            if user == None:
-                await interaction.response.defer()
-                msg = await interaction.original_response()
-                embed = discord.Embed(title="Avatar", url="https://www.craiyon.com", color=0x00ff00)
-                embed.set_image(url=self.bot.user.avatar)
-                embed.set_footer(text=f"{config.footer}")
-                await msg.edit(embed=embed)
-            else:
-                await interaction.response.defer()
-                msg = await interaction.original_response()
-                embed = discord.Embed(title="Avatar", url=user.avatar, color=0x00ff00)
-                embed.set_image(url=user.avatar)
-                embed.set_footer(text=f"{config.footer}")
-                await msg.edit(embed=embed)
-        except:
+            await interaction.response.defer()
+            target_user = user or self.bot.user
+            avatar_url = target_user.display_avatar.url
+
+            embed = discord.Embed(
+                title=f"{target_user.name}'s Avatar",
+                color=0x00ff00
+            )
+            embed.set_image(url=avatar_url)
+            embed.set_footer(text=config.footer)
+
+            await interaction.followup.send(embed=embed)
+        except Exception as e:
             error_channel = self.bot.get_channel(config.error_channel)
-            string = f"{traceback.format_exc()}"
-            await error_channel.send(f"<@920797181034778655>```{string}```")
-            await interaction.followup.send("Error with command, Message has been sent to Bot Developers", ephemeral=True)
+            await error_channel.send(f"<@920797181034778655>```{traceback.format_exc()}```")
+            await interaction.followup.send(
+                "An error occurred while fetching the avatar. The issue has been reported to the bot developers.",
+                ephemeral=True
+            )
+
     
 async def setup(bot):
     await bot.add_cog(avatar(bot))

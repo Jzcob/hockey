@@ -18,225 +18,107 @@ class player(commands.Cog):
     @app_commands.allowed_installs(guilds=True, users=True)
     @app_commands.allowed_contexts(guilds=True, dms=True, private_channels=True)
     async def player(self, interaction: discord.Interaction, name: str):
-        if config.command_log_bool == True:
-            command_log_channel = self.bot.get_channel(config.command_log)
-            if interaction.guild == None:
-                await command_log_channel.send(f"`/player` used by `{interaction.user.name}` in DMs at `{datetime.now()}`\n---")
-            elif interaction.guild.name == "":
-                await command_log_channel.send(f"`/player` used by `{interaction.user.name}` in an unknown server at `{datetime.now()}`\n---")
-            else:
-                await command_log_channel.send(f"`/player` used by `{interaction.user.name}` in `{interaction.guild.name}` player requested `{name}` at `{datetime.now()}`\n---")
+        if config.command_log_bool:
+            try:
+                command_log_channel = self.bot.get_channel(config.command_log)
+                guild_name = interaction.guild.name if interaction.guild else "DMs"
+                await command_log_channel.send(
+                    f"`/player` used by `{interaction.user.name}` in `{guild_name}` for player `{name}` at `{datetime.now()}`\n---"
+                )
+            except Exception as e:
+                print(f"Command logging failed: {e}")
+
         try:
             await interaction.response.defer()
-            msg = await interaction.original_response()
-            teams= {
-                "ANA": "Anaheim Ducks",
-                "BOS": "Boston Bruins",
-                "BUF": "Buffalo Sabres",
-                "CGY": "Calgary Flames",
-                "CAR": "Carolina Hurricanes",
-                "CHI": "Chicago Blackhawks",
-                "COL": "Colorado Avalanche",
-                "CBJ": "Columbus Blue Jackets",
-                "DAL": "Dallas Stars",
-                "DET": "Detroit Red Wings",
-                "EDM": "Edmonton Oilers",
-                "FLA": "Florida Panthers",
-                "LAK": "Los Angeles Kings",
-                "MIN": "Minnesota Wild",
-                "MTL": "Montreal Canadiens",
-                "NSH": "Nashville Predators",
-                "NJD": "New Jersey Devils",
-                "NYI": "New York Islanders",
-                "NYR": "New York Rangers",
-                "OTT": "Ottawa Senators",
-                "PHI": "Philadelphia Flyers",
-                "PIT": "Pittsburgh Penguins",
-                "SJS": "San Jose Sharks",
-                "SEA": "Seattle Kraken",
-                "STL": "St. Louis Blues",
-                "TBL": "Tampa Bay Lightning",
-                "TOR": "Toronto Maple Leafs",
-                "UTA": "Utah Hockey Club",
-                "VAN": "Vancouver Canucks",
-                "VGK": "Vegas Golden Knights",
-                "WSH": "Washington Capitals",
-                "WPG": "Winnipeg Jets"
+            teams = {
+                "ANA": "Anaheim Ducks", "BOS": "Boston Bruins", "BUF": "Buffalo Sabres", 
+                "CGY": "Calgary Flames", "CAR": "Carolina Hurricanes", "CHI": "Chicago Blackhawks",
+                "COL": "Colorado Avalanche", "CBJ": "Columbus Blue Jackets", "DAL": "Dallas Stars",
+                "DET": "Detroit Red Wings", "EDM": "Edmonton Oilers", "FLA": "Florida Panthers",
+                "LAK": "Los Angeles Kings", "MIN": "Minnesota Wild", "MTL": "Montreal Canadiens",
+                "NSH": "Nashville Predators", "NJD": "New Jersey Devils", "NYI": "New York Islanders",
+                "NYR": "New York Rangers", "OTT": "Ottawa Senators", "PHI": "Philadelphia Flyers",
+                "PIT": "Pittsburgh Penguins", "SJS": "San Jose Sharks", "SEA": "Seattle Kraken",
+                "STL": "St. Louis Blues", "TBL": "Tampa Bay Lightning", "TOR": "Toronto Maple Leafs",
+                "UTA": "Utah Hockey Club", "VAN": "Vancouver Canucks", "VGK": "Vegas Golden Knights",
+                "WSH": "Washington Capitals", "WPG": "Winnipeg Jets"
             }
-            for team in teams:
-                url = f"https://api-web.nhle.com/v1/roster/{team}/current"
+
+            for team_abbr, team_name in teams.items():
+                url = f"https://api-web.nhle.com/v1/roster/{team_abbr}/current"
                 response = requests.get(url)
-                x = response.json()
-                for player in range(len(x['forwards'])):
-                    firstName = x['forwards'][player]['firstName']['default']
-                    lastName = x['forwards'][player]['lastName']['default']
-                    fullName = f"{firstName} {lastName}"
-                    if fullName.lower() == name.lower():
-                        playerID = x['forwards'][player]['id']
-                        playerURL = f"https://api-web.nhle.com/v1/player/{playerID}/landing"
-                        data = requests.get(playerURL)
-                        y = data.json()
-                        birthDate = y['birthDate']
-                        birthCity = y['birthCity']['default']
-                        birthCountry = y['birthCountry']
-                        try:
-                            gamesPlayed = y['featuredStats']['regularSeason']['career']['gamesPlayed']
-                            goals = y['featuredStats']['regularSeason']['career']['goals']
-                            assists = y['featuredStats']['regularSeason']['career']['assists']
-                            points = y['featuredStats']['regularSeason']['career']['points']
-                        except:
-                            gamesPlayed = "N/A"
-                            goals = "N/A"
-                            assists = "N/A"
-                            points = "N/A"
-                        playerPosition = y['position']
-                        try:
-                            playerNumber = y['sweaterNumber']
-                        except:
-                            playerNumber = "N/A"
-                        headshot = y['headshot']
-                        embed = discord.Embed(title=f"{fullName}", color=config.color, url=f"https://www.nhl.com/player/{playerID}")
-                        embed.set_thumbnail(url=headshot)
-                        try:
-                            avatar = interaction.user.avatar.url
-                        except:
-                            avatar = self.bot.user.avatar.url
-                        embed.set_author(icon_url=avatar, name="NHL Player Information")
-                        if playerPosition == "G":
-                            playerPosition = "Goalie"
-                        elif playerPosition == "D":
-                            playerPosition = "Defenseman"
-                        elif playerPosition == "C":
-                            playerPosition = "Center"
-                        elif playerPosition == "L":
-                            playerPosition = "Left Wing"
-                        elif playerPosition == "R":
-                            playerPosition = "Right Wing"
-                        embed.description = f"{playerPosition} for the {teams[team]} #{playerNumber}"
-                        embed.add_field(name="Birth Date", value=f"{birthDate}", inline=True)
-                        embed.add_field(name="Birth City", value=f"{birthCity}", inline=True)
-                        embed.add_field(name="Birth Country", value=f"{birthCountry}", inline=True)
-                        embed.add_field(name="Games Played", value=f"{gamesPlayed}", inline=True)
-                        embed.add_field(name="Goals", value=f"{goals}", inline=True)
-                        embed.add_field(name="Assists", value=f"{assists}", inline=True)
-                        embed.add_field(name="Points", value=f"{points}", inline=True)
-                        embed.set_footer(text=f"Player ID: {playerID}")
-                        await msg.edit(embed=embed)
-                        return
-                for player in range(len(x['defensemen'])):
-                    firstName = x['defensemen'][player]['firstName']['default']
-                    lastName = x['defensemen'][player]['lastName']['default']
-                    fullName = f"{firstName} {lastName}"
-                    if fullName.lower() == name.lower():
-                        playerID = x['defensemen'][player]['id']
-                        playerURL = f"https://api-web.nhle.com/v1/player/{playerID}/landing"
-                        data = requests.get(playerURL)
-                        y = data.json()
-                        shoots = y['shootsCatches']
-                        birthDate = y['birthDate']
-                        birthCity = y['birthCity']['default']
-                        birthCountry = y['birthCountry']
-                        try:
-                            gamesPlayed = y['featuredStats']['regularSeason']['career']['gamesPlayed']
-                            goals = y['featuredStats']['regularSeason']['career']['goals']
-                            assists = y['featuredStats']['regularSeason']['career']['assists']
-                            points = y['featuredStats']['regularSeason']['career']['points']
-                        except:
-                            gamesPlayed = "N/A"
-                            goals = "N/A"
-                            assists = "N/A"
-                            points = "N/A"
-                        playerPosition = y['position']
-                        try:
-                            playerNumber = y['sweaterNumber']
-                        except:
-                            playerNumber = "N/A"
-                        headshot = y['headshot']
-                        embed = discord.Embed(title=f"{fullName}", color=config.color, url=f"https://www.nhl.com/player/{playerID}")
-                        embed.set_thumbnail(url=headshot)
-                        try:
-                            avatar = interaction.user.avatar.url
-                        except:
-                            avatar = self.bot.user.avatar.url
-                        embed.set_author(icon_url=avatar, name="NHL Player Information")
-                        if playerPosition == "G":
-                            playerPosition = "Goalie"
-                        elif playerPosition == "D":
-                            playerPosition = "Defenseman"
-                        elif playerPosition == "C":
-                            playerPosition = "Center"
-                        elif playerPosition == "L":
-                            playerPosition = "Left Wing"
-                        elif playerPosition == "R":
-                            playerPosition = "Right Wing"
-                        embed.description = f"{playerPosition} for the {teams[team]}"
-                        embed.add_field(name="Number", value=f"{playerNumber}", inline=True)
-                        embed.add_field(name="Birth Date", value=f"{birthDate}", inline=True)
-                        embed.add_field(name="Birth City", value=f"{birthCity}", inline=True)
-                        embed.add_field(name="Birth Country", value=f"{birthCountry}", inline=True)
-                        embed.add_field(name="Games Played", value=f"{gamesPlayed}", inline=True)
-                        embed.add_field(name="Goals", value=f"{goals}", inline=True)
-                        embed.add_field(name="Assists", value=f"{assists}", inline=True)
-                        embed.add_field(name="Points", value=f"{points}", inline=True)
-                        embed.set_footer(text=f"Player ID: {playerID}")
-                        await msg.edit(embed=embed)
-                        return
-                for player in range(len(x['goalies'])):
-                    firstName = x['goalies'][player]['firstName']['default']
-                    lastName = x['goalies'][player]['lastName']['default']
-                    fullName = f"{firstName} {lastName}"
-                    if fullName.lower() == name.lower():
-                        playerID = x['goalies'][player]['id']
-                        playerURL = f"https://api-web.nhle.com/v1/player/{playerID}/landing"
-                        data = requests.get(playerURL)
-                        y = data.json()
-                        shoots = y['shootsCatches']
-                        birthDate = y['birthDate']
-                        birthCity = y['birthCity']['default']
-                        birthCountry = y['birthCountry']
-                        try:
-                            gamesPlayed = y['featuredStats']['regularSeason']['career']['gamesPlayed']
-                        except:
-                            gamesPlayed = "N/A"
-                        playerPosition = y['position']
-                        try:
-                            playerNumber = y['sweaterNumber']
-                        except:
-                            playerNumber = "N/A"
-                        headshot = y['headshot']
-                        embed = discord.Embed(title=f"{fullName}", color=config.color, url=f"https://www.nhl.com/player/{playerID}")
-                        embed.set_thumbnail(url=headshot)
-                        try:
-                            avatar = interaction.user.avatar.url
-                        except:
-                            avatar = self.bot.user.avatar.url
-                        embed.set_author(icon_url=avatar, name="NHL Player Information")
-                        if playerPosition == "G":
-                            playerPosition = "Goalie"
-                        elif playerPosition == "D":
-                            playerPosition = "Defenseman"
-                        elif playerPosition == "C":
-                            playerPosition = "Center"
-                        elif playerPosition == "L":
-                            playerPosition = "Left Wing"
-                        elif playerPosition == "R":
-                            playerPosition = "Right Wing"
-                        embed.description = f"{playerPosition} for the {teams[team]}"
-                        embed.add_field(name="Number", value=f"{playerNumber}", inline=True)
-                        embed.add_field(name="Shoots", value=f"{shoots}", inline=True)
-                        embed.add_field(name="Birth Date", value=f"{birthDate}", inline=True)
-                        embed.add_field(name="Birth City", value=f"{birthCity}", inline=True)
-                        embed.add_field(name="Birth Country", value=f"{birthCountry}", inline=True)
-                        embed.set_footer(text=f"Player ID: {playerID}")
-                        await msg.edit(embed=embed)
-                        return
-            else:
-                await interaction.followup.send("Player not found!", ephemeral=True)
-        except:
+                if response.status_code != 200:
+                    continue
+                roster_data = response.json()
+
+                for position_group in ["forwards", "defensemen", "goalies"]:
+                    players = roster_data.get(position_group, [])
+                    for player in players:
+                        first_name = player["firstName"]["default"]
+                        last_name = player["lastName"]["default"]
+                        full_name = f"{first_name} {last_name}"
+
+                        if full_name.lower() == name.lower():
+                            player_id = player["id"]
+                            player_data_url = f"https://api-web.nhle.com/v1/player/{player_id}/landing"
+                            player_response = requests.get(player_data_url)
+                            if player_response.status_code != 200:
+                                continue
+                            player_data = player_response.json()
+
+                            embed = self._create_player_embed(player_data, full_name, team_name)
+                            await interaction.followup.send(embed=embed)
+                            return
+
+            await interaction.followup.send("Player not found!", ephemeral=True)
+
+        except Exception as e:
             error_channel = self.bot.get_channel(config.error_channel)
-            string = f"{traceback.format_exc()}"
-            await error_channel.send(f"<@920797181034778655>```{string}```")
-            await interaction.followup.send("Error with command, Message has been sent to Bot Developers", ephemeral=True)
+            await error_channel.send(f"<@920797181034778655>```{traceback.format_exc()}```")
+            await interaction.followup.send(
+                "An error occurred while fetching player data. The issue has been reported.",
+                ephemeral=True
+            )
+
+    def _create_player_embed(self, player_data, full_name, team_name):
+        try:
+            headshot = player_data.get("headshot", "")
+            position = player_data.get("position", "")
+            birth_date = player_data.get("birthDate", "Unknown")
+            birth_city = player_data.get("birthCity", {}).get("default", "Unknown")
+            birth_country = player_data.get("birthCountry", "Unknown")
+            sweater_number = player_data.get("sweaterNumber", "N/A")
+            stats = player_data.get("featuredStats", {}).get("regularSeason", {}).get("career", {})
+            games_played = stats.get("gamesPlayed", "N/A")
+            goals = stats.get("goals", "N/A")
+            assists = stats.get("assists", "N/A")
+            points = stats.get("points", "N/A")
+
+            position_map = {
+                "G": "Goalie", "D": "Defenseman", "C": "Center",
+                "L": "Left Wing", "R": "Right Wing"
+            }
+            position_full = position_map.get(position, position)
+
+            embed = discord.Embed(
+                title=f"{full_name}",
+                description=f"{position_full} for the {team_name} #{sweater_number}",
+                color=config.color,
+                url=f"https://www.nhl.com/player/{player_data.get('id')}"
+            )
+            embed.set_thumbnail(url=headshot)
+            embed.add_field(name="Birth Date", value=birth_date, inline=True)
+            embed.add_field(name="Birth City", value=birth_city, inline=True)
+            embed.add_field(name="Birth Country", value=birth_country, inline=True)
+            embed.add_field(name="Games Played", value=games_played, inline=True)
+            embed.add_field(name="Goals", value=goals, inline=True)
+            embed.add_field(name="Assists", value=assists, inline=True)
+            embed.add_field(name="Points", value=points, inline=True)
+            embed.set_footer(text=f"Player ID: {player_data.get('id')}")
+            return embed
+        except Exception as e:
+            print(f"Error creating embed: {e}")
+            raise
 
 async def setup(bot):
     await bot.add_cog(player(bot))
