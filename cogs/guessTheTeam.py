@@ -5,6 +5,7 @@ import random
 import asyncio
 import config
 import traceback
+from datetime import datetime
 
 class GuessTheTeam(commands.Cog):
     def __init__(self, bot):
