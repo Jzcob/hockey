@@ -14,6 +14,8 @@ import time
 
 used = {}
 
+
+
 class guessThePlayer(commands.Cog):
     def __init__(self, bot): 
         self.bot = bot
@@ -26,20 +28,19 @@ class guessThePlayer(commands.Cog):
     @app_commands.command(name="guess-the-player", description="Guess the player!")
     @app_commands.checks.cooldown(1.0, 15.0, key=lambda i: (i.guild.id))
     @app_commands.checks.cooldown(1.0, 60.0, key=lambda i: (i.user.id))
-    async def guessThePlayer(self, interaction : discord.Interaction):
-        if config.command_log_bool == True:
-            command_log_channel = self.bot.get_channel(config.command_log)
-            from datetime import datetime
-            if interaction.guild == None:
-                await command_log_channel.send(f"`/guess-the-player` used by `{interaction.user.name}` in DMs at `{datetime.now()}`\n---")
-            elif interaction.guild.name == "":
-                await command_log_channel.send(f"`/guess-the-player` used by `{interaction.user.name}` in an unknown server at `{datetime.now()}`\n---")
-            else:
-                await command_log_channel.send(f"`/guess-the-player` used by `{interaction.user.name}` in `{interaction.guild.name}` at `{datetime.now()}`\n---")
+    async def guessThePlayer(self, interaction: discord.Interaction):
+        if config.command_log_bool:
+            try:
+                command_log_channel = self.bot.get_channel(config.command_log)
+                guild_name = interaction.guild.name if interaction.guild else "DMs"
+                await command_log_channel.send(f"`/guess-the-player` used by `{interaction.user.name}` in `{guild_name}` at `{datetime.now()}`\n---")
+            except Exception as log_error:
+                print(f"Command logging failed: {log_error}")
+
         used.update({interaction.user.id: True})
+        await interaction.response.defer()
+
         try:
-            await interaction.response.defer()
-            msg = await interaction.original_response()
             teams = {
                 "ANA": "Anaheim Ducks",
                 "BOS": "Boston Bruins",
@@ -74,48 +75,52 @@ class guessThePlayer(commands.Cog):
                 "WSH": "Washington Capitals",
                 "WPG": "Winnipeg Jets"
             }
-            
+
             team = random.choice(list(teams.keys()))
-            # Get the team name from the abbreviation
+            team_name = teams[team]
             url = f"https://api-web.nhle.com/v1/roster/{team}/current"
-            command_log_channel = self.bot.get_channel(config.command_log)
-            if config.command_log_bool == True:
-                await command_log_channel.send(f"URL: {url}\n---")
-            response = requests.get(url)
-            x = response.json()
+            
+            try:
+                response = requests.get(url)
+                response.raise_for_status()
+                x = response.json()
+            except requests.exceptions.RequestException as e:
+                await interaction.followup.send("Could not fetch team data. Please try again later.", ephemeral=True)
+                raise e
+
             positions = ["forwards", "defensemen", "goalies"]
             position = random.choice(positions)
-            roster = x[position]
-            length = len(roster)
-            try:
-                randomChoice = random.randint(0, length - 1)
-            except:
-                randomChoice = 0
-            error_channel = self.bot.get_channel(config.error_channel)
-            y = x[position][randomChoice]
-            firstName = y["firstName"]['default']
-            lastName = y["lastName"]['default']
-            fullName = f"{firstName} {lastName}"
-            position = y["positionCode"]
-            if position == "G":
-                position = "Goalie"
-            elif position == "D":
-                position = "Defenseman"
-            elif position == "C":
-                position = "Center"
-            elif position == "L":
-                position = "Left Wing"
-            elif position == "R":
-                position = "Right Wing"
-            await msg.edit(content=f"Guess the player from the `{teams[team]}`! You have 15 seconds! (Hint: Their first name starts with `{firstName[0]}`) (Hint: They play `{position}`)")
-            if config.dev_mode == True:
-                if interaction.user.id is config.jacob:
-                    await msg.edit(content=f"**DEBUG**: The player is `{fullName}`")
+            roster = x.get(position, [])
+            if not roster:
+                await interaction.followup.send(f"No players found for position `{position}` in the `{team_name}`.")
+                return
+
+            player = random.choice(roster)
+            first_name = player.get("firstName", {}).get("default", "Unknown")
+            last_name = player.get("lastName", {}).get("default", "Unknown")
+            full_name = f"{first_name} {last_name}"
+            position_code = player.get("positionCode", "Unknown")
+
+            position_full = {
+                "G": "Goalie",
+                "D": "Defenseman",
+                "C": "Center",
+                "L": "Left Wing",
+                "R": "Right Wing"
+            }.get(position_code, "Unknown Position")
+
+            hint = f"(Hint: Their first name starts with `{first_name[0]}` and they play `{position_full}`)"
+            await interaction.followup.send(f"Guess the player from the `{team_name}`! You have 15 seconds! {hint}")
+
+            if config.dev_mode and interaction.user.id == config.jacob:
+                await interaction.followup.send(f"**DEBUG**: The player is `{full_name}`")
+
             def check(message):
-                return message.content.lower() == fullName.lower()
+                return message.channel == interaction.channel and message.content.lower() == full_name.lower()
+
             try:
-                message = await self.bot.wait_for("message", check=check, timeout=15.0)
-                
+                msg = await self.bot.wait_for("message", check=check, timeout=15.0)
+
                 mydb = mysql.connector.connect(
                     host=os.getenv("db_host"),
                     user=os.getenv("db_user"),
@@ -123,25 +128,33 @@ class guessThePlayer(commands.Cog):
                     database=os.getenv("db_name")
                 )
                 mycursor = mydb.cursor()
-                mycursor.execute(f"SELECT * FROM users WHERE id = {message.author.id}")
+                mycursor.execute("SELECT * FROM users WHERE id = %s", (msg.author.id,))
                 myresult = mycursor.fetchone()
-                if myresult == None:
-                    mycursor.execute(f"INSERT INTO users (id, points, allow_leaderboard) VALUES ({message.author.id}, 1, TRUE)")
-                    await interaction.followup.send(f"Congratulations, {message.author.mention}! You guessed the Player! You have been added to the leaderboard!\n**The leaderboard is global across the entire bot. If you wish to not be showed on the leaderboard please use `/leaderboard-status`**")
+
+                if not myresult:
+                    mycursor.execute(
+                        "INSERT INTO users (id, points, allow_leaderboard) VALUES (%s, %s, %s)",
+                        (msg.author.id, 1, True)
+                    )
+                    await interaction.followup.send(
+                        f"Congratulations, {msg.author.mention}! You guessed the player! You have been added to the leaderboard!"
+                    )
                 else:
                     points = myresult[1] + 1
-                    mycursor.execute(f"UPDATE users SET points = {points} WHERE id = {message.author.id}")
-                    await interaction.followup.send(f"Congratulations, {message.author.mention}! You guessed the Player!")
+                    mycursor.execute("UPDATE users SET points = %s WHERE id = %s", (points, msg.author.id))
+                    await interaction.followup.send(f"Congratulations, {msg.author.mention}! You guessed the player!")
+
                 mydb.commit()
                 mydb.close()
             except asyncio.TimeoutError:
-                await interaction.followup.send(f"Sorry, time's up!, the correct answer was `{fullName}`.")
-        except:
+                await interaction.followup.send(f"Time's up! The correct answer was `{full_name}`.")
+        except Exception as e:
             error_channel = self.bot.get_channel(config.error_channel)
-            string = f"{traceback.format_exc()}"
-            await error_channel.send(f"<@920797181034778655> AT {datetime.now()}```{string}```")
-            await interaction.followup.send("Error with command, Message has been sent to Bot Developers", ephemeral=True)
-        used.pop(interaction.user.id)
+            await error_channel.send(f"<@920797181034778655> Error at {datetime.now()}:\n```{traceback.format_exc()}```")
+            await interaction.followup.send("An error occurred. The issue has been reported to the developers.", ephemeral=True)
+
+        finally:
+            used.pop(interaction.user.id, None)
     
     @guessThePlayer.error
     async def guessThePlayer_error(self, interaction: discord.Interaction , error):
