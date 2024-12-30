@@ -130,7 +130,7 @@ class Leaderboards(commands.Cog):
                 error_log_channel = self.bot.get_channel(config.error_log)
                 await error_log_channel.send(f"An error occurred in `/my-points`:\n```{traceback.format_exc()}```")
     
-    @app_commands.command(name="trvia-leaderboard", description="View the trivia leaderboards!")
+    @app_commands.command(name="trivia-leaderboard", description="View the trivia leaderboards!")
     @app_commands.allowed_installs(guilds=True, users=True)
     @app_commands.allowed_contexts(guilds=True, dms=True, private_channels=True)
     async def trivia_leaderboard(self, interaction: discord.Interaction):
