@@ -128,12 +128,12 @@ class guessThePlayer(commands.Cog):
                     database=os.getenv("db_name")
                 )
                 mycursor = mydb.cursor()
-                mycursor.execute("SELECT * FROM users WHERE id = %s", (msg.author.id,))
+                mycursor.execute("SELECT * FROM gtp WHERE id = %s", (msg.author.id,))
                 myresult = mycursor.fetchone()
 
                 if not myresult:
                     mycursor.execute(
-                        "INSERT INTO users (id, points, allow_leaderboard) VALUES (%s, %s, %s)",
+                        "INSERT INTO gtp (id, points, allow_leaderboard) VALUES (%s, %s, %s)",
                         (msg.author.id, 1, True)
                     )
                     await interaction.followup.send(
@@ -141,7 +141,7 @@ class guessThePlayer(commands.Cog):
                     )
                 else:
                     points = myresult[1] + 1
-                    mycursor.execute("UPDATE users SET points = %s WHERE id = %s", (points, msg.author.id))
+                    mycursor.execute("UPDATE gtp SET points = %s WHERE id = %s", (points, msg.author.id))
                     await interaction.followup.send(f"Congratulations, {msg.author.mention}! You guessed the player!")
 
                 mydb.commit()

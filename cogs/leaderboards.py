@@ -38,7 +38,7 @@ class Leaderboards(commands.Cog):
                 database=os.getenv("db_name")
             )
             mycursor = mydb.cursor()
-            mycursor.execute("SELECT * FROM users ORDER BY points DESC LIMIT 10")
+            mycursor.execute("SELECT * FROM gtp ORDER BY points DESC LIMIT 10")
             myresult = mycursor.fetchall()
             embed = discord.Embed(title="Leaderboard", color=0x00ff00)
             embed.set_footer(text=config.footer)
@@ -88,7 +88,7 @@ class Leaderboards(commands.Cog):
                 database=os.getenv("db_name")
             )
             mycursor = mydb.cursor()
-            mycursor.execute(f"UPDATE users SET allow_leaderboard = {allow} WHERE id = {interaction.user.id}")
+            mycursor.execute(f"UPDATE gtp SET allow_leaderboard = {allow} WHERE id = {interaction.user.id}")
             mydb.commit()
             await interaction.response.send_message(content=f"Leaderboard status updated to `{allow}`", ephemeral=True)
             mydb.close()
@@ -113,10 +113,10 @@ class Leaderboards(commands.Cog):
                 database=os.getenv("db_name")
             )
             mycursor = mydb.cursor()
-            mycursor.execute(f"SELECT points FROM users WHERE id = {interaction.user.id}")
+            mycursor.execute(f"SELECT points FROM gtp WHERE id = {interaction.user.id}")
             myresult = mycursor.fetchall()
             if len(myresult) == 0:
-                mycursor.execute(f"INSERT INTO users (id, points, allow_leaderboard) VALUES ({interaction.user.id}, 0, true)")
+                mycursor.execute(f"INSERT INTO gtp (id, points, allow_leaderboard) VALUES ({interaction.user.id}, 0, true)")
                 mydb.commit()
                 points = 0
             else:
@@ -129,6 +129,122 @@ class Leaderboards(commands.Cog):
             if config.error_log_bool == True:
                 error_log_channel = self.bot.get_channel(config.error_log)
                 await error_log_channel.send(f"An error occurred in `/my-points`:\n```{traceback.format_exc()}```")
+    
+    @app_commands.command(name="trvia-leaderboard", description="View the trivia leaderboards!")
+    @app_commands.allowed_installs(guilds=True, users=True)
+    @app_commands.allowed_contexts(guilds=True, dms=True, private_channels=True)
+    async def trivia_leaderboard(self, interaction: discord.Interaction):
+        if config.command_log_bool == True:
+            command_log_channel = self.bot.get_channel(config.command_log)
+            from datetime import datetime
+            if interaction.guild == None:
+                await command_log_channel.send(f"`/trivia-leaderboard` used by `{interaction.user.name}` in DMs at `{datetime.now()}`\n---")
+            elif interaction.guild.name == "":
+                await command_log_channel.send(f"`/trivia-leaderboard` used by `{interaction.user.name}` in an unknown server at `{datetime.now()}`\n---")
+            else:
+                await command_log_channel.send(f"`/trivia-leaderboard` used by `{interaction.user.name}` in `{interaction.guild.name}` at `{datetime.now()}`\n---")
+        try:
+            await interaction.response.defer()
+            msg = await interaction.original_response()
+            mydb = mysql.connector.connect(
+                host=os.getenv("db_host"),
+                user=os.getenv("db_user"),
+                password=os.getenv("db_password"),
+                database=os.getenv("db_name")
+            )
+            mycursor = mydb.cursor()
+            mycursor.execute("SELECT * FROM trivia ORDER BY points DESC LIMIT 10")
+            myresult = mycursor.fetchall()
+            embed = discord.Embed(title="Trivia Leaderboard", color=0x00ff00)
+            embed.set_footer(text=config.footer)
+            i = 1
+            lb = ""
+            for x in myresult:
+                if x[2] == False:
+                    name = "Anonymous"
+                else:
+                    name = await self.bot.fetch_user(x[0])
+                    name = name.name
+                if x[1] == 1:
+                    lb += f"{i}. `{name}` - `{x[1]}` point\n"
+                else:
+                    lb += f"{i}. `{name}` - `{x[1]:,}` points\n"
+                i += 1
+            embed.description = f"Points are based on correct guesses from `/trivia`!\nIf you have any trivia question suggestion, feel free to join my discord server and suggest away!\n {lb}"
+            await msg.edit(embed=embed)
+            mydb.close()
+        except Exception as e:
+            print(traceback.format_exc())
+            await msg.edit(content="An error occurred. Please try again later.")
+            if config.error_log_bool == True:
+                error_log_channel = self.bot.get_channel(config.error_log)
+                await error_log_channel.send(f"An error occurred in `/trivia-leaderboard`:\n```{traceback.format_exc()}```")
+    
+    @app_commands.command(name="trivia-leaderboard-status", description="Toggles if you are displayed on the trivia leaderboard!")
+    @app_commands.describe(allow="On to be shown (default), Off to not be shown.")
+    @app_commands.choices(allow=[
+        app_commands.Choice(name='on', value='t'),
+        app_commands.Choice(name='off', value='f')
+    ])
+    async def trivia_leaderboard_status(self, interaction: discord.Interaction, allow: discord.app_commands.Choice[str]):
+        if config.command_log_bool == True:
+            command_log_channel = self.bot.get_channel(config.command_log)
+            from datetime import datetime
+            await command_log_channel.send(f"`/trivia-leaderboard-status` used by `{interaction.user.name}` in `{interaction.guild.name}` at `{datetime.now()}`\n---")
+        try:
+            if allow.value == "t":
+                allow = True
+            else:
+                allow = False
+            mydb = mysql.connector.connect(
+                host=os.getenv("db_host"),
+                user=os.getenv("db_user"),
+                password=os.getenv("db_password"),
+                database=os.getenv("db_name")
+            )
+            mycursor = mydb.cursor()
+            mycursor.execute(f"UPDATE trivia SET allow_leaderboard = {allow} WHERE id = {interaction.user.id}")
+            mydb.commit()
+            await interaction.response.send_message(content=f"Trivia leaderboard status updated to `{allow}`", ephemeral=True)
+            mydb.close()
+        except Exception as e:
+            print(traceback.format_exc())
+            await interaction.response.send_message("Error with command, Message has been sent to Bot Developers")
+            if config.error_log_bool == True:
+                error_log_channel = self.bot.get_channel(config.error_log)
+                await error_log_channel.send(f"An error occurred in `/trivia-leaderboard-status`:\n```{traceback.format_exc()}```")
+        
+    @app_commands.command(name="my-trivia-points", description="View your trivia points!")
+    async def my_trivia_points(self, interaction: discord.Interaction):
+        if config.command_log_bool == True:
+            command_log_channel = self.bot.get_channel(config.command_log)
+            from datetime import datetime
+            await command_log_channel.send(f"`/my-trivia-points` used by `{interaction.user.name}` in `{interaction.guild.name}` at `{datetime.now()}`\n---")
+        try:
+            mydb = mysql.connector.connect(
+                host=os.getenv("db_host"),
+                user=os.getenv("db_user"),
+                password=os.getenv("db_password"),
+                database=os.getenv("db_name")
+            )
+            mycursor = mydb.cursor()
+            mycursor.execute(f"SELECT points FROM trivia WHERE id = {interaction.user.id}")
+            myresult = mycursor.fetchall()
+            if len(myresult) == 0:
+                mycursor.execute(f"INSERT INTO trivia (id, points, allow_leaderboard) VALUES ({interaction.user.id}, 0, true)")
+                mydb.commit()
+                points = 0
+            else:
+                points = myresult[0][0]
+            await interaction.response.send_message(content=f"You have `{points:,}` points!", ephemeral=True)
+            mydb.close()
+        except Exception as e:
+            print(traceback.format_exc())
+            await interaction.response.send_message("Error with command, Message has been sent to Bot Developers")
+            if config.error_log_bool == True:
+                error_log_channel = self.bot.get_channel(config.error_log)
+                await error_log_channel.send(f"An error occurred in `/my-trivia-points`:\n```{traceback.format_exc()}```")
+
         
 async def setup(bot):
     await bot.add_cog(Leaderboards(bot))
