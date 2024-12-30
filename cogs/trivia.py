@@ -75,7 +75,7 @@ class Trivia(commands.Cog):
                         points = myresult[1] + 1
                         mycursor.execute("UPDATE trivia SET points = %s WHERE id = %s", (points, msg.author.id))
                         await interaction.followup.send(
-                            f"Correct! 🎉 {msg.author.mention}, you've earned another point! You now have {points} points!"
+                            f"Correct! 🎉 {msg.author.mention}, you've earned another point! You now have `{points}` points!"
                         )
 
                     mydb.commit()

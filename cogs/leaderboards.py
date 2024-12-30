@@ -170,7 +170,7 @@ class Leaderboards(commands.Cog):
                 else:
                     lb += f"{i}. `{name}` - `{x[1]:,}` points\n"
                 i += 1
-            embed.description = f"Points are based on correct guesses from `/trivia`!\nIf you have any trivia question suggestion, feel free to join my discord server and suggest away!\n {lb}"
+            embed.description = f"Points are based on correct guesses from `/trivia`!\nSuggest questions with `/suggest-trivia`!\n\n{lb}"
             await msg.edit(embed=embed)
             mydb.close()
         except Exception as e:

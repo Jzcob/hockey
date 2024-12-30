@@ -50,6 +50,7 @@ class Help(commands.Cog):
             embed.add_field(name="`/my-trivia-points`", value="Check how many trivia points you have!", inline=False)
             embed.add_field(name="`/standings`", value="Get the NHL standings!", inline=False)
             embed.add_field(name="`/schedule <abbreviation>`", value="Get the schedule of an NHL team!", inline=False)
+            embed.add_field(name="`/suggest-trivia <question> <answer>`", value="Suggest a trivia question!", inline=False)
             embed.add_field(name="`/game <abbreviation>`", value="Get information about a game!", inline=False)
             embed.add_field(name="`/today`", value="List today's games!", inline=False)
             embed.add_field(name="`/trivia`", value="Answer trivia questions to earn points!", inline=False)
