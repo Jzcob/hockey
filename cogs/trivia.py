@@ -49,9 +49,19 @@ class Trivia(commands.Cog):
                 return message.channel == interaction.channel and message.author == interaction.user
 
             try:
+                # Wait for the user's answer
                 msg = await self.bot.wait_for("message", check=check, timeout=30.0)
+                user_answer = msg.content.strip().lower()
 
-                if msg.content.strip().lower() == answer.lower():
+                # Special handling for list answers
+                if ", " in answer:
+                    correct_answer_list = sorted(answer.lower().split(", "))
+                    user_answer_list = sorted(user_answer.split(", "))
+                    is_correct = correct_answer_list == user_answer_list
+                else:
+                    is_correct = user_answer == answer.lower()
+
+                if is_correct:
                     # Correct answer
                     mydb = mysql.connector.connect(
                         host=os.getenv("db_host"),
