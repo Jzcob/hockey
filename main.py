@@ -47,6 +47,14 @@ async def syncserver(ctx) -> None:
         await ctx.send(embed=embed)
 
 @bot.command()
+async def triviaquestions(ctx):
+    if ctx.author.id == config.jacob:
+        await ctx.send(file=discord.File("trivia.json"))
+    else:
+        embed = discord.Embed(title="Error", description="This is a bot admin command restricted to only the bot owner, used to get the trivia questions.", color=0xff0000)
+        await ctx.send(embed=embed)
+
+@bot.command()
 async def servers(ctx):
     if ctx.author.id == config.jacob:
         if ctx.channel.type == discord.ChannelType.private or ctx.channel.id in config.allowed_channels:   
