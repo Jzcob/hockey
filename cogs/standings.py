@@ -119,8 +119,13 @@ class standings(commands.Cog):
                     otLosses = data['standings'][i]['otLosses']
                     points = data['standings'][i]['points']
                     name = data['standings'][i]['teamName']['default']
+                    wildcardSequence = data["standings"][i]["wildcardSequence"]
+                    if wildcardSequence == 1 or wildcardSequence == 2:
+                        wildcardSequence = ":wc:"
+                    else:
+                        wildcardSequence = ""
                     new_name = strings(name)
-                    atlanticString += f"{new_name} ({wins}-{losses}-{otLosses}) {points}pts"
+                    atlanticString += f"{new_name} ({wins}-{losses}-{otLosses}) {points}pts {wildcardSequence}"
                     atlantic.append(atlanticString)
                 elif divisionName == "Metropolitan":
                     metropolitanString = ""
@@ -129,8 +134,13 @@ class standings(commands.Cog):
                     otLosses = data['standings'][i]['otLosses']
                     points = data['standings'][i]['points']
                     name = data['standings'][i]['teamName']['default']
+                    wildcardSequence = data["standings"][i]["wildcardSequence"]
+                    if wildcardSequence == 1 or wildcardSequence == 2:
+                        wildcardSequence = ":wc:"
+                    else:
+                        wildcardSequence = ""
                     new_name = strings(name)
-                    metropolitanString += f"{new_name} ({wins}-{losses}-{otLosses}) {points}pts"
+                    metropolitanString += f"{new_name} ({wins}-{losses}-{otLosses}) {points}pts {wildcardSequence}"
                     metropolitan.append(metropolitanString)
                 elif divisionName == "Central":
                     centralString = ""
@@ -139,8 +149,13 @@ class standings(commands.Cog):
                     otLosses = data['standings'][i]['otLosses']
                     points = data['standings'][i]['points']
                     name = data['standings'][i]['teamName']['default']
+                    wildcardSequence = data["standings"][i]["wildcardSequence"]
+                    if wildcardSequence == 1 or wildcardSequence == 2:
+                        wildcardSequence = ":wc:"
+                    else:
+                        wildcardSequence = ""
                     new_name = strings(name)
-                    centralString += f"{new_name} ({wins}-{losses}-{otLosses}) {points}pts"
+                    centralString += f"{new_name} ({wins}-{losses}-{otLosses}) {points}pts {wildcardSequence}"
                     central.append(centralString)
                 elif divisionName == "Pacific":
                     pacificString = ""
@@ -149,8 +164,13 @@ class standings(commands.Cog):
                     otLosses = data['standings'][i]['otLosses']
                     points = data['standings'][i]['points']
                     name = data['standings'][i]['teamName']['default']
+                    wildcardSequence = data["standings"][i]["wildcardSequence"]
+                    if wildcardSequence == 1 or wildcardSequence == 2:
+                        wildcardSequence = ":wc:"
+                    else:
+                        wildcardSequence = ""
                     new_name = strings(name)
-                    pacificString += f"{new_name} ({wins}-{losses}-{otLosses}) {points}pts"
+                    pacificString += f"{new_name} ({wins}-{losses}-{otLosses}) {points}pts {wildcardSequence}"
                     pacific.append(pacificString)
             embed = discord.Embed(title="Standings", color=config.color)
             embed.set_thumbnail(url="https://www-league.nhlstatic.com/images/logos/league-dark/133-flat.svg")
