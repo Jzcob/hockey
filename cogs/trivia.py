@@ -43,14 +43,14 @@ class Trivia(commands.Cog):
             question, answer = random.choice(list(trivia_data.items()))
 
             # Send the trivia question
-            await interaction.followup.send(f"Trivia Question: {question}\nYou have 40 seconds to answer!")
+            await interaction.followup.send(f"Trivia Question: {question}\nYou have 60 seconds to answer!")
 
             def check(message):
                 return message.channel == interaction.channel and message.author == interaction.user
 
             try:
                 # Wait for the user's answer
-                msg = await self.bot.wait_for("message", check=check, timeout=40.0)
+                msg = await self.bot.wait_for("message", check=check, timeout=60.0)
                 user_answer = msg.content.strip().lower()
 
                 # Special handling for list answers
