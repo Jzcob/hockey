@@ -2,10 +2,12 @@
 
 A discord bot that shows NHL team stats that go in-depth to some degree. The bot also shows the games that are on today as well as the current standings and schedule for any team in the league.
 
+To suggest more trivia questions feel free to use `/suggest-trivia`. Keep in mind not all questions will be used. 
 
 # How to add Hockey
 ### Add the bot through the App Discovery section of any server! Just search `Hockey`!
 
+### Discord Server: https://discord.gg/W5Jx5QSZCb
 
 # Milestones
 - Released: `11/01/2023`
