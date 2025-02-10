@@ -4,7 +4,7 @@ A discord bot that shows NHL team stats that go in-depth to some degree. The bot
 
 
 # How to add Hockey
-### Due to hockey being verfied you can add it through the App Discovery section of any server! Just search `Hockey`!
+### Add the bot through the App Discovery section of any server! Just search `Hockey`!
 
 
 # Milestones
@@ -16,4 +16,5 @@ A discord bot that shows NHL team stats that go in-depth to some degree. The bot
 - 400 servers: `07/30/2024`
 - 500 servers: `10/05/2024`
 - 600 servers: `11/22/2024`
-- 700 servers: Soon!
+- 700 servers: `02/08/2025`
+- 800 servers: Soon!
