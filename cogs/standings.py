@@ -151,7 +151,7 @@ class standings(commands.Cog):
                     name = data['standings'][i]['teamName']['default']
                     wildcardSequence = data["standings"][i]["wildcardSequence"]
                     if wildcardSequence == 1 or wildcardSequence == 2:
-                        wildcardSequence = ":wc:"
+                        wildcardSequence = ":joker:"
                     else:
                         wildcardSequence = ""
                     new_name = strings(name)
