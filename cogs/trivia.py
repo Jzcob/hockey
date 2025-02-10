@@ -54,12 +54,18 @@ class Trivia(commands.Cog):
                 user_answer = msg.content.strip().lower()
 
                 # Special handling for list answers
-                if ", " in answer:
+                if " or " in answer:
+                    # If answer contains "or", split and check if user guessed either option
+                    possible_answers = [a.strip().lower() for a in answer.split(" or ")]
+                    if user_answer in possible_answers:
+                        is_correct = True
+                elif ", " in answer:
                     correct_answer_list = sorted(answer.lower().split(", "))
                     user_answer_list = sorted(user_answer.split(", "))
                     is_correct = correct_answer_list == user_answer_list
                 else:
                     is_correct = user_answer == answer.lower()
+                
 
                 if is_correct:
                     # Correct answer
