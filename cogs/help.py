@@ -44,7 +44,7 @@ class Help(commands.Cog):
                 color=config.color
             )
             embed.set_thumbnail(url="https://cdn.discordapp.com/attachments/1156254139966292099/1156254690573557920/61487dbbd329bb0004dbd335.png")
-            if menu == "general":
+            if menu.value == "general":
                 embed.add_field(name="`/help`", value="Shows the help menu!", inline=False)
                 embed.add_field(name="`/info`", value="Shows the info menu!", inline=False)
                 embed.add_field(name="`/avatar`", value="Get the avatar of the bot or a user!", inline=False)
@@ -52,7 +52,7 @@ class Help(commands.Cog):
                     embed.add_field(name="`/weather <city> (state) (country)`", value="Get the weather of a city!", inline=False)
                     embed.add_field(name="`/f-to-c <fahrenheit>`", value="Convert Fahrenheit to Celsius!", inline=False)
                     embed.add_field(name="`/c-to-f <celsius>`", value="Convert Celsius to Fahrenheit!", inline=False)
-            elif menu == "nhl":
+            elif menu.value == "nhl":
                 embed.add_field(name="`/player <name>`", value="Gets the information of a player!", inline=False)
                 embed.add_field(name="`/team <abbreviation>`", value="Gets the information of a team!", inline=False)
                 embed.add_field(name="`/teams`", value="Lists all NHL teams!", inline=False)
@@ -62,7 +62,7 @@ class Help(commands.Cog):
                 embed.add_field(name="`/today`", value="List today's games!", inline=False)
                 embed.add_field(name="`/tomorrow`", value="List tomorrow's games!", inline=False)
                 embed.add_field(name="`/yesterday`", value="List yesterday's games!", inline=False)
-            elif menu == "games":
+            elif menu.value == "games":
                 embed.add_field(name="`/guess-the-player`", value="Guess the player!", inline=False)
                 embed.add_field(name="`/guess-the-team`", value="Guess the team!", inline=False)
                 embed.add_field(name="`/leaderboard`", value="View the leaderboards!", inline=False)
