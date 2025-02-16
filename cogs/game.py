@@ -40,13 +40,13 @@ class game(commands.Cog):
                 "PIT": "Pittsburgh Penguins", "SJS": "San Jose Sharks", "SEA": "Seattle Kraken",
                 "STL": "St. Louis Blues", "TBL": "Tampa Bay Lightning", "TOR": "Toronto Maple Leafs",
                 "UTA": "Utah Hockey Club", "VAN": "Vancouver Canucks", "VGK": "Vegas Golden Knights",
-                "WSH": "Washington Capitals", "WPG": "Winnipeg Jets"
-            }
+                "WSH": "Washington Capitals", "WPG": "Winnipeg Jets",
+                "USA": "Team USA", "CAN": "Team Canada", "SWE": "Team Sweden", "FIN": "Team Finland" }
 
             abbreviation = abbreviation.upper()
             if abbreviation not in teams:
                 await interaction.followup.send(
-                    "Invalid team abbreviation. Use `/teams` to see all of the abbreviations!"
+                    "Invalid team abbreviation. Use `/teams` to see all of the abbreviations!" 
                 )
                 return
 

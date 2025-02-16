@@ -45,7 +45,7 @@ class Help(commands.Cog):
             )
             embed.set_thumbnail(url="https://cdn.discordapp.com/attachments/1156254139966292099/1156254690573557920/61487dbbd329bb0004dbd335.png")
             if menu.value == "general":
-                embed.add_field(name="`/help`", value="Shows the help menu!", inline=False)
+                embed.add_field(name="`/help <menu>`", value="Shows the help menu's!", inline=False)
                 embed.add_field(name="`/info`", value="Shows the info menu!", inline=False)
                 embed.add_field(name="`/avatar`", value="Get the avatar of the bot or a user!", inline=False)
                 if interaction.guild and interaction.guild.id == config.hockey_discord_server:

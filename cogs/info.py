@@ -39,7 +39,7 @@ class Info(commands.Cog):
         embed.add_field(name="Discord Terms of Service", value="https://discord.com/terms", inline=False)
         embed.add_field(name="My GitHub", value="https://github.com/Jzcob/hockey", inline=False)
         embed.add_field(name="My Discord", value="https://discord.gg/W5Jx5QSZCb", inline=False)
-        embed.add_field(name="My Patreon", value="https://www.patreon.com/jzcob", inline=False)
+        embed.add_field(name="Support my Developer", value="https://www.patreon.com/jzcob", inline=False)
         embed.set_footer(text=config.footer)
         await interaction.response.send_message(embed=embed, ephemeral=True)
 async def setup(bot):

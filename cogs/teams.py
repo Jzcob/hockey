@@ -60,7 +60,11 @@ class teams(commands.Cog):
             "VAN": "Vancouver Canucks",
             "VGK": "Vegas Golden Knights",
             "WSH": "Washington Capitals",
-            "WPG": "Winnipeg Jets"
+            "WPG": "Winnipeg Jets",
+            "USA": "Team USA",
+            "CAN": "Team Canada",
+            "SWE": "Team Sweden",
+            "FIN": "Team Finland"
         }
     
         try:
