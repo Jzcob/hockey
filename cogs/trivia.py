@@ -66,8 +66,7 @@ class Trivia(commands.Cog):
                 else:
                     is_correct = user_answer == answer.lower()
                 
-                error_channel = self.bot.get_channel(config.error_channel)
-                await error_channel.send(f"User answer: {user_answer}\nCorrect answer: {answer}\nIs correct: {is_correct}")
+                await command_log_channel.send(f"User answer: {user_answer}\nCorrect answer: {answer}\nIs correct: {is_correct}")
                 if is_correct:
                     # Correct answer
                     mydb = mysql.connector.connect(
