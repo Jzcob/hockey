@@ -35,6 +35,7 @@ class Trivia(commands.Cog):
 
         used.update({interaction.user.id: True})
         await interaction.response.defer()
+        is_correct = ""
 
         try:
             with open("trivia.json", "r", encoding="utf-8") as f:
