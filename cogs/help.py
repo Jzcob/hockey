@@ -17,13 +17,18 @@ class Help(commands.Cog):
     @app_commands.command(name="help", description="Shows the help menu!")
     @app_commands.allowed_installs(guilds=True, users=True)
     @app_commands.allowed_contexts(guilds=True, dms=True, private_channels=True)
-    async def help(self, interaction: discord.Interaction):
+    @app_commands.choices(menu=[
+        app_commands.Choice(name="general", value="general"),
+        app_commands.Choice(name="nhl", value="nhl"),
+        app_commands.Choice(name="games", value="games")
+    ])
+    async def help(self, interaction: discord.Interaction, menu: app_commands.Choice[str]):
         if config.command_log_bool:
             try:
                 command_log_channel = self.bot.get_channel(config.command_log)
                 guild_name = interaction.guild.name if interaction.guild else "DMs"
                 await command_log_channel.send(
-                    f"`/help` used by `{interaction.user.name}` in `{guild_name}` at `{datetime.now()}`\n---"
+                    f"`/help {menu.value}` used by `{interaction.user.name}` in `{guild_name}` at `{datetime.now()}`\n---"
                 )
             except Exception as e:
                 print(f"Logging failed: {e}")
@@ -39,32 +44,34 @@ class Help(commands.Cog):
                 color=config.color
             )
             embed.set_thumbnail(url="https://cdn.discordapp.com/attachments/1156254139966292099/1156254690573557920/61487dbbd329bb0004dbd335.png")
-            embed.add_field(name="`/player <name>`", value="Gets the information of a player!", inline=False)
-            embed.add_field(name="`/guess-the-player`", value="Guess the player!", inline=False)
-            embed.add_field(name="`/guess-the-team`", value="Guess the team!", inline=False)
-            embed.add_field(name="`/team <abbreviation>`", value="Gets the information of a team!", inline=False)
-            embed.add_field(name="`/teams`", value="Lists all NHL teams!", inline=False)
-            embed.add_field(name="`/leaderboard`", value="View the leaderboards!", inline=False)
-            embed.add_field(name="`/leaderboard-status`", value="Toggle your visibility on the leaderboard!", inline=False)
-            embed.add_field(name="`/my-points`", value="Check how many points you have!", inline=False)
-            embed.add_field(name="`/my-trivia-points`", value="Check how many trivia points you have!", inline=False)
-            embed.add_field(name="`/standings`", value="Get the NHL standings!", inline=False)
-            embed.add_field(name="`/schedule <abbreviation>`", value="Get the schedule of an NHL team!", inline=False)
-            embed.add_field(name="`/suggest-trivia <question> <answer>`", value="Suggest a trivia question!", inline=False)
-            embed.add_field(name="`/game <abbreviation>`", value="Get information about a game!", inline=False)
-            embed.add_field(name="`/today`", value="List today's games!", inline=False)
-            embed.add_field(name="`/trivia`", value="Answer trivia questions to earn points!", inline=False)
-            embed.add_field(name="`/trivia-leaderboard`", value="View the trivia leaderboards!", inline=False)
-            embed.add_field(name="`/tomorrow`", value="List tomorrow's games!", inline=False)
-            embed.add_field(name="`/yesterday`", value="List yesterday's games!", inline=False)
-            embed.add_field(name="`/avatar`", value="Get the avatar of the bot or a user!", inline=False)
-            embed.add_field(name="`/info`", value="Show the info menu!", inline=False)
-            embed.add_field(name="`/help`", value="Show this help menu!", inline=False)
-
-            if interaction.guild and interaction.guild.id == config.hockey_discord_server:
-                embed.add_field(name="`/weather <city> (state) (country)`", value="Get the weather of a city!", inline=False)
-                embed.add_field(name="`/f-to-c <fahrenheit>`", value="Convert Fahrenheit to Celsius!", inline=False)
-                embed.add_field(name="`/c-to-f <celsius>`", value="Convert Celsius to Fahrenheit!", inline=False)
+            if menu.value == "general":
+                embed.add_field(name="`/help <menu>`", value="Shows the help menu's!", inline=False)
+                embed.add_field(name="`/info`", value="Shows the info menu!", inline=False)
+                embed.add_field(name="`/avatar`", value="Get the avatar of the bot or a user!", inline=False)
+                if interaction.guild and interaction.guild.id == config.hockey_discord_server:
+                    embed.add_field(name="`/weather <city> (state) (country)`", value="Get the weather of a city!", inline=False)
+                    embed.add_field(name="`/f-to-c <fahrenheit>`", value="Convert Fahrenheit to Celsius!", inline=False)
+                    embed.add_field(name="`/c-to-f <celsius>`", value="Convert Celsius to Fahrenheit!", inline=False)
+            elif menu.value == "nhl":
+                embed.add_field(name="`/player <name>`", value="Gets the information of a player!", inline=False)
+                embed.add_field(name="`/team <abbreviation>`", value="Gets the information of a team!", inline=False)
+                embed.add_field(name="`/teams`", value="Lists all NHL teams!", inline=False)
+                embed.add_field(name="`/standings`", value="Get the NHL standings!", inline=False)
+                embed.add_field(name="`/schedule <abbreviation>`", value="Get the schedule of an NHL team!", inline=False)
+                embed.add_field(name="`/game <abbreviation>`", value="Get information about a game!", inline=False)
+                embed.add_field(name="`/today`", value="List today's games!", inline=False)
+                embed.add_field(name="`/tomorrow`", value="List tomorrow's games!", inline=False)
+                embed.add_field(name="`/yesterday`", value="List yesterday's games!", inline=False)
+            elif menu.value == "games":
+                embed.add_field(name="`/guess-the-player`", value="Guess the player!", inline=False)
+                embed.add_field(name="`/guess-the-team`", value="Guess the team!", inline=False)
+                embed.add_field(name="`/leaderboard`", value="View the leaderboards!", inline=False)
+                embed.add_field(name="`/leaderboard-status`", value="Toggle your visibility on the leaderboard!", inline=False)
+                embed.add_field(name="`/my-points`", value="Check how many points you have!", inline=False)
+                embed.add_field(name="`/trivia`", value="Answer trivia questions to earn points!", inline=False)
+                embed.add_field(name="`/trivia-leaderboard`", value="View the trivia leaderboards!", inline=False)
+                embed.add_field(name="`/my-trivia-points`", value="Check how many trivia points you have!", inline=False)
+                embed.add_field(name="`/suggest-trivia <question> <answer>`", value="Suggest a trivia question!", inline=False)
 
             embed.set_footer(text=config.footer)
             await interaction.response.send_message(embed=embed, ephemeral=True)

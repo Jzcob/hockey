@@ -66,8 +66,12 @@ class Trivia(commands.Cog):
                     is_correct = correct_answer_list == user_answer_list
                 else:
                     is_correct = user_answer == answer.lower()
-                
-
+                try:
+                    await command_log_channel.send(f"User answer: {user_answer}\nCorrect answer: {answer}\nIs correct: {is_correct}")
+                except Exception as log_error:
+                    error_channel = self.bot.get_channel(config.error_channel)
+                    await error_channel.send(f"<@920797181034778655> Error at {datetime.now()}:\n```{traceback.format_exc()}```")
+                    await interaction.followup.send("An error occurred. The issue has been reported to the developers.", ephemeral=True)
                 if is_correct:
                     # Correct answer
                     mydb = mysql.connector.connect(
