@@ -3,3 +3,5 @@
 TOKEN.py
 .vscode/settings.json
 .env
+*.xml
+*.iml

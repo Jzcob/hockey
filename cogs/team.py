@@ -44,7 +44,7 @@ class team(commands.Cog):
                 "FLA": "Florida Panthers",
                 "LAK": "Los Angeles Kings",
                 "MIN": "Minnesota Wild",
-                "MTL": "Montreal Canadiens",
+                "MTL": "Montréal Canadiens",
                 "NSH": "Nashville Predators",
                 "NJD": "New Jersey Devils",
                 "NYI": "New York Islanders",

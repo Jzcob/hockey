@@ -41,7 +41,18 @@ class Trivia(commands.Cog):
             with open("trivia.json", "r", encoding="utf-8") as f:
                 trivia_data = json.load(f)
 
-            question, answer = random.choice(list(trivia_data.items()))
+            question0, answer0 = random.choice(list(trivia_data.items()))
+            question1, answer1 = random.choice(list(trivia_data.items()))
+            question2, answer2 = random.choice(list(trivia_data.items()))
+
+            question = random.choice([question0, question1, question2])
+            if question == question0:
+                answer = answer0
+            elif question == question1:
+                answer = answer1
+            else:
+                answer = answer2
+
 
             # Send the trivia question
             await interaction.followup.send(f"Trivia Question: {question}\nYou have 60 seconds to answer!")
