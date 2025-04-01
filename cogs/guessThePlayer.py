@@ -1,43 +1,43 @@
 import discord
-from discord import app_commands
 from discord.ext import commands
-import requests
-import json
-import random
-import config
-import asyncio
-import traceback
+from discord import app_commands
 import mysql.connector
 import os
+import random
+import asyncio
+import requests
+import config
 from datetime import datetime
-import time
+import traceback
 
-used = {}
-
-
-
-class guessThePlayer(commands.Cog):
-    def __init__(self, bot): 
+class GTP(commands.Cog):
+    def __init__(self, bot):
         self.bot = bot
-    
-    @commands.Cog.listener()
-    async def on_ready(self):
-        print(f"LOADED: `guessThePlayer.py`")
-    
+        self.used = {}
+
+    def migrate_gtp(self, cursor, user_id, actual_guild_id):
+        cursor.execute("SELECT points FROM gtp_scores WHERE user_id = %s AND guild_id = 0", (user_id,))
+        row = cursor.fetchone()
+        if row:
+            points_from_zero = row[0]
+            cursor.execute("SELECT points FROM gtp_scores WHERE user_id = %s AND guild_id = %s", (user_id, actual_guild_id))
+            exists = cursor.fetchone()
+            if exists:
+                cursor.execute("""
+                    UPDATE gtp_scores
+                    SET points = points + %s
+                    WHERE user_id = %s AND guild_id = %s
+                """, (points_from_zero, user_id, actual_guild_id))
+                cursor.execute("DELETE FROM gtp_scores WHERE user_id = %s AND guild_id = 0", (user_id,))
+            else:
+                cursor.execute("""
+                    UPDATE gtp_scores
+                    SET guild_id = %s
+                    WHERE user_id = %s AND guild_id = 0
+                """, (actual_guild_id, user_id))
 
     @app_commands.command(name="guess-the-player", description="Guess the player!")
-    @app_commands.checks.cooldown(1.0, 15.0, key=lambda i: (i.guild.id))
-    @app_commands.checks.cooldown(1.0, 60.0, key=lambda i: (i.user.id))
-    async def guessThePlayer(self, interaction: discord.Interaction):
-        if config.command_log_bool:
-            try:
-                command_log_channel = self.bot.get_channel(config.command_log)
-                guild_name = interaction.guild.name if interaction.guild else "DMs"
-                await command_log_channel.send(f"`/guess-the-player` used by `{interaction.user.name}` in `{guild_name}` at `{datetime.now()}`\n---")
-            except Exception as log_error:
-                print(f"Command logging failed: {log_error}")
-
-        used.update({interaction.user.id: True})
+    async def guess_the_player(self, interaction: discord.Interaction):
         await interaction.response.defer()
 
         try:
@@ -56,7 +56,7 @@ class guessThePlayer(commands.Cog):
                 "FLA": "Florida Panthers",
                 "LAK": "Los Angeles Kings",
                 "MIN": "Minnesota Wild",
-                "MTL": "Montreal Canadiens",
+                "MTL": "Montréal Canadiens",
                 "NSH": "Nashville Predators",
                 "NJD": "New Jersey Devils",
                 "NYI": "New York Islanders",
@@ -64,8 +64,8 @@ class guessThePlayer(commands.Cog):
                 "OTT": "Ottawa Senators",
                 "PHI": "Philadelphia Flyers",
                 "PIT": "Pittsburgh Penguins",
+                "SEA": "Seattle Kraken",
                 "SJS": "San Jose Sharks",
-                "SEA": "Seattle Kraken",   
                 "STL": "St. Louis Blues",
                 "TBL": "Tampa Bay Lightning",
                 "TOR": "Toronto Maple Leafs",
@@ -75,24 +75,19 @@ class guessThePlayer(commands.Cog):
                 "WSH": "Washington Capitals",
                 "WPG": "Winnipeg Jets"
             }
-
             team = random.choice(list(teams.keys()))
             team_name = teams[team]
             url = f"https://api-web.nhle.com/v1/roster/{team}/current"
-            
-            try:
-                response = requests.get(url)
-                response.raise_for_status()
-                x = response.json()
-            except requests.exceptions.RequestException as e:
-                await interaction.followup.send("Could not fetch team data. Please try again later.", ephemeral=True)
-                raise e
+
+            response = requests.get(url)
+            response.raise_for_status()
+            x = response.json()
 
             positions = ["forwards", "defensemen", "goalies"]
             position = random.choice(positions)
             roster = x.get(position, [])
             if not roster:
-                await interaction.followup.send(f"No players found for position `{position}` in the `{team_name}`.")
+                await interaction.followup.send(f"No players found for `{team_name}` ({position})")
                 return
 
             player = random.choice(roster)
@@ -100,23 +95,13 @@ class guessThePlayer(commands.Cog):
             last_name = player.get("lastName", {}).get("default", "Unknown")
             full_name = f"{first_name} {last_name}"
             position_code = player.get("positionCode", "Unknown")
+            position_full = {"G": "Goalie", "D": "Defenseman", "C": "Center", "L": "Left Wing", "R": "Right Wing"}.get(position_code, "Unknown")
+            hint = f"(Hint: Their name starts with `{first_name[0]}` and they play `{position_full}`)"
 
-            position_full = {
-                "G": "Goalie",
-                "D": "Defenseman",
-                "C": "Center",
-                "L": "Left Wing",
-                "R": "Right Wing"
-            }.get(position_code, "Unknown Position")
-
-            hint = f"(Hint: Their first name starts with `{first_name[0]}` and they play `{position_full}`)"
             await interaction.followup.send(f"Guess the player from the `{team_name}`! You have 15 seconds! {hint}")
 
-            if config.dev_mode and interaction.user.id == config.jacob:
-                await interaction.followup.send(f"**DEBUG**: The player is `{full_name}`")
-
-            def check(message):
-                return message.channel == interaction.channel and message.content.lower() == full_name.lower()
+            def check(m):
+                return m.channel == interaction.channel and m.author == interaction.user and m.content.lower() == full_name.lower()
 
             try:
                 msg = await self.bot.wait_for("message", check=check, timeout=15.0)
@@ -128,45 +113,132 @@ class guessThePlayer(commands.Cog):
                     database=os.getenv("db_name")
                 )
                 mycursor = mydb.cursor()
-                mycursor.execute("SELECT * FROM gtp WHERE id = %s", (msg.author.id,))
-                myresult = mycursor.fetchone()
+                self.migrate_gtp(mycursor, msg.author.id, interaction.guild.id)
 
-                if not myresult:
-                    mycursor.execute(
-                        "INSERT INTO gtp (id, points, allow_leaderboard) VALUES (%s, %s, %s)",
-                        (msg.author.id, 1, True)
-                    )
-                    await interaction.followup.send(
-                        f"Congratulations, {msg.author.mention}! You guessed the player! You have been added to the leaderboard!"
-                    )
-                else:
-                    points = myresult[1] + 1
-                    mycursor.execute("UPDATE gtp SET points = %s WHERE id = %s", (points, msg.author.id))
-                    await interaction.followup.send(f"Congratulations, {msg.author.mention}! You guessed the player!")
+                mycursor.execute("""
+                    INSERT INTO gtp_users (user_id, allow_leaderboard)
+                    VALUES (%s, 1)
+                    ON DUPLICATE KEY UPDATE user_id = user_id
+                """, (msg.author.id,))
 
+                mycursor.execute("""
+                    INSERT INTO gtp_scores (user_id, guild_id, points)
+                    VALUES (%s, %s, 1)
+                    ON DUPLICATE KEY UPDATE points = points + 1
+                """, (msg.author.id, interaction.guild.id))
                 mydb.commit()
                 mydb.close()
+
+                await interaction.followup.send(f"Correct! 🎉 The player was `{full_name}`. Well done, {msg.author.mention}!")
+
             except asyncio.TimeoutError:
                 await interaction.followup.send(f"Time's up! The correct answer was `{full_name}`.")
+
+        except Exception:
+            await interaction.followup.send("An error occurred while processing your request.", ephemeral=True)
+            traceback.print_exc()
+
+    @app_commands.command(name="leaderboard", description="View Guess the Player leaderboard")
+    @app_commands.describe(global_view="Show global leaderboard instead of just this server.")
+    async def leaderboard(self, interaction: discord.Interaction, global_view: bool = False):
+        await interaction.response.defer()
+        msg = await interaction.original_response()
+
+        try:
+            mydb = mysql.connector.connect(
+                host=os.getenv("db_host"),
+                user=os.getenv("db_user"),
+                password=os.getenv("db_password"),
+                database=os.getenv("db_name")
+            )
+            mycursor = mydb.cursor()
+            self.migrate_gtp(mycursor, interaction.user.id, interaction.guild.id)
+
+            if global_view:
+                mycursor.execute("""
+                    SELECT gs.user_id, SUM(gs.points) AS total_points, gu.allow_leaderboard
+                    FROM gtp_scores gs
+                    JOIN gtp_users gu ON gs.user_id = gu.user_id
+                    GROUP BY gs.user_id
+                    HAVING gu.allow_leaderboard = 1
+                    ORDER BY total_points DESC
+                    LIMIT 10
+                """)
+            else:
+                mycursor.execute("""
+                    SELECT gs.user_id, gs.points, gu.allow_leaderboard
+                    FROM gtp_scores gs
+                    JOIN gtp_users gu ON gs.user_id = gu.user_id
+                    WHERE gs.guild_id = %s AND gu.allow_leaderboard = 1
+                    ORDER BY gs.points DESC
+                    LIMIT 10
+                """, (interaction.guild.id,))
+
+            rows = mycursor.fetchall()
+            embed = discord.Embed(title="🏒 Guess The Player Leaderboard", color=0x00ff00)
+            embed.set_footer(text=config.footer)
+            lb = ""
+            for i, (uid, pts, show) in enumerate(rows, start=1):
+                name = "Anonymous" if not show else (await self.bot.fetch_user(uid)).name
+                lb += f"{i}. `{name}` - `{pts:,}` point{'s' if pts != 1 else ''}\n"
+            embed.description = lb or "No entries yet!"
+            await msg.edit(embed=embed)
+            mydb.close()
         except Exception as e:
-            error_channel = self.bot.get_channel(config.error_channel)
-            await error_channel.send(f"<@920797181034778655> Error at {datetime.now()}:\n```{traceback.format_exc()}```")
-            await interaction.followup.send("An error occurred. The issue has been reported to the developers.", ephemeral=True)
+            traceback.print_exc()
+            await msg.edit(content="Failed to load leaderboard. Please try again later.")
 
-        finally:
-            used.pop(interaction.user.id, None)
-    
-    @guessThePlayer.error
-    async def guessThePlayer_error(self, interaction: discord.Interaction , error):
-        if used.get(interaction.user.id) == True:
-            await interaction.response.send_message("You have already used the command! Please allow the timer to end before using the command again!", ephemeral=True)
-            return
-        else:
-            now = datetime.now()
-            cmd_cool = int(error.retry_after) + 1
-            new_time = time.mktime(now.timetuple()) + cmd_cool
-            await interaction.response.send_message(f"Command on cooldown! Try again <t:{int(new_time)}:R>.", ephemeral=True)
+    @app_commands.command(name="leaderboard-status", description="Toggle your leaderboard visibility")
+    @app_commands.choices(allow=[
+        app_commands.Choice(name="on", value="t"),
+        app_commands.Choice(name="off", value="f")
+    ])
+    async def leaderboard_status(self, interaction: discord.Interaction, allow: discord.app_commands.Choice[str]):
+        try:
+            allow_bool = allow.value == "t"
+            mydb = mysql.connector.connect(
+                host=os.getenv("db_host"),
+                user=os.getenv("db_user"),
+                password=os.getenv("db_password"),
+                database=os.getenv("db_name")
+            )
+            mycursor = mydb.cursor()
+            self.migrate_gtp(mycursor, interaction.user.id, interaction.guild.id)
+            mycursor.execute("""
+                INSERT INTO gtp_users (user_id, allow_leaderboard)
+                VALUES (%s, %s)
+                ON DUPLICATE KEY UPDATE allow_leaderboard = %s
+            """, (interaction.user.id, allow_bool, allow_bool))
+            mydb.commit()
+            mydb.close()
+            await interaction.response.send_message(f"Your leaderboard status is now `{allow_bool}`", ephemeral=True)
+        except Exception:
+            traceback.print_exc()
+            await interaction.response.send_message("Error updating leaderboard status.", ephemeral=True)
 
+    @app_commands.command(name="my-points", description="Check your Guess the Player points")
+    async def my_points(self, interaction: discord.Interaction):
+        try:
+            mydb = mysql.connector.connect(
+                host=os.getenv("db_host"),
+                user=os.getenv("db_user"),
+                password=os.getenv("db_password"),
+                database=os.getenv("db_name")
+            )
+            mycursor = mydb.cursor()
+            self.migrate_gtp(mycursor, interaction.user.id, interaction.guild.id)
+
+            mycursor.execute("SELECT points FROM gtp_scores WHERE user_id = %s AND guild_id = %s",
+                             (interaction.user.id, interaction.guild.id))
+            row = mycursor.fetchone()
+            points = row[0] if row else 0
+
+            await interaction.response.send_message(f"You have `{points:,}` point{'s' if points != 1 else ''} in this server!", ephemeral=True)
+            mydb.commit()
+            mydb.close()
+        except Exception:
+            traceback.print_exc()
+            await interaction.response.send_message("Error retrieving your points.", ephemeral=True)
 
 async def setup(bot):
-    await bot.add_cog(guessThePlayer(bot))
+    await bot.add_cog(GTP(bot))

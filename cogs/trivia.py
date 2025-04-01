@@ -16,75 +16,180 @@ used = {}
 class Trivia(commands.Cog):
     def __init__(self, bot):
         self.bot = bot
+        self.used = {}
 
-    @commands.Cog.listener()
-    async def on_ready(self):
-        print("LOADED: `trivia.py`")
+    def migrate_guild_id(self, cursor, user_id, actual_guild_id):
+        cursor.execute("SELECT points FROM trivia_scores WHERE user_id = %s AND guild_id = 0", (user_id,))
+        row = cursor.fetchone()
+        if row:
+            points_from_zero = row[0]
+            cursor.execute("SELECT points FROM trivia_scores WHERE user_id = %s AND guild_id = %s", (user_id, actual_guild_id))
+            exists = cursor.fetchone()
+            if exists:
+                cursor.execute("""
+                    UPDATE trivia_scores
+                    SET points = points + %s
+                    WHERE user_id = %s AND guild_id = %s
+                """, (points_from_zero, user_id, actual_guild_id))
+                cursor.execute("DELETE FROM trivia_scores WHERE user_id = %s AND guild_id = 0", (user_id,))
+            else:
+                cursor.execute("""
+                    UPDATE trivia_scores
+                    SET guild_id = %s
+                    WHERE user_id = %s AND guild_id = 0
+                """, (actual_guild_id, user_id))
+
+    @app_commands.command(name="trivia-leaderboard", description="View the trivia leaderboards!")
+    @app_commands.describe(global_view="Show global leaderboard instead of just this server.")
+    async def trivia_leaderboard(self, interaction: discord.Interaction, global_view: bool = False):
+        try:
+            await interaction.response.defer()
+            msg = await interaction.original_response()
+
+            mydb = mysql.connector.connect(
+                host=os.getenv("db_host"),
+                user=os.getenv("db_user"),
+                password=os.getenv("db_password"),
+                database=os.getenv("db_name")
+            )
+            mycursor = mydb.cursor()
+            self.migrate_guild_id(mycursor, interaction.user.id, interaction.guild.id)
+
+            if global_view:
+                mycursor.execute("""
+                    SELECT ts.user_id, SUM(ts.points) AS total_points, tu.allow_leaderboard
+                    FROM trivia_scores ts
+                    JOIN trivia_users tu ON ts.user_id = tu.user_id
+                    GROUP BY ts.user_id
+                    HAVING tu.allow_leaderboard = 1
+                    ORDER BY total_points DESC
+                    LIMIT 10
+                """)
+            else:
+                mycursor.execute("""
+                    SELECT ts.user_id, ts.points, tu.allow_leaderboard
+                    FROM trivia_scores ts
+                    JOIN trivia_users tu ON ts.user_id = tu.user_id
+                    WHERE ts.guild_id = %s AND tu.allow_leaderboard = 1
+                    ORDER BY ts.points DESC
+                    LIMIT 10
+                """, (interaction.guild.id,))
+
+            myresult = mycursor.fetchall()
+            title = "🌐 Global Trivia Leaderboard" if global_view else "Trivia Leaderboard"
+            embed = discord.Embed(title=title, color=0x00ff00)
+            embed.set_footer(text=config.footer)
+            lb = ""
+            for i, (user_id, points, allow) in enumerate(myresult, start=1):
+                name = "Anonymous" if not allow else (await self.bot.fetch_user(user_id)).name
+                lb += f"{i}. `{name}` - `{points:,}` point{'s' if points != 1 else ''}\n"
+
+            embed.description = lb or "No entries yet!"
+            await msg.edit(embed=embed)
+            mydb.commit()
+            mydb.close()
+        except Exception as e:
+            traceback.print_exc()
+            await msg.edit(content="An error occurred. Please try again later.")
+
+    @app_commands.command(name="trivia-leaderboard-status", description="Toggles if you are displayed on the trivia leaderboard!")
+    @app_commands.describe(allow="On to be shown (default), Off to not be shown.")
+    @app_commands.choices(allow=[
+        app_commands.Choice(name='on', value='t'),
+        app_commands.Choice(name='off', value='f')
+    ])
+    async def trivia_leaderboard_status(self, interaction: discord.Interaction, allow: discord.app_commands.Choice[str]):
+        try:
+            allow_bool = allow.value == 't'
+            mydb = mysql.connector.connect(
+                host=os.getenv("db_host"),
+                user=os.getenv("db_user"),
+                password=os.getenv("db_password"),
+                database=os.getenv("db_name")
+            )
+            mycursor = mydb.cursor()
+            self.migrate_guild_id(mycursor, interaction.user.id, interaction.guild.id)
+            mycursor.execute("""
+                INSERT INTO trivia_users (user_id, allow_leaderboard)
+                VALUES (%s, %s)
+                ON DUPLICATE KEY UPDATE allow_leaderboard = %s
+            """, (interaction.user.id, allow_bool, allow_bool))
+            mydb.commit()
+            mydb.close()
+            await interaction.response.send_message(f"Trivia leaderboard status updated to `{allow_bool}`", ephemeral=True)
+        except Exception as e:
+            traceback.print_exc()
+            await interaction.response.send_message("Error occurred while updating your leaderboard status.", ephemeral=True)
+
+    @app_commands.command(name="my-trivia-points", description="View your trivia points!")
+    async def my_trivia_points(self, interaction: discord.Interaction):
+        try:
+            mydb = mysql.connector.connect(
+                host=os.getenv("db_host"),
+                user=os.getenv("db_user"),
+                password=os.getenv("db_password"),
+                database=os.getenv("db_name")
+            )
+            mycursor = mydb.cursor()
+            self.migrate_guild_id(mycursor, interaction.user.id, interaction.guild.id)
+            mycursor.execute("SELECT points FROM trivia_scores WHERE user_id = %s AND guild_id = %s",
+                             (interaction.user.id, interaction.guild.id))
+            result = mycursor.fetchone()
+
+            if not result:
+                points = 0
+                mycursor.execute("""
+                    INSERT INTO trivia_users (user_id, allow_leaderboard) 
+                    VALUES (%s, 1) 
+                    ON DUPLICATE KEY UPDATE user_id = user_id
+                """, (interaction.user.id,))
+                mycursor.execute("""
+                    INSERT INTO trivia_scores (user_id, guild_id, points) 
+                    VALUES (%s, %s, 0)
+                """, (interaction.user.id, interaction.guild.id))
+                mydb.commit()
+            else:
+                points = result[0]
+
+            await interaction.response.send_message(f"You have `{points:,}` point{'s' if points != 1 else ''} in this server!", ephemeral=True)
+            mydb.commit()
+            mydb.close()
+        except Exception as e:
+            traceback.print_exc()
+            await interaction.response.send_message("An error occurred while retrieving your points.", ephemeral=True)
 
     @app_commands.command(name="trivia", description="Answer trivia questions to earn points!")
-    @app_commands.checks.cooldown(1.0, 15.0, key=lambda i: (i.guild.id))
-    @app_commands.checks.cooldown(1.0, 60.0, key=lambda i: (i.user.id))
     async def trivia(self, interaction: discord.Interaction):
-        if config.command_log_bool:
-            try:
-                command_log_channel = self.bot.get_channel(config.command_log)
-                guild_name = interaction.guild.name if interaction.guild else "DMs"
-                await command_log_channel.send(f"`/trivia` used by `{interaction.user.name}` in `{guild_name}` at `{datetime.now()}`\n---")
-            except Exception as log_error:
-                print(f"Command logging failed: {log_error}")
-
-        used.update({interaction.user.id: True})
-        await interaction.response.defer()
-        is_correct = ""
-
         try:
+            self.used[interaction.user.id] = True
+            await interaction.response.defer()
+
             with open("trivia.json", "r", encoding="utf-8") as f:
                 trivia_data = json.load(f)
 
-            question0, answer0 = random.choice(list(trivia_data.items()))
-            question1, answer1 = random.choice(list(trivia_data.items()))
-            question2, answer2 = random.choice(list(trivia_data.items()))
+            q1, a1 = random.choice(list(trivia_data.items()))
+            q2, a2 = random.choice(list(trivia_data.items()))
+            q3, a3 = random.choice(list(trivia_data.items()))
+            question, answer = random.choice([(q1, a1), (q2, a2), (q3, a3)])
 
-            question = random.choice([question0, question1, question2])
-            if question == question0:
-                answer = answer0
-            elif question == question1:
-                answer = answer1
-            else:
-                answer = answer2
-
-
-            # Send the trivia question
             await interaction.followup.send(f"Trivia Question: {question}\nYou have 60 seconds to answer!")
 
             def check(message):
                 return message.channel == interaction.channel and message.author == interaction.user
 
             try:
-                # Wait for the user's answer
                 msg = await self.bot.wait_for("message", check=check, timeout=60.0)
                 user_answer = msg.content.strip().lower()
 
-                # Special handling for list answers
+                correct = False
                 if " or " in answer:
-                    # If answer contains "or", split and check if user guessed either option
-                    possible_answers = [a.strip().lower() for a in answer.split(" or ")]
-                    if user_answer in possible_answers:
-                        is_correct = True
+                    correct = user_answer in [a.strip().lower() for a in answer.split(" or ")]
                 elif ", " in answer:
-                    correct_answer_list = sorted(answer.lower().split(", "))
-                    user_answer_list = sorted(user_answer.split(", "))
-                    is_correct = correct_answer_list == user_answer_list
+                    correct = sorted(user_answer.split(", ")) == sorted(answer.lower().split(", "))
                 else:
-                    is_correct = user_answer == answer.lower()
-                try:
-                    await command_log_channel.send(f"User answer: {user_answer}\nCorrect answer: {answer}\nIs correct: {is_correct}")
-                except Exception as log_error:
-                    error_channel = self.bot.get_channel(config.error_channel)
-                    await error_channel.send(f"<@920797181034778655> Error at {datetime.now()}:\n```{traceback.format_exc()}```")
-                    await interaction.followup.send("An error occurred. The issue has been reported to the developers.", ephemeral=True)
-                if is_correct:
-                    # Correct answer
+                    correct = user_answer == answer.lower()
+
+                if correct:
                     mydb = mysql.connector.connect(
                         host=os.getenv("db_host"),
                         user=os.getenv("db_user"),
@@ -92,52 +197,34 @@ class Trivia(commands.Cog):
                         database=os.getenv("db_name")
                     )
                     mycursor = mydb.cursor()
-                    mycursor.execute("SELECT * FROM trivia WHERE id = %s", (msg.author.id,))
-                    myresult = mycursor.fetchone()
+                    self.migrate_guild_id(mycursor, interaction.user.id, interaction.guild.id)
+                    mycursor.execute("""
+                        INSERT INTO trivia_users (user_id, allow_leaderboard)
+                        VALUES (%s, 1)
+                        ON DUPLICATE KEY UPDATE user_id = user_id
+                    """, (interaction.user.id,))
 
-                    if not myresult:
-                        mycursor.execute(
-                            "INSERT INTO trivia (id, points, allow_leaderboard) VALUES (%s, %s, %s)",
-                            (msg.author.id, 1, True)
-                        )
-                        await interaction.followup.send(
-                            f"Correct! 🎉 {msg.author.mention}, you earned your first point! You've been added to the leaderboard!"
-                        )
-                    else:
-                        points = myresult[1] + 1
-                        mycursor.execute("UPDATE trivia SET points = %s WHERE id = %s", (points, msg.author.id))
-                        await interaction.followup.send(
-                            f"Correct! 🎉 {msg.author.mention}, you've earned another point! You now have `{points}` points!"
-                        )
-
+                    mycursor.execute("""
+                        INSERT INTO trivia_scores (user_id, guild_id, points)
+                        VALUES (%s, %s, 1)
+                        ON DUPLICATE KEY UPDATE points = points + 1
+                    """, (interaction.user.id, interaction.guild.id))
                     mydb.commit()
                     mydb.close()
+
+                    await interaction.followup.send(f"Correct! 🎉 {interaction.user.mention}, you earned a point!")
                 else:
-                    # Incorrect answer
                     await interaction.followup.send(f"Wrong answer! The correct answer was: `{answer}`")
 
             except asyncio.TimeoutError:
-                # No answer in time
                 await interaction.followup.send(f"Time's up! The correct answer was: `{answer}`")
 
         except Exception as e:
-            error_channel = self.bot.get_channel(config.error_channel)
-            await error_channel.send(f"<@920797181034778655> Error at {datetime.now()}:\n```{traceback.format_exc()}```")
-            await interaction.followup.send("An error occurred. The issue has been reported to the developers.", ephemeral=True)
+            traceback.print_exc()
+            await interaction.followup.send("An error occurred. Please try again later.", ephemeral=True)
 
         finally:
-            used.pop(interaction.user.id, None)
-
-    @trivia.error
-    async def trivia_error(self, interaction: discord.Interaction , error):
-        if used.get(interaction.user.id) == True:
-            await interaction.response.send_message("You have already used the command! Please allow the timer to end before using the command again!", ephemeral=True)
-            return
-        else:
-            now = datetime.now()
-            cmd_cool = int(error.retry_after) + 1
-            new_time = time.mktime(now.timetuple()) + cmd_cool
-            await interaction.response.send_message(f"Command on cooldown! Try again <t:{int(new_time)}:R>.", ephemeral=True)
+            self.used.pop(interaction.user.id, None)
 
 async def setup(bot):
     await bot.add_cog(Trivia(bot))

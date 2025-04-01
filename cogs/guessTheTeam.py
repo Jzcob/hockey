@@ -38,7 +38,7 @@ class GuessTheTeam(commands.Cog):
                 "Carolina Hurricanes", "Chicago Blackhawks", "Colorado Avalanche",
                 "Columbus Blue Jackets", "Dallas Stars", "Detroit Red Wings",
                 "Edmonton Oilers", "Florida Panthers", "Los Angeles Kings",
-                "Minnesota Wild", "Montreal Canadiens", "Nashville Predators",
+                "Minnesota Wild", "Montréal Canadiens", "Nashville Predators",
                 "New Jersey Devils", "New York Islanders", "New York Rangers",
                 "Ottawa Senators", "Philadelphia Flyers", "Pittsburgh Penguins",
                 "Seattle Kraken", "San Jose Sharks", "St. Louis Blues",
