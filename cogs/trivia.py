@@ -42,6 +42,14 @@ class Trivia(commands.Cog):
     @app_commands.command(name="trivia-leaderboard", description="View the trivia leaderboards!")
     @app_commands.describe(global_view="Show global leaderboard instead of just this server.")
     async def trivia_leaderboard(self, interaction: discord.Interaction, global_view: bool = False):
+        if config.command_log_bool == True:
+            command_log_channel = self.bot.get_channel(config.command_log)
+            if interaction.guild == None:
+                await command_log_channel.send(f"`/trivia-leaderboard` used by `{interaction.user.name}` in DMs at `{datetime.now()}`\n---")
+            elif interaction.guild.name == "":
+                await command_log_channel.send(f"`/trivia-leaderboard` used by `{interaction.user.name}` in an unknown server at `{datetime.now()}`\n---")
+            else:
+                await command_log_channel.send(f"`/trivia-leaderboard` used by `{interaction.user.name}` in `{interaction.guild.name}` at `{datetime.now()}`\n---")
         try:
             await interaction.response.defer()
             msg = await interaction.original_response()
@@ -99,6 +107,14 @@ class Trivia(commands.Cog):
         app_commands.Choice(name='off', value='f')
     ])
     async def trivia_leaderboard_status(self, interaction: discord.Interaction, allow: discord.app_commands.Choice[str]):
+        if config.command_log_bool == True:
+            command_log_channel = self.bot.get_channel(config.command_log)
+            if interaction.guild == None:
+                await command_log_channel.send(f"`/trivia-leaderboard-status` used by `{interaction.user.name}` in DMs at `{datetime.now()}`\n---")
+            elif interaction.guild.name == "":
+                await command_log_channel.send(f"`/trivia-leaderboard-status` used by `{interaction.user.name}` in an unknown server at `{datetime.now()}`\n---")
+            else:
+                await command_log_channel.send(f"`/trivia-leaderboard-status` used by `{interaction.user.name}` in `{interaction.guild.name}` at `{datetime.now()}`\n---")
         try:
             allow_bool = allow.value == 't'
             mydb = mysql.connector.connect(
@@ -123,6 +139,14 @@ class Trivia(commands.Cog):
 
     @app_commands.command(name="my-trivia-points", description="View your trivia points!")
     async def my_trivia_points(self, interaction: discord.Interaction):
+        if config.command_log_bool == True:
+            command_log_channel = self.bot.get_channel(config.command_log)
+            if interaction.guild == None:
+                await command_log_channel.send(f"`/my-trivia-points` used by `{interaction.user.name}` in DMs at `{datetime.now()}`\n---")
+            elif interaction.guild.name == "":
+                await command_log_channel.send(f"`/my-trivia-points` used by `{interaction.user.name}` in an unknown server at `{datetime.now()}`\n---")
+            else:
+                await command_log_channel.send(f"`/my-trivia-points` used by `{interaction.user.name}` in `{interaction.guild.name}` at `{datetime.now()}`\n---")
         try:
             mydb = mysql.connector.connect(
                 host=os.getenv("db_host"),
@@ -160,6 +184,14 @@ class Trivia(commands.Cog):
 
     @app_commands.command(name="trivia", description="Answer trivia questions to earn points!")
     async def trivia(self, interaction: discord.Interaction):
+        if config.command_log_bool == True:
+            command_log_channel = self.bot.get_channel(config.command_log)
+            if interaction.guild == None:
+                await command_log_channel.send(f"`/trivia` used by `{interaction.user.name}` in DMs at `{datetime.now()}`\n---")
+            elif interaction.guild.name == "":
+                await command_log_channel.send(f"`/trivia` used by `{interaction.user.name}` in an unknown server at `{datetime.now()}`\n---")
+            else:
+                await command_log_channel.send(f"`/trivia` used by `{interaction.user.name}` in `{interaction.guild.name}` at `{datetime.now()}`\n---")
         try:
             self.used[interaction.user.id] = True
             await interaction.response.defer()
