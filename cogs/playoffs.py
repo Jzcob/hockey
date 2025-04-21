@@ -1,0 +1,265 @@
+import discord
+from discord import app_commands
+from discord.ext import commands
+import traceback
+import config
+import requests
+import json
+import datetime
+
+def strings(awayAbbreviation, homeAbbreviation, home, away):
+    if awayAbbreviation == "ANA":
+        awayString = f"{config.anahiem_ducks_emoji} {away}"
+    elif awayAbbreviation == "BOS":
+        awayString = f"{config.boston_bruins_emoji} {away}"
+    elif awayAbbreviation == "BUF":
+        awayString = f"{config.buffalo_sabres_emoji} {away}"
+    elif awayAbbreviation == "CGY":
+        awayString = f"{config.calgary_flames_emoji} {away}"
+    elif awayAbbreviation == "CAR":
+        awayString = f"{config.carolina_hurricanes_emoji} {away}"
+    elif awayAbbreviation == "CHI":
+        awayString = f"{config.chicago_blackhawks_emoji} {away}"
+    elif awayAbbreviation == "COL":
+        awayString = f"{config.colorado_avalanche_emoji} {away}"
+    elif awayAbbreviation == "CBJ":
+        awayString = f"{config.columbus_blue_jackets_emoji} {away}"
+    elif awayAbbreviation == "DAL":
+        awayString = f"{config.dallas_stars_emoji} {away}"
+    elif awayAbbreviation == "DET":
+        awayString = f"{config.detroit_red_wings_emoji} {away}"
+    elif awayAbbreviation == "EDM":
+        awayString = f"{config.edmonton_oilers_emoji} {away}"
+    elif awayAbbreviation == "FLA":
+        awayString = f"{config.florida_panthers_emoji} {away}"
+    elif awayAbbreviation == "LAK":
+        awayString = f"{config.los_angeles_kings_emoji} {away}"
+    elif awayAbbreviation == "MIN":
+        awayString = f"{config.minnesota_wild_emoji} {away}"
+    elif awayAbbreviation == "MTL":
+        awayString = f"{config.montreal_canadiens_emoji} {away}"
+    elif awayAbbreviation == "NSH":
+        awayString = f"{config.nashville_predators_emoji} {away}"
+    elif awayAbbreviation == "NJD":
+        awayString = f"{config.new_jersey_devils_emoji} {away}"
+    elif awayAbbreviation == "NYI":
+        awayString = f"{config.new_york_islanders_emoji} {away}"
+    elif awayAbbreviation == "NYR":
+        awayString = f"{config.new_york_rangers_emoji} {away}"
+    elif awayAbbreviation == "OTT":
+        awayString = f"{config.ottawa_senators_emoji} {away}"
+    elif awayAbbreviation == "PHI":
+        awayString = f"{config.philadelphia_flyers_emoji} {away}"
+    elif awayAbbreviation == "PIT":
+        awayString = f"{config.pittsburgh_penguins_emoji} {away}"
+    elif awayAbbreviation == "SJS":
+        awayString = f"{config.san_jose_sharks_emoji} {away}"
+    elif awayAbbreviation == "SEA":
+        awayString = f"{config.seattle_kraken_emoji} {away}"
+    elif awayAbbreviation == "STL":
+        awayString = f"{config.st_louis_blues_emoji} {away}"
+    elif awayAbbreviation == "TBL":
+        awayString = f"{config.tampa_bay_lightning_emoji} {away}"
+    elif awayAbbreviation == "TOR":
+        awayString = f"{config.toronto_maple_leafs_emoji} {away}"
+    elif awayAbbreviation == "UTA":
+        awayString = f"{config.utah_hockey_club_emoji} {away}"
+    elif awayAbbreviation == "VAN":
+        awayString = f"{config.vancouver_canucks_emoji} {away}"
+    elif awayAbbreviation == "VGK":
+        awayString = f"{config.vegas_golden_knights_emoji} {away}"
+    elif awayAbbreviation == "WSH":
+        awayString = f"{config.washington_capitals_emoji} {away}"
+    elif awayAbbreviation == "WPG":
+        awayString = f"{config.winnipeg_jets_emoji} {away}"
+    else:
+        awayString = f"{away}"
+    if homeAbbreviation == "ANA":
+        homeString = f"{home} {config.anahiem_ducks_emoji}"
+    elif homeAbbreviation == "BOS":
+        homeString = f"{home} {config.boston_bruins_emoji}"
+    elif homeAbbreviation == "BUF":
+        homeString = f"{home} {config.buffalo_sabres_emoji}"
+    elif homeAbbreviation == "CGY":
+        homeString = f"{home} {config.calgary_flames_emoji}"
+    elif homeAbbreviation == "CAR":
+        homeString = f"{home} {config.carolina_hurricanes_emoji}"
+    elif homeAbbreviation == "CHI":
+        homeString = f"{home} {config.chicago_blackhawks_emoji}"
+    elif homeAbbreviation == "COL":
+        homeString = f"{home} {config.colorado_avalanche_emoji}"
+    elif homeAbbreviation == "CBJ":
+        homeString = f"{home} {config.columbus_blue_jackets_emoji}"
+    elif homeAbbreviation == "DAL":
+        homeString = f"{home} {config.dallas_stars_emoji}"
+    elif homeAbbreviation == "DET":
+        homeString = f"{home} {config.detroit_red_wings_emoji}"
+    elif homeAbbreviation == "EDM":
+        homeString = f"{home} {config.edmonton_oilers_emoji}"
+    elif homeAbbreviation == "FLA":
+        homeString = f"{home} {config.florida_panthers_emoji}"
+    elif homeAbbreviation == "LAK":
+        homeString = f"{home} {config.los_angeles_kings_emoji}"
+    elif homeAbbreviation == "MIN":
+        homeString = f"{home} {config.minnesota_wild_emoji}"
+    elif homeAbbreviation == "MTL":
+        homeString = f"{home} {config.montreal_canadiens_emoji}"
+    elif homeAbbreviation == "NSH":
+        homeString = f"{home} {config.nashville_predators_emoji}"
+    elif homeAbbreviation == "NJD":
+        homeString = f"{home} {config.new_jersey_devils_emoji}"
+    elif homeAbbreviation == "NYI":
+        homeString = f"{home} {config.new_york_islanders_emoji}"
+    elif homeAbbreviation == "NYR":
+        homeString = f"{home} {config.new_york_rangers_emoji}"
+    elif homeAbbreviation == "OTT":
+        homeString = f"{home} {config.ottawa_senators_emoji}"
+    elif homeAbbreviation == "PHI":
+        homeString = f"{home} {config.philadelphia_flyers_emoji}"
+    elif homeAbbreviation == "PIT":
+        homeString = f"{home} {config.pittsburgh_penguins_emoji}"
+    elif homeAbbreviation == "SJS":
+        homeString = f"{home} {config.san_jose_sharks_emoji}"
+    elif homeAbbreviation == "SEA":
+        homeString = f"{home} {config.seattle_kraken_emoji}"
+    elif homeAbbreviation == "STL":
+        homeString = f"{home} {config.st_louis_blues_emoji}"
+    elif homeAbbreviation == "TBL":
+        homeString = f"{home} {config.tampa_bay_lightning_emoji}"
+    elif homeAbbreviation == "TOR":
+        homeString = f"{home} {config.toronto_maple_leafs_emoji}"
+    elif homeAbbreviation == "UTA":
+        homeString = f"{home} {config.utah_hockey_club_emoji}"
+    elif homeAbbreviation == "VAN":
+        homeString = f"{home} {config.vancouver_canucks_emoji}"
+    elif homeAbbreviation == "VGK":
+        homeString = f"{home} {config.vegas_golden_knights_emoji}"
+    elif homeAbbreviation == "WSH":
+        homeString = f"{home} {config.washington_capitals_emoji}"
+    elif homeAbbreviation == "WPG":
+        homeString = f"{home} {config.winnipeg_jets_emoji}"
+    else:
+        homeString = f"{home}"
+    
+    return awayString, homeString
+
+class playoffs(commands.Cog):
+    def __init__(self, bot):
+        self.bot = bot
+    
+    @commands.Cog.listener()
+    async def on_ready(self):
+        print(f"LOADED: `playoffs.py`")
+    
+    @app_commands.command(name="brackets", description="Get the current NHL playoff brackets")
+    async def brackets(self, interaction: discord.Interaction):
+        print("✅ brackets command triggered")
+
+        try:
+            # Log who used it
+            if config.command_log_bool:
+                command_log_channel = self.bot.get_channel(config.command_log)
+                print(f"Logging to channel: {command_log_channel}")
+                await command_log_channel.send(
+                    f"`/brackets` used by `{interaction.user.name}` in `{interaction.guild.name}` at `{datetime.datetime.now()}`\n---"
+                )
+
+            url = "https://api-web.nhle.com/v1/playoff-series/carousel/20242025/"
+            print(f"Fetching from NHL API: {url}")
+            response = requests.get(url)
+
+            print(f"Status code: {response.status_code}")
+            if response.status_code != 200:
+                raise Exception(f"NHL API returned status {response.status_code}")
+
+            data = response.json()
+            print("✅ API JSON received")
+
+            season = url.split("/")[-2]
+            embed = discord.Embed(
+                title=f"NHL {season[:4]}–{season[4:]} Playoff Brackets",
+                color=discord.Color.blurple(),
+                url="https://www.nhl.com/playoffs/2024/bracket"
+            )
+
+            rounds = data.get("rounds", [])
+            if not rounds:
+                print("⚠️ No rounds found in API data")
+            thumbnail_set = False
+
+            for rnd in rounds:
+                round_label = rnd.get("roundLabel", f"Round {rnd.get('roundNumber', '?')}")
+                print(f"🌀 Processing {round_label}")
+                series_summary = ""
+
+                for series in rnd.get("series", []):
+                    top = series.get("topSeed", {})
+                    bottom = series.get("bottomSeed", {})
+                    needed = series.get("neededToWin", 4)
+
+                    top_abbr = top.get("abbrev", "???")
+                    bottom_abbr = bottom.get("abbrev", "???")
+
+                    top_wins = top.get("wins", 0)
+                    bottom_wins = bottom.get("wins", 0)
+
+                    print(f"  ▶ {bottom_abbr} ({bottom_wins}) vs {top_abbr} ({top_wins})")
+
+                    # Use your string emoji formatter
+                    try:
+                        bottom_string, top_string = strings(bottom_abbr, top_abbr, top_abbr, bottom_abbr)
+                    except Exception as e:
+                        print(f"❌ strings() failed: {e}")
+                        bottom_string, top_string = bottom_abbr, top_abbr
+
+                    # Determine status
+                    if top_wins >= needed or bottom_wins >= needed:
+                        status = "✅ Completed"
+                    elif top_wins > 0 or bottom_wins > 0:
+                        status = "🟡 In Progress"
+                    else:
+                        status = "🕓 Scheduled"
+
+                    # Set thumbnail once
+                    if not thumbnail_set and "logo" in top:
+                        embed.set_thumbnail(url=top["logo"])
+                        thumbnail_set = True
+
+                    # Series link if available
+                    link = f"https://www.nhl.com{series.get('seriesLink', '')}"
+                    label = f"[{series.get('seriesLabel', 'Series')}]({link})"
+
+                    series_summary += f"{bottom_string} ({bottom_wins}) vs {top_string} ({top_wins}) — *{status}* • {label}\n"
+
+                try:
+                    if not series_summary:
+                        series_summary = "TBD"
+
+                    if len(series_summary) > 1024:
+                        print("⚠️ Trimming series_summary — too long for Discord embed field")
+                        series_summary = series_summary[:1020] + "..."
+
+                    embed.add_field(name=round_label, value=series_summary, inline=False)
+                    print(f"✅ Field added: {round_label}")
+
+                except Exception as add_field_error:
+                    print(f"❌ Failed to add embed field: {add_field_error}")
+
+
+            if len(embed.fields) == 0:
+                embed.description = "The playoff bracket has not been finalized yet."
+                print("⚠️ No fields added to embed")
+
+            await interaction.response.send_message(embed=embed)
+            print("✅ Embed sent!")
+
+        except Exception as e:
+            print("❌ Exception occurred in brackets command")
+            error_channel = self.bot.get_channel(920797181034778655)
+            await error_channel.send(f"<@920797181034778655>```{traceback.format_exc()}```")
+            await interaction.response.send_message("Error with command. Message has been sent to Bot Developers.", ephemeral=True)
+
+
+
+async def setup(bot):
+    await bot.add_cog(playoffs(bot), guilds=[discord.Object(id=config.hockey_discord_server)])
