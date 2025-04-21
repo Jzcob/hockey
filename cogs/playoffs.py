@@ -153,27 +153,18 @@ class playoffs(commands.Cog):
     
     @app_commands.command(name="brackets", description="Get the current NHL playoff brackets")
     async def brackets(self, interaction: discord.Interaction):
-        print("✅ brackets command triggered")
-
         try:
-            # Log who used it
             if config.command_log_bool:
                 command_log_channel = self.bot.get_channel(config.command_log)
-                print(f"Logging to channel: {command_log_channel}")
                 await command_log_channel.send(
                     f"`/brackets` used by `{interaction.user.name}` in `{interaction.guild.name}` at `{datetime.datetime.now()}`\n---"
                 )
 
             url = "https://api-web.nhle.com/v1/playoff-series/carousel/20242025/"
-            print(f"Fetching from NHL API: {url}")
             response = requests.get(url)
-
-            print(f"Status code: {response.status_code}")
             if response.status_code != 200:
                 raise Exception(f"NHL API returned status {response.status_code}")
-
             data = response.json()
-            print("✅ API JSON received")
 
             season = url.split("/")[-2]
             embed = discord.Embed(
@@ -183,14 +174,10 @@ class playoffs(commands.Cog):
             )
 
             rounds = data.get("rounds", [])
-            if not rounds:
-                print("⚠️ No rounds found in API data")
             thumbnail_set = False
 
             for rnd in rounds:
                 round_label = rnd.get("roundLabel", f"Round {rnd.get('roundNumber', '?')}")
-                print(f"🌀 Processing {round_label}")
-                series_summary = ""
 
                 for series in rnd.get("series", []):
                     top = series.get("topSeed", {})
@@ -199,20 +186,14 @@ class playoffs(commands.Cog):
 
                     top_abbr = top.get("abbrev", "???")
                     bottom_abbr = bottom.get("abbrev", "???")
-
                     top_wins = top.get("wins", 0)
                     bottom_wins = bottom.get("wins", 0)
 
-                    print(f"  ▶ {bottom_abbr} ({bottom_wins}) vs {top_abbr} ({top_wins})")
-
-                    # Use your string emoji formatter
                     try:
-                        bottom_string, top_string = strings(bottom_abbr, top_abbr, top_abbr, bottom_abbr)
-                    except Exception as e:
-                        print(f"❌ strings() failed: {e}")
+                        bottom_string, top_string = strings(bottom_abbr, top_abbr, bottom_abbr, top_abbr)
+                    except:
                         bottom_string, top_string = bottom_abbr, top_abbr
 
-                    # Determine status
                     if top_wins >= needed or bottom_wins >= needed:
                         status = "✅ Completed"
                     elif top_wins > 0 or bottom_wins > 0:
@@ -220,46 +201,32 @@ class playoffs(commands.Cog):
                     else:
                         status = "🕓 Scheduled"
 
-                    # Set thumbnail once
                     if not thumbnail_set and "logo" in top:
                         embed.set_thumbnail(url=top["logo"])
                         thumbnail_set = True
 
-                    # Series link if available
-                    link = f"https://www.nhl.com{series.get('seriesLink', '')}"
-                    label = f"[{series.get('seriesLabel', 'Series')}]({link})"
+                    raw_link = series.get("seriesLink")
+                    link = f"https://www.nhl.com{raw_link}" if raw_link else "https://www.nhl.com/playoffs/"
+                    label = f"[Series {series.get('seriesLetter', '?')}]({link})"
 
-                    series_summary += f"{bottom_string} ({bottom_wins}) vs {top_string} ({top_wins}) — *{status}* • {label}\n"
-
-                    embed.set_footer(text=config.footer)
-
-                try:
-                    if not series_summary:
-                        series_summary = "TBD"
-
-                    if len(series_summary) > 1024:
-                        print("⚠️ Trimming series_summary — too long for Discord embed field")
-                        series_summary = series_summary[:1020] + "..."
-
-                    embed.add_field(name=round_label, value=series_summary, inline=False)
-                    print(f"✅ Field added: {round_label}")
-
-                except Exception as add_field_error:
-                    print(f"❌ Failed to add embed field: {add_field_error}")
-
+                    matchup = f"{bottom_string} ({bottom_wins}) vs {top_string} ({top_wins})"
+                    embed.add_field(
+                        name=f"{round_label} — {label}",
+                        value=f"{matchup} — *{status}*",
+                        inline=False
+                    )
 
             if len(embed.fields) == 0:
                 embed.description = "The playoff bracket has not been finalized yet."
-                print("⚠️ No fields added to embed")
 
+            embed.set_footer(text=config.footer)
             await interaction.response.send_message(embed=embed)
-            print("✅ Embed sent!")
 
-        except Exception as e:
-            print("❌ Exception occurred in brackets command")
+        except Exception:
             error_channel = self.bot.get_channel(920797181034778655)
             await error_channel.send(f"<@920797181034778655>```{traceback.format_exc()}```")
             await interaction.response.send_message("Error with command. Message has been sent to Bot Developers.", ephemeral=True)
+
 
 
 
