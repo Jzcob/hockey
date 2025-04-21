@@ -19,4 +19,5 @@ To suggest more trivia questions feel free to use `/suggest-trivia`. Keep in min
 - 500 servers: `10/05/2024`
 - 600 servers: `11/22/2024`
 - 700 servers: `02/08/2025`
-- 800 servers: Soon!
+- 800 servers: `04/20/2025`
+- 900 servers: Soon!
