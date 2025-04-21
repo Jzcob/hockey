@@ -179,7 +179,7 @@ class playoffs(commands.Cog):
             embed = discord.Embed(
                 title=f"NHL {season[:4]}–{season[4:]} Playoff Brackets",
                 color=discord.Color.blurple(),
-                url="https://www.nhl.com/playoffs/2024/bracket"
+                url="https://www.nhl.com/playoffs/2025/bracket"
             )
 
             rounds = data.get("rounds", [])
@@ -230,6 +230,8 @@ class playoffs(commands.Cog):
                     label = f"[{series.get('seriesLabel', 'Series')}]({link})"
 
                     series_summary += f"{bottom_string} ({bottom_wins}) vs {top_string} ({top_wins}) — *{status}* • {label}\n"
+
+                    embed.set_footer(text=config.footer)
 
                 try:
                     if not series_summary:
