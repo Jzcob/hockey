@@ -207,12 +207,14 @@ class playoffs(commands.Cog):
 
                     raw_link = series.get("seriesLink")
                     link = f"https://www.nhl.com{raw_link}" if raw_link else "https://www.nhl.com/playoffs/"
-                    label = f"[Series {series.get('seriesLetter', '?')}]({link})"
+                    letter = series.get("seriesLetter", "?")
 
                     matchup = f"{bottom_string} ({bottom_wins}) vs {top_string} ({top_wins})"
+                    series_status = f"{matchup} — *{status}*\n[View Series {letter}]({link})"
+
                     embed.add_field(
-                        name=f"{round_label} — {label}",
-                        value=f"{matchup} — *{status}*",
+                        name=f"{round_label} – Series {letter}",
+                        value=series_status,
                         inline=False
                     )
 
@@ -226,6 +228,7 @@ class playoffs(commands.Cog):
             error_channel = self.bot.get_channel(920797181034778655)
             await error_channel.send(f"<@920797181034778655>```{traceback.format_exc()}```")
             await interaction.response.send_message("Error with command. Message has been sent to Bot Developers.", ephemeral=True)
+
 
 
 
