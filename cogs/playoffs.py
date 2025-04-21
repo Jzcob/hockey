@@ -6,6 +6,48 @@ import config
 import requests
 import json
 import datetime
+from discord.ui import View, Button
+from discord import Embed, Interaction, ButtonStyle
+
+class BracketPaginator(View):
+    def __init__(self, embeds, user):
+        super().__init__(timeout=120) 
+        self.embeds = embeds
+        self.user = user
+        self.index = 0
+
+        self.prev_button = Button(label="Previous", style=ButtonStyle.gray)
+        self.next_button = Button(label="Next", style=ButtonStyle.gray)
+
+        self.prev_button.callback = self.go_previous
+        self.next_button.callback = self.go_next
+
+        self.add_item(self.prev_button)
+        self.add_item(self.next_button)
+        self.update_buttons()
+
+    def update_buttons(self):
+        self.prev_button.disabled = self.index == 0
+        self.next_button.disabled = self.index == len(self.embeds) - 1
+
+    async def go_previous(self, interaction: Interaction):
+        if interaction.user.id != self.user.id:
+            await interaction.response.send_message("You can't use this paginator.", ephemeral=True)
+            return
+
+        self.index -= 1
+        self.update_buttons()
+        await interaction.response.edit_message(embed=self.embeds[self.index], view=self)
+
+    async def go_next(self, interaction: Interaction):
+        if interaction.user.id != self.user.id:
+            await interaction.response.send_message("You can't use this paginator.", ephemeral=True)
+            return
+
+        self.index += 1
+        self.update_buttons()
+        await interaction.response.edit_message(embed=self.embeds[self.index], view=self)
+
 
 def strings(awayAbbreviation, homeAbbreviation, home, away):
     if awayAbbreviation == "ANA":
@@ -167,17 +209,16 @@ class playoffs(commands.Cog):
             data = response.json()
 
             season = url.split("/")[-2]
-            embed = discord.Embed(
-                title=f"NHL {season[:4]}–{season[4:]} Playoff Brackets",
-                color=discord.Color.blurple(),
-                url="https://www.nhl.com/playoffs/2025/bracket"
-            )
-
             rounds = data.get("rounds", [])
-            thumbnail_set = False
-
+            embeds = []
+            
             for rnd in rounds:
                 round_label = rnd.get("roundLabel", f"Round {rnd.get('roundNumber', '?')}")
+                embed = discord.Embed(
+                    title=f"{round_label} – NHL {season[:4]}–{season[4:]}",
+                    color=discord.Color.blurple(),
+                    url="https://www.nhl.com/playoffs/2025/bracket"
+                )
 
                 for series in rnd.get("series", []):
                     top = series.get("topSeed", {})
@@ -201,9 +242,8 @@ class playoffs(commands.Cog):
                     else:
                         status = "🕓 Scheduled"
 
-                    if not thumbnail_set and "logo" in top:
+                    if "logo" in top and not embed.thumbnail.url:
                         embed.set_thumbnail(url=top["logo"])
-                        thumbnail_set = True
 
                     raw_link = series.get("seriesLink")
                     link = f"https://www.nhl.com{raw_link}" if raw_link else "https://www.nhl.com/playoffs/"
@@ -213,24 +253,25 @@ class playoffs(commands.Cog):
                     series_status = f"{matchup} — *{status}*\n[View Series {letter}]({link})"
 
                     embed.add_field(
-                        name=f"{round_label} – Series {letter}",
+                        name=f"Series {letter}",
                         value=series_status,
                         inline=False
                     )
 
-            if len(embed.fields) == 0:
-                embed.description = "The playoff bracket has not been finalized yet."
+                embed.set_footer(text=config.footer)
+                embeds.append(embed)
 
-            embed.set_footer(text=config.footer)
-            await interaction.response.send_message(embed=embed)
+            if not embeds:
+                await interaction.response.send_message("The playoff bracket has not been finalized yet.")
+                return
+
+            view = BracketPaginator(embeds, interaction.user)
+            await interaction.response.send_message(embed=embeds[0], view=view)
 
         except Exception:
             error_channel = self.bot.get_channel(920797181034778655)
             await error_channel.send(f"<@920797181034778655>```{traceback.format_exc()}```")
             await interaction.response.send_message("Error with command. Message has been sent to Bot Developers.", ephemeral=True)
-
-
-
 
 
 async def setup(bot):
