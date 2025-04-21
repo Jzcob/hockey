@@ -53,10 +53,11 @@ class Help(commands.Cog):
                     embed.add_field(name="`/f-to-c <fahrenheit>`", value="Convert Fahrenheit to Celsius!", inline=False)
                     embed.add_field(name="`/c-to-f <celsius>`", value="Convert Celsius to Fahrenheit!", inline=False)
             elif menu.value == "nhl":
+                embed.add_field(name="`/bracket`", value="Get the NHL Playoff bracket!", inline=False)
                 embed.add_field(name="`/player <name>`", value="Gets the information of a player!", inline=False)
                 embed.add_field(name="`/team <abbreviation>`", value="Gets the information of a team!", inline=False)
                 embed.add_field(name="`/teams`", value="Lists all NHL teams!", inline=False)
-                embed.add_field(name="`/standings`", value="Get the NHL standings!", inline=False)
+                #embed.add_field(name="`/standings`", value="Get the NHL standings!", inline=False)
                 embed.add_field(name="`/schedule <abbreviation>`", value="Get the schedule of an NHL team!", inline=False)
                 embed.add_field(name="`/game <abbreviation>`", value="Get information about a game!", inline=False)
                 embed.add_field(name="`/today`", value="List today's games!", inline=False)
