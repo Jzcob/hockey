@@ -231,7 +231,7 @@ class playoffs(commands.Cog):
                     bottom_wins = bottom.get("wins", 0)
 
                     try:
-                        bottom_string, top_string = strings(bottom_abbr, top_abbr, bottom_abbr, top_abbr)
+                        bottom_string, top_string = strings(bottom_abbr, top_abbr, top_abbr, bottom_abbr)
                     except:
                         bottom_string, top_string = bottom_abbr, top_abbr
 
@@ -275,4 +275,4 @@ class playoffs(commands.Cog):
 
 
 async def setup(bot):
-    await bot.add_cog(playoffs(bot), guilds=[discord.Object(id=config.hockey_discord_server)])
+    await bot.add_cog(playoffs(bot))
