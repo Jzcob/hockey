@@ -117,7 +117,7 @@ class weather(commands.Cog):
     async def fToC(self, interaction : discord.Interaction, fahrenheit: float):
         try:
             celsius = (fahrenheit - 32) * 5/9
-            return await interaction.response.send_message(f"`{fahrenheit}°F` is equal to `{celsius}°C`", ephemeral=True)
+            return await interaction.response.send_message(f"`{fahrenheit}°F` is equal to `{celsius:.2f}°C`", ephemeral=True)
         except Exception as e:
             return await interaction.response.send_message(f"Error: {e}", ephemeral=True)
     
@@ -125,7 +125,7 @@ class weather(commands.Cog):
     async def cToF(self, interaction : discord.Interaction, celsius: float):
         try:
             fahrenheit = (celsius * 1.8) + 32
-            return await interaction.response.send_message(f"`{celsius}°C` is equal to `{fahrenheit}°F`", ephemeral=True)
+            return await interaction.response.send_message(f"`{celsius}°C` is equal to `{fahrenheit:.2f}°F`", ephemeral=True)
         except Exception as e:
             return await interaction.response.send_message(f"Error: {e}", ephemeral=True)
 async def setup(bot):
