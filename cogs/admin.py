@@ -37,5 +37,21 @@ class announcement(commands.Cog):
             string = f"{traceback.format_exc()}"
             await error_channel.send(f"<@920797181034778655>```{string}```")
 
+    @app_commands.command(name="send", description="Make the bot say something.")
+    @app_commands.checks.has_any_role(config.admin, config.owner)
+    async def say(self, interaction: discord.Interaction, *, message: str, channel: discord.TextChannel = None):
+        try:
+            if channel == None:
+                channel = interaction.channel
+                await channel.send(message)
+                await interaction.response.send_message(f"Sent message to {channel.mention}", ephemeral=True)
+            else:
+                await channel.send(message)
+                await interaction.response.send_message(f"Sent message to {channel.mention}", ephemeral=True)
+        except:
+            error_channel = self.bot.get_channel(config.error_channel)
+            string = f"{traceback.format_exc()}"
+            await error_channel.send(f"```{string}```")
+
 async def setup(bot):
     await bot.add_cog(announcement(bot), guilds=[discord.Object(id=config.hockey_discord_server)])

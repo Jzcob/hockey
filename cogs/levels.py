@@ -63,12 +63,12 @@ class levels(commands.Cog):
         print("LOADED: `leveling.py`")
     
     @app_commands.command(name='reset-levels', description="Resets the XP levels in the server.")
-    @app_commands.checks.has_any_role(config.admin)
+    @app_commands.checks.has_any_role(config.admin, config.owner)
     async def resetLevels(self, interaction: discord.Interaction):
         await interaction.response.send_message("Are you sure you would like to reset all of the levels in the server? This action is irreversible.", view=Confirm(), ephemeral=True)
 
     @app_commands.command(name='reset-member-level', description="Resets the XP and levels of a specified user.")
-    @app_commands.checks.has_any_role(config.admin)
+    @app_commands.checks.has_any_role(config.admin, config.owner)
     async def resetMemberLevel(self, interaction: discord.Interaction, user: discord.Member):
         db_conn = None
         try:
@@ -87,7 +87,7 @@ class levels(commands.Cog):
                 db_conn.close()
     
     @app_commands.command(name='set-member-level', description="Set the level of a specified user.")
-    @app_commands.checks.has_any_role(config.admin)
+    @app_commands.checks.has_any_role(config.admin, config.owner)
     async def setMemberLevel(self, interaction: discord.Interaction, user: discord.Member, level: int):
         if level < 1:
             return await interaction.response.send_message("The number must be greater than 0")
