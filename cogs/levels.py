@@ -42,7 +42,8 @@ class Confirm(discord.ui.View):
         try:
             db_conn = get_db_connection()
             cursor = db_conn.cursor()
-            cursor.execute("UPDATE user_levels SET level = 0, xp = 0.00")
+            cursor.execute("TRUNCATE TABLE user_levels")
+            cursor.execute("TRUNCATE TABLE users")
             db_conn.commit()
             await interaction.response.send_message("All levels have been reset.", ephemeral=True)
             button.disabled = True
