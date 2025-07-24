@@ -174,6 +174,8 @@ class levels(commands.Cog):
 
     @commands.Cog.listener()
     async def on_message(self, message: discord.Message):
+        if message.guild.id != config.hockey_discord_server:
+            return
         if message.author.bot or message.guild is None:
             return
         
