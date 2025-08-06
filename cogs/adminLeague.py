@@ -245,7 +245,7 @@ class adminLeague(commands.Cog):
             await interaction.followup.send(f"An unexpected error occurred: {e}", ephemeral=True)
 
 
-    @app_commands.command(name="admin_league", description="Manage the global hockey league.")
+    @app_commands.command(name="league_admin", description="Manage the global hockey league.")
     @app_commands.default_permissions(administrator=True)
     async def admin_league(self, interaction: discord.Interaction):
         """Provides a control panel for league administrators."""
