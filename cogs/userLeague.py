@@ -3,6 +3,9 @@ from discord.ext import commands
 from discord import app_commands, ui
 import mysql.connector
 import config # Your config file with DB credentials
+import os
+from dotenv import load_dotenv
+load_dotenv()  # Load environment variables from .env file
 
 # --- UI Modal for Joining the League ---
 class JoinLeagueModal(ui.Modal, title="Join the Hockey League"):
@@ -99,10 +102,10 @@ class userLeague(commands.Cog):
     def __init__(self, bot: commands.Bot):
         self.bot = bot
         self.db = mysql.connector.connect(
-            host=config.DB_HOST,
-            user=config.DB_USER,
-            password=config.DB_PASSWORD,
-            database=config.DB_NAME
+            host=os.getenv("db-host"),
+            user=os.getenv("db-user"),
+            password=os.getenv("db-password"),
+            database=os.getenv("db-name")
         )
         self.cursor = self.db.cursor(dictionary=True, buffered=True) # Use dictionary cursor for easy data access
         print("User Cog: Database connection established.")

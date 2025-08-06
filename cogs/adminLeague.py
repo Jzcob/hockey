@@ -5,6 +5,9 @@ from discord import app_commands, ui
 import mysql.connector
 import config # Your config file with DB credentials
 import random # Used for the mock API data
+import os
+from dotenv import load_dotenv
+load_dotenv() 
 
 # --- Helper function for simulation ---
 def get_nhl_teams():
@@ -73,10 +76,10 @@ class adminLeague(commands.Cog):
     def __init__(self, bot: commands.Bot):
         self.bot = bot
         self.db = mysql.connector.connect(
-            host=config.DB_HOST,
-            user=config.DB_USER,
-            password=config.DB_PASSWORD,
-            database=config.DB_NAME
+            host=os.getenv("db-host"),
+            user=os.getenv("db-user"),
+            password=os.getenv("db-password"),
+            database=os.getenv("db-name")
         )
         # Use dictionary cursor for easier access to columns by name
         self.cursor = self.db.cursor(dictionary=True, buffered=True)
