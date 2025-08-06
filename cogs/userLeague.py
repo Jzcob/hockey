@@ -147,10 +147,10 @@ class userLeague(commands.Cog):
     def __init__(self, bot: commands.Bot):
         self.bot = bot
         self.db = mysql.connector.connect(
-            host=os.getenv("DB_HOST"),
-            user=os.getenv("DB_USER"),
-            password=os.getenv("DB_PASSWORD"),
-            database=os.getenv("DB_NAME")
+            host=os.getenv("db_host"),
+            user=os.getenv("db_user"),
+            password=os.getenv("db_password"),
+            database=os.getenv("db_name")
         )
         self.cursor = self.db.cursor(dictionary=True, buffered=True)
         print("User Cog: Database connection established.")
