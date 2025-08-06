@@ -5,7 +5,7 @@ from datetime import datetime
 import config
 import traceback
 
-watching = discord.Activity(name="Hockey!", type=discord.ActivityType.watching)
+watching = discord.CustomActivity(name="👀 New Feature Coming?")
 
 #hello world
 class announcement(commands.Cog):

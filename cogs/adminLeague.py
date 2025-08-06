@@ -290,4 +290,4 @@ class adminLeague(commands.Cog):
 
 # The setup function to load the cog
 async def setup(bot: commands.Bot):
-    await bot.add_cog(adminLeague(bot))
+    await bot.add_cog(adminLeague(bot), guilds=[discord.Object(id=config.hockey_discord_server)])
