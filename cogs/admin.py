@@ -15,7 +15,7 @@ class announcement(commands.Cog):
     @commands.Cog.listener()
     async def on_ready(self):
         print(f"LOADED: `announcement.py`")
-        await self.bot.change_presence(activity=watching)
+        await self.bot.change_presence(activity=discord.CustomActivity(name="👀 New Feature Coming?"))
     
     @app_commands.command(name="dev-mode", description="Toggles dev mode!")
     async def dev_mode(self, interaction: discord.Interaction):
