@@ -193,7 +193,7 @@ class userLeague(commands.Cog):
         self.cursor.execute("SELECT * FROM rosters WHERE user_id = %s", (user_id,))
         return self.cursor.fetchone()
 
-    @app_commands.command(name="leaderboard", description="Displays the top 10 players in the league.")
+    @app_commands.command(name="league_leaderboard", description="Displays the top 10 players in the league.")
     async def leaderboard(self, interaction: discord.Interaction):
         """Shows the league leaderboard."""
         await interaction.response.defer()

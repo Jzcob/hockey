@@ -325,7 +325,7 @@ class adminLeague(commands.Cog):
         except mysql.connector.Error as err:
             await interaction.followup.send(f"❌ A database error occurred during point calculation: {err}", ephemeral=True)
 
-    @app_commands.command(name="admin_league", description="Manage the global hockey league.")
+    @app_commands.command(name="league_admin", description="Manage the global hockey league.")
     @app_commands.default_permissions(administrator=True)
     async def admin_league(self, interaction: discord.Interaction):
         view = ui.View(timeout=180)
