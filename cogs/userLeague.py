@@ -11,46 +11,49 @@ from dotenv import load_dotenv
 load_dotenv()
 
 # --- UI Modal for Bench Teams (Step 2) ---
-# This modal appears after the user submits their active roster.
+# This modal appears after the user clicks the "Set Bench Teams" button.
 class SetBenchModal(ui.Modal, title="Set Your Bench Teams (Step 2 of 2)"):
     bench_one = ui.TextInput(label="Bench Team 1", placeholder="Enter NHL Team Name")
     bench_two = ui.TextInput(label="Bench Team 2", placeholder="Enter NHL Team Name")
     bench_three = ui.TextInput(label="Bench Team 3", placeholder="Enter NHL Team Name")
 
-    def __init__(self, db_cursor, db_connection, active_teams: list):
+    def __init__(self, db_cursor, db_connection):
         super().__init__(timeout=300)
         self.cursor = db_cursor
         self.db = db_connection
-        self.active_teams = active_teams
 
     async def on_submit(self, interaction: discord.Interaction):
-        """This is the final step. It inserts the complete 8-team roster into the database."""
-        bench_teams = [self.bench_one.value, self.bench_two.value, self.bench_three.value]
-        
-        # Combine active and bench teams for the final database insert
-        all_teams = self.active_teams + bench_teams
-        
+        """This is the final step. It UPDATES the user's roster with the bench teams."""
         sql = """
-            INSERT INTO rosters (user_id, team_one, team_two, team_three, team_four, team_five, bench_one, bench_two, bench_three)
-            VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s)
+            UPDATE rosters
+            SET bench_one = %s, bench_two = %s, bench_three = %s
+            WHERE user_id = %s
         """
-        # The user_id is the first value, followed by all 8 team names
-        val = (interaction.user.id, *all_teams)
+        val = (self.bench_one.value, self.bench_two.value, self.bench_three.value, interaction.user.id)
         
         try:
             self.cursor.execute(sql, val)
             self.db.commit()
-            await interaction.response.send_message(
-                "🎉 **Welcome to the league!** Your full roster is set. Use `/my_roster` to view it.",
-                ephemeral=True
+            # Edit the original message to show completion, removing the button.
+            await interaction.response.edit_message(
+                content="🎉 **Welcome to the league!** Your full roster is set. Use `/my_roster` to view it.",
+                view=None
             )
         except mysql.connector.Error as err:
-            # Provide a more specific error if a user tries to join twice
-            if err.errno == 1062: # Error code for duplicate primary key
-                await interaction.response.send_message("❌ You are already in the league!", ephemeral=True)
-            else:
-                await interaction.response.send_message(f"❌ A database error occurred: {err}", ephemeral=True)
+            await interaction.response.edit_message(content=f"❌ A database error occurred: {err}", view=None)
 
+# --- UI View with Button to Trigger Step 2 ---
+class SetBenchButtonView(ui.View):
+    def __init__(self, db_cursor, db_connection):
+        super().__init__(timeout=300) # Button will time out after 5 minutes
+        self.cursor = db_cursor
+        self.db = db_connection
+
+    @ui.button(label="Set Bench Teams", style=discord.ButtonStyle.success)
+    async def set_bench(self, interaction: discord.Interaction, button: ui.Button):
+        # When the button is clicked, open the second modal.
+        modal = SetBenchModal(self.cursor, self.db)
+        await interaction.response.send_modal(modal)
 
 # --- UI Modal for Active Teams (Step 1) ---
 class JoinLeagueModal(ui.Modal, title="Join the League (Step 1 of 2)"):
@@ -66,23 +69,28 @@ class JoinLeagueModal(ui.Modal, title="Join the League (Step 1 of 2)"):
         self.db = db_connection
 
     async def on_submit(self, interaction: discord.Interaction):
-        """This method now transitions to the second modal for bench teams."""
+        """This method now saves the active teams and responds with a button for the next step."""
+        sql = """
+            INSERT INTO rosters (user_id, team_one, team_two, team_three, team_four, team_five)
+            VALUES (%s, %s, %s, %s, %s, %s)
+        """
+        val = (interaction.user.id, self.team_one.value, self.team_two.value, self.team_three.value, self.team_four.value, self.team_five.value)
+        
         try:
-            active_teams = [
-                self.team_one.value,
-                self.team_two.value,
-                self.team_three.value,
-                self.team_four.value,
-                self.team_five.value
-            ]
-            
-            # Create an instance of the second modal, passing the active teams and DB info
-            bench_modal = SetBenchModal(self.cursor, self.db, active_teams)
-            
-            # Send the second modal to the user
-            await interaction.response.send_modal(bench_modal)
-        except Exception as e:
-            await interaction.response.send_message(f"❌ An error occurred while setting your active teams: {e}", ephemeral=True)
+            self.cursor.execute(sql, val)
+            self.db.commit()
+            # Respond with a new view containing the button for step 2
+            view = SetBenchButtonView(self.cursor, self.db)
+            await interaction.response.send_message(
+                "✅ Active roster saved! Click the button below to set your bench teams.",
+                view=view,
+                ephemeral=True
+            )
+        except mysql.connector.Error as err:
+            if err.errno == 1062:
+                await interaction.response.send_message("❌ You are already in the league!", ephemeral=True)
+            else:
+                await interaction.response.send_message(f"❌ An error occurred while setting your active teams: {err}", ephemeral=True)
 
 
 # --- UI View for Swapping Teams ---
@@ -252,6 +260,15 @@ class userLeague(commands.Cog):
         view = ui.View(timeout=180)
         view.add_item(select)
         await interaction.response.send_message("Select your ace team. This team will earn triple points from all games this week.", view=view, ephemeral=True)
+
+# The setup function to load the cog
+async def setup(bot: commands.Bot):
+    # Assuming you have a guild ID in your .env or config for testing
+    guild_id = os.getenv("HOCKEY_DISCORD_SERVER")
+    if guild_id:
+        await bot.add_cog(userLeague(bot), guilds=[discord.Object(id=int(guild_id))])
+    else:
+        await bot.add_cog(userLeague(bot))
 
 # The setup function to load the cog
 async def setup(bot):
