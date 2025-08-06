@@ -76,10 +76,10 @@ class adminLeague(commands.Cog):
     def __init__(self, bot: commands.Bot):
         self.bot = bot
         self.db = mysql.connector.connect(
-            host=os.getenv("db-host"),
-            user=os.getenv("db-user"),
-            password=os.getenv("db-password"),
-            database=os.getenv("db-name")
+            host=os.getenv("db_host"),
+            user=os.getenv("db_user"),
+            password=os.getenv("db_password"),
+            database=os.getenv("db_name")
         )
         # Use dictionary cursor for easier access to columns by name
         self.cursor = self.db.cursor(dictionary=True, buffered=True)
