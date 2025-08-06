@@ -203,5 +203,5 @@ class userLeague(commands.Cog):
         await interaction.response.send_message("Select your ace team. This team will earn double points from all games this week.", view=view, ephemeral=True)
 
 # The setup function to load the cog
-async def setup(bot: commands.Bot):
+async def setup(bot):
     await bot.add_cog(userLeague(bot), guilds=[discord.Object(id=config.hockey_discord_server)])

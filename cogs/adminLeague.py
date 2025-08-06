@@ -289,5 +289,5 @@ class adminLeague(commands.Cog):
         await interaction.response.send_message("League Admin Panel:", view=view, ephemeral=True)
 
 # The setup function to load the cog
-async def setup(bot: commands.Bot):
+async def setup(bot):
     await bot.add_cog(adminLeague(bot), guilds=[discord.Object(id=config.hockey_discord_server)])
