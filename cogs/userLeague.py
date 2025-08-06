@@ -3,27 +3,40 @@ import discord
 from discord.ext import commands
 from discord import app_commands, ui
 import mysql.connector
-import config
 import os
 from dotenv import load_dotenv
+import config
 
 # Load environment variables from .env file
 load_dotenv()
 
 # --- UI Modal for Bench Teams (Step 2) ---
-# This modal appears after the user clicks the "Set Bench Teams" button.
 class SetBenchModal(ui.Modal, title="Set Your Bench Teams (Step 2 of 2)"):
     bench_one = ui.TextInput(label="Bench Team 1", placeholder="Enter NHL Team Name")
     bench_two = ui.TextInput(label="Bench Team 2", placeholder="Enter NHL Team Name")
     bench_three = ui.TextInput(label="Bench Team 3", placeholder="Enter NHL Team Name")
 
-    def __init__(self, db_cursor, db_connection):
+    def __init__(self, db_cursor, db_connection, active_teams: list):
         super().__init__(timeout=300)
         self.cursor = db_cursor
         self.db = db_connection
+        self.active_teams = active_teams
 
     async def on_submit(self, interaction: discord.Interaction):
-        """This is the final step. It UPDATES the user's roster with the bench teams."""
+        bench_teams = [self.bench_one.value, self.bench_two.value, self.bench_three.value]
+        all_teams = self.active_teams + bench_teams
+
+        # --- VALIDATION: Check for duplicate teams across all 8 picks ---
+        if len(set(all_teams)) != len(all_teams):
+            await interaction.response.send_message("❌ You cannot select the same team more than once. Please start over with `/join_league`.", ephemeral=True)
+            # We also need to delete the partial entry from the database
+            try:
+                self.cursor.execute("DELETE FROM rosters WHERE user_id = %s", (interaction.user.id,))
+                self.db.commit()
+            except mysql.connector.Error as err:
+                print(f"Failed to clean up partial entry for user {interaction.user.id}: {err}")
+            return
+
         sql = """
             UPDATE rosters
             SET bench_one = %s, bench_two = %s, bench_three = %s
@@ -34,7 +47,6 @@ class SetBenchModal(ui.Modal, title="Set Your Bench Teams (Step 2 of 2)"):
         try:
             self.cursor.execute(sql, val)
             self.db.commit()
-            # Edit the original message to show completion, removing the button.
             await interaction.response.edit_message(
                 content="🎉 **Welcome to the league!** Your full roster is set. Use `/my_roster` to view it.",
                 view=None
@@ -51,9 +63,19 @@ class SetBenchButtonView(ui.View):
 
     @ui.button(label="Set Bench Teams", style=discord.ButtonStyle.success)
     async def set_bench(self, interaction: discord.Interaction, button: ui.Button):
-        # When the button is clicked, open the second modal.
-        modal = SetBenchModal(self.cursor, self.db)
-        await interaction.response.send_modal(modal)
+        # We need to fetch the active teams again for the next modal
+        try:
+            self.cursor.execute("SELECT team_one, team_two, team_three, team_four, team_five FROM rosters WHERE user_id = %s", (interaction.user.id,))
+            roster = self.cursor.fetchone()
+            if roster:
+                active_teams = list(roster.values())
+                modal = SetBenchModal(self.cursor, self.db, active_teams)
+                await interaction.response.send_modal(modal)
+            else:
+                await interaction.response.send_message("Could not find your active roster. Please try `/join_league` again.", ephemeral=True)
+        except mysql.connector.Error as err:
+            await interaction.response.send_message(f"A database error occurred: {err}", ephemeral=True)
+
 
 # --- UI Modal for Active Teams (Step 1) ---
 class JoinLeagueModal(ui.Modal, title="Join the League (Step 1 of 2)"):
@@ -69,17 +91,22 @@ class JoinLeagueModal(ui.Modal, title="Join the League (Step 1 of 2)"):
         self.db = db_connection
 
     async def on_submit(self, interaction: discord.Interaction):
-        """This method now saves the active teams and responds with a button for the next step."""
+        active_teams = [self.team_one.value, self.team_two.value, self.team_three.value, self.team_four.value, self.team_five.value]
+
+        # --- VALIDATION: Check for duplicate active teams ---
+        if len(set(active_teams)) != len(active_teams):
+            await interaction.response.send_message("❌ You cannot select the same active team more than once. Please try again.", ephemeral=True)
+            return
+
         sql = """
             INSERT INTO rosters (user_id, team_one, team_two, team_three, team_four, team_five)
             VALUES (%s, %s, %s, %s, %s, %s)
         """
-        val = (interaction.user.id, self.team_one.value, self.team_two.value, self.team_three.value, self.team_four.value, self.team_five.value)
+        val = (interaction.user.id, *active_teams)
         
         try:
             self.cursor.execute(sql, val)
             self.db.commit()
-            # Respond with a new view containing the button for step 2
             view = SetBenchButtonView(self.cursor, self.db)
             await interaction.response.send_message(
                 "✅ Active roster saved! Click the button below to set your bench teams.",
@@ -103,15 +130,12 @@ class SwapView(ui.View):
         self.active_selection = None
         self.bench_selection = None
 
-        # Create dropdown for active teams
         active_options = [discord.SelectOption(label=team[1], value=team[0]) for team in active_teams if team[1]]
         self.active_dropdown = ui.Select(placeholder="Choose an active team to swap out...", options=active_options)
 
-        # Create dropdown for bench teams
         bench_options = [discord.SelectOption(label=team[1], value=team[0]) for team in bench_teams if team[1]]
         self.bench_dropdown = ui.Select(placeholder="Choose a bench team to swap in...", options=bench_options)
         
-        # Add callbacks
         self.active_dropdown.callback = self.on_active_select
         self.bench_dropdown.callback = self.on_bench_select
 
@@ -131,12 +155,10 @@ class SwapView(ui.View):
     async def check_and_execute_swap(self, interaction: discord.Interaction):
         if self.active_selection and self.bench_selection:
             try:
-                # Get the actual team names from the database
                 self.cursor.execute(f"SELECT {self.active_selection}, {self.bench_selection} FROM rosters WHERE user_id = {self.user_id}")
                 team_names = self.cursor.fetchone()
                 active_team_name, bench_team_name = team_names[self.active_selection], team_names[self.bench_selection]
 
-                # Perform the swap and increment swaps_used
                 sql = f"""
                     UPDATE rosters
                     SET {self.active_selection} = %s, {self.bench_selection} = %s, swaps_used = swaps_used + 1
@@ -171,6 +193,38 @@ class userLeague(commands.Cog):
         self.cursor.execute("SELECT * FROM rosters WHERE user_id = %s", (user_id,))
         return self.cursor.fetchone()
 
+    @app_commands.command(name="leaderboard", description="Displays the top 10 players in the league.")
+    async def leaderboard(self, interaction: discord.Interaction):
+        """Shows the league leaderboard."""
+        await interaction.response.defer()
+        try:
+            self.cursor.execute("SELECT user_id, points FROM rosters ORDER BY points DESC LIMIT 10")
+            leaders = self.cursor.fetchall()
+
+            if not leaders:
+                await interaction.followup.send("There are no players on the leaderboard yet!")
+                return
+
+            embed = discord.Embed(title="🏆 League Leaderboard", color=discord.Color.gold())
+            
+            description = []
+            for rank, leader in enumerate(leaders, 1):
+                try:
+                    user = await self.bot.fetch_user(leader['user_id'])
+                    user_name = user.display_name
+                except discord.errors.NotFound:
+                    user_name = f"Unknown User ({leader['user_id']})"
+                
+                rank_emoji = "🥇" if rank == 1 else "🥈" if rank == 2 else "🥉" if rank == 3 else f"**{rank}.**"
+                description.append(f"{rank_emoji} {user_name} - **{leader['points']}** points")
+            
+            embed.description = "\n".join(description)
+            await interaction.followup.send(embed=embed)
+
+        except mysql.connector.Error as err:
+            await interaction.followup.send(f"❌ A database error occurred: {err}")
+
+
     @app_commands.command(name="join_league", description="Sign up for the fantasy league and set your roster.")
     async def join_league(self, interaction: discord.Interaction):
         roster = self.get_user_roster(interaction.user.id)
@@ -178,7 +232,6 @@ class userLeague(commands.Cog):
             await interaction.response.send_message("You are already in the league! Use `/my_roster` to see your teams.", ephemeral=True)
             return
         
-        # Start the two-step modal process
         modal = JoinLeagueModal(self.cursor, self.db)
         await interaction.response.send_modal(modal)
 
@@ -237,7 +290,7 @@ class userLeague(commands.Cog):
         options = []
         team_slots = ['team_one', 'team_two', 'team_three', 'team_four', 'team_five']
         for slot in team_slots:
-            if roster.get(slot): # Only show if the slot is not empty
+            if roster.get(slot):
                 options.append(discord.SelectOption(label=roster[slot], value=slot))
         
         if not options:
@@ -260,15 +313,6 @@ class userLeague(commands.Cog):
         view = ui.View(timeout=180)
         view.add_item(select)
         await interaction.response.send_message("Select your ace team. This team will earn triple points from all games this week.", view=view, ephemeral=True)
-
-# The setup function to load the cog
-async def setup(bot: commands.Bot):
-    # Assuming you have a guild ID in your .env or config for testing
-    guild_id = os.getenv("HOCKEY_DISCORD_SERVER")
-    if guild_id:
-        await bot.add_cog(userLeague(bot), guilds=[discord.Object(id=int(guild_id))])
-    else:
-        await bot.add_cog(userLeague(bot))
 
 # The setup function to load the cog
 async def setup(bot):

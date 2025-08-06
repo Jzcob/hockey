@@ -3,11 +3,14 @@ import discord
 from discord.ext import commands
 from discord import app_commands, ui
 import mysql.connector
-import config # Your config file with DB credentials
-import random # Used for the mock API data
 import os
 from dotenv import load_dotenv
-load_dotenv() 
+import random
+import traceback
+import config
+
+# Load environment variables from .env file
+load_dotenv()
 
 # --- Helper function for simulation ---
 def get_nhl_teams():
@@ -26,7 +29,6 @@ def get_nhl_teams():
     ]
 
 # --- Mock NHL API Function ---
-# This function now returns a dictionary with game outcomes for each team.
 def fetch_weekly_results():
     """
     (MOCK FUNCTION) Fetches a dictionary of game results for the week.
@@ -37,18 +39,16 @@ def fetch_weekly_results():
     nhl_teams = get_nhl_teams()
     
     results = {}
-    # Simulate results for a random number of teams
     participating_teams = random.sample(nhl_teams, k=random.randint(20, 28))
     
     for team in participating_teams:
-        outcome = random.choice(['win', 'win', 'win', 'ot_loss', 'loss', 'loss']) # Skew towards wins/losses
+        outcome = random.choice(['win', 'win', 'win', 'ot_loss', 'loss', 'loss'])
         results[team] = outcome
         
     print(f"MOCK API: Results are {results}")
     return results
 
 # --- UI View for Reset Confirmation ---
-# This view asks the admin for a final confirmation before deleting all data.
 class ConfirmResetView(ui.View):
     def __init__(self, db_cursor, db_connection):
         super().__init__(timeout=60)
@@ -57,7 +57,6 @@ class ConfirmResetView(ui.View):
 
     @ui.button(label="Confirm & Reset Season", style=discord.ButtonStyle.danger)
     async def confirm_button(self, interaction: discord.Interaction, button: ui.Button):
-        """Wipes the rosters table to start a new season."""
         try:
             self.cursor.execute("TRUNCATE TABLE rosters")
             self.db.commit()
@@ -81,10 +80,11 @@ class adminLeague(commands.Cog):
             password=os.getenv("db_password"),
             database=os.getenv("db_name")
         )
-        # Use dictionary cursor for easier access to columns by name
         self.cursor = self.db.cursor(dictionary=True, buffered=True)
         print("Admin Cog: Database connection established.")
         self.create_table()
+        # And the most important feature...
+        print("Grabbing a Dunkin' iced coffee for the admin... ☕")
 
     def create_table(self):
         """Creates the rosters table if it doesn't already exist."""
@@ -109,11 +109,115 @@ class adminLeague(commands.Cog):
         except mysql.connector.Error as err:
             print(f"Admin Cog: Failed to create table: {err}")
 
+    # --- Error Handling Listener ---
+    @commands.Cog.listener()
+    async def on_app_command_error(self, interaction: discord.Interaction, error: app_commands.AppCommandError):
+        """A global error handler for all app commands."""
+        log_channel_id = os.getenv("ERROR_LOG_CHANNEL")
+        if not log_channel_id:
+            print("ERROR: ERROR_LOG_CHANNEL not set in .env file. Cannot log error.")
+            return
+
+        log_channel = self.bot.get_channel(int(log_channel_id))
+        if not log_channel:
+            print(f"ERROR: Cannot find log channel with ID {log_channel_id}")
+            return
+
+        # Extract the original error
+        if isinstance(error, app_commands.CommandInvokeError):
+            error = error.original
+
+        # Format the traceback
+        tb_str = "".join(traceback.format_exception(type(error), error, error.__traceback__))
+        
+        embed = discord.Embed(
+            title="App Command Error",
+            description=f"An error occurred in command `/{interaction.command.name}`",
+            color=discord.Color.red()
+        )
+        embed.add_field(name="User", value=f"{interaction.user.mention} (`{interaction.user.id}`)", inline=False)
+        embed.add_field(name="Channel", value=f"{interaction.channel.mention} (`{interaction.channel.id}`)", inline=False)
+        # Ensure the traceback fits within the embed field limit
+        embed.add_field(name="Traceback", value=f"```python\n{tb_str[:1000]}\n```", inline=False)
+        
+        await log_channel.send(embed=embed)
+        # Also inform the user
+        try:
+            await interaction.followup.send("An unexpected error occurred. The development team has been notified.", ephemeral=True)
+        except discord.errors.InteractionResponded:
+            pass # If we already responded, no need to do it again.
+
+
+    @app_commands.command(name="remove_user", description="Removes a user from the fantasy league.")
+    @app_commands.default_permissions(administrator=True)
+    @app_commands.describe(user="The user to remove from the league.")
+    async def remove_user(self, interaction: discord.Interaction, user: discord.User):
+        """Removes a user's entire entry from the rosters table."""
+        await interaction.response.defer(ephemeral=True)
+        try:
+            sql = "DELETE FROM rosters WHERE user_id = %s"
+            val = (user.id,)
+            self.cursor.execute(sql, val)
+            self.db.commit()
+
+            if self.cursor.rowcount > 0:
+                await interaction.followup.send(f"✅ Successfully removed **{user.display_name}** from the league.", ephemeral=True)
+            else:
+                await interaction.followup.send(f"⚠️ **{user.display_name}** was not found in the league.", ephemeral=True)
+
+        except mysql.connector.Error as err:
+            await interaction.followup.send(f"❌ A database error occurred: {err}", ephemeral=True)
+
+    @app_commands.command(name="notify_all", description="Sends a DM to all league members with their rank and points.")
+    @app_commands.default_permissions(administrator=True)
+    async def notify_all(self, interaction: discord.Interaction):
+        """Notifies all users of their current standing via DM."""
+        await interaction.response.defer(ephemeral=True)
+        try:
+            # Fetch all users ordered by points to determine rank
+            self.cursor.execute("SELECT user_id, points FROM rosters ORDER BY points DESC")
+            all_rosters = self.cursor.fetchall()
+
+            if not all_rosters:
+                await interaction.followup.send("There are no players in the league to notify.", ephemeral=True)
+                return
+
+            success_count = 0
+            fail_count = 0
+
+            for rank, roster in enumerate(all_rosters, 1):
+                user_id = roster['user_id']
+                points = roster['points']
+                
+                try:
+                    user = await self.bot.fetch_user(user_id)
+                    embed = discord.Embed(
+                        title="🏒 Weekly League Update!",
+                        description=f"Here's your current standing in the league.",
+                        color=discord.Color.blue()
+                    )
+                    embed.add_field(name="Your Rank", value=f"**#{rank}** of {len(all_rosters)}", inline=True)
+                    embed.add_field(name="Your Points", value=f"**{points}** 🏆", inline=True)
+                    embed.set_footer(text="Good luck next week!")
+                    
+                    await user.send(embed=embed)
+                    success_count += 1
+                except (discord.errors.NotFound, discord.errors.Forbidden):
+                    # User not found or has DMs disabled
+                    fail_count += 1
+                except Exception as e:
+                    fail_count += 1
+                    print(f"Failed to DM user {user_id}: {e}")
+
+            await interaction.followup.send(f"✅ Notification process complete.\n- Successfully sent DMs to **{success_count}** users.\n- Failed to send DMs to **{fail_count}** users.", ephemeral=True)
+
+        except mysql.connector.Error as err:
+            await interaction.followup.send(f"❌ A database error occurred: {err}", ephemeral=True)
+
     @app_commands.command(name="simulate_users", description="[TESTING] Populates the league with fake users.")
     @app_commands.default_permissions(administrator=True)
     @app_commands.describe(count="The number of fake users to create (e.g., 50)")
     async def simulate_users(self, interaction: discord.Interaction, count: int):
-        """Creates a specified number of fake users with random data for testing."""
         await interaction.response.defer(ephemeral=True)
         
         if count <= 0:
@@ -124,15 +228,10 @@ class adminLeague(commands.Cog):
             nhl_teams = get_nhl_teams()
             created_count = 0
             for _ in range(count):
-                user_id = random.randint(10**17, 10**18 - 1) # Fake Discord ID
-                
-                # Assign 8 unique random teams
+                user_id = random.randint(10**17, 10**18 - 1)
                 random_roster = random.sample(nhl_teams, 8)
-                
                 points = random.randint(0, 150)
                 swaps_used = random.randint(0, 10)
-                
-                # Randomly assign an aced team or leave it null
                 aced_team_slot = random.choice([None, 'team_one', 'team_two', 'team_three', 'team_four', 'team_five'])
 
                 sql = """
@@ -152,33 +251,23 @@ class adminLeague(commands.Cog):
 
         except mysql.connector.Error as err:
             await interaction.followup.send(f"❌ A database error occurred during simulation: {err}", ephemeral=True)
-        except Exception as e:
-            await interaction.followup.send(f"An unexpected error occurred: {e}", ephemeral=True)
-
 
     @app_commands.command(name="calculate_points", description="Calculates and awards points based on weekly results.")
     @app_commands.default_permissions(administrator=True)
     async def calculate_points(self, interaction: discord.Interaction):
-        """
-        This command fetches weekly winners, calculates points for each player,
-        and updates the database.
-        """
         await interaction.response.defer(ephemeral=True)
 
-        # --- Point Values ---
         WIN_POINTS = 4
         OT_LOSS_POINTS = 2
         LOSS_POINTS = -2
         ACE_MULTIPLIER = 3
 
         try:
-            # 1. Fetch game results from the (mock) API
             weekly_results = fetch_weekly_results()
             if not weekly_results:
                 await interaction.followup.send("Could not fetch weekly results. Aborting.", ephemeral=True)
                 return
 
-            # 2. Get all player rosters from the database
             self.cursor.execute("SELECT * FROM rosters")
             all_rosters = self.cursor.fetchall()
 
@@ -189,7 +278,6 @@ class adminLeague(commands.Cog):
             total_points_awarded = 0
             players_updated = 0
 
-            # 3. Iterate through each player and calculate their points
             for roster in all_rosters:
                 weekly_points = 0
                 user_id = roster['user_id']
@@ -198,13 +286,11 @@ class adminLeague(commands.Cog):
                 for slot in active_team_slots:
                     player_team = roster.get(slot)
                     
-                    # Check if the player's team has a result this week
                     if player_team and player_team in weekly_results:
                         result = weekly_results[player_team]
                         points_for_game = 0
                         is_aced = roster.get('aced_team_slot') == slot
 
-                        # Determine base points from the game outcome
                         if result == 'win':
                             points_for_game = WIN_POINTS
                         elif result == 'ot_loss':
@@ -212,13 +298,11 @@ class adminLeague(commands.Cog):
                         elif result == 'loss':
                             points_for_game = LOSS_POINTS
                         
-                        # Apply the ace multiplier if the team was aced
                         if is_aced:
                             points_for_game *= ACE_MULTIPLIER
                         
                         weekly_points += points_for_game
                 
-                # 4. Update the player's score in the database if their point total changed
                 if weekly_points != 0:
                     update_sql = "UPDATE rosters SET points = points + %s WHERE user_id = %s"
                     self.cursor.execute(update_sql, (weekly_points, user_id))
@@ -227,7 +311,6 @@ class adminLeague(commands.Cog):
             
             self.db.commit()
 
-            # 5. Send a summary report to the admin
             embed = discord.Embed(
                 title="✅ Weekly Point Calculation Complete",
                 description="Player scores have been updated based on this week's game results.",
@@ -241,17 +324,12 @@ class adminLeague(commands.Cog):
 
         except mysql.connector.Error as err:
             await interaction.followup.send(f"❌ A database error occurred during point calculation: {err}", ephemeral=True)
-        except Exception as e:
-            await interaction.followup.send(f"An unexpected error occurred: {e}", ephemeral=True)
 
-
-    @app_commands.command(name="league_admin", description="Manage the global hockey league.")
+    @app_commands.command(name="admin_league", description="Manage the global hockey league.")
     @app_commands.default_permissions(administrator=True)
     async def admin_league(self, interaction: discord.Interaction):
-        """Provides a control panel for league administrators."""
         view = ui.View(timeout=180)
 
-        # --- Button to Reset the Season ---
         reset_button = ui.Button(label="Reset League Season", style=discord.ButtonStyle.danger, emoji="🔄")
         async def reset_callback(interaction: discord.Interaction):
             confirm_view = ConfirmResetView(self.cursor, self.db)
@@ -263,7 +341,6 @@ class adminLeague(commands.Cog):
         reset_button.callback = reset_callback
         view.add_item(reset_button)
 
-        # --- Button to Reset Weekly Aces ---
         reset_aces_button = ui.Button(label="Reset Weekly Aces", style=discord.ButtonStyle.primary, emoji="✨")
         async def reset_aces_callback(interaction: discord.Interaction):
             try:
@@ -275,7 +352,6 @@ class adminLeague(commands.Cog):
         reset_aces_button.callback = reset_aces_callback
         view.add_item(reset_aces_button)
 
-        # --- Button to View League Stats ---
         stats_button = ui.Button(label="League Stats", style=discord.ButtonStyle.secondary, emoji="📊")
         async def stats_callback(interaction: discord.Interaction):
             try:
