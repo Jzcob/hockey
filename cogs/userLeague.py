@@ -67,19 +67,22 @@ class JoinLeagueModal(ui.Modal, title="Join the League (Step 1 of 2)"):
 
     async def on_submit(self, interaction: discord.Interaction):
         """This method now transitions to the second modal for bench teams."""
-        active_teams = [
-            self.team_one.value,
-            self.team_two.value,
-            self.team_three.value,
-            self.team_four.value,
-            self.team_five.value
-        ]
-        
-        # Create an instance of the second modal, passing the active teams and DB info
-        bench_modal = SetBenchModal(self.cursor, self.db, active_teams)
-        
-        # Send the second modal to the user
-        await interaction.response.send_modal(bench_modal)
+        try:
+            active_teams = [
+                self.team_one.value,
+                self.team_two.value,
+                self.team_three.value,
+                self.team_four.value,
+                self.team_five.value
+            ]
+            
+            # Create an instance of the second modal, passing the active teams and DB info
+            bench_modal = SetBenchModal(self.cursor, self.db, active_teams)
+            
+            # Send the second modal to the user
+            await interaction.response.send_modal(bench_modal)
+        except Exception as e:
+            await interaction.response.send_message(f"❌ An error occurred while setting your active teams: {e}", ephemeral=True)
 
 
 # --- UI View for Swapping Teams ---
