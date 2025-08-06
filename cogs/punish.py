@@ -193,8 +193,6 @@ class punish(commands.Cog):
     @app_commands.checks.has_any_role(mod, admin, manager, owner)
     async def ban(self, interaction: discord.Interaction, member: discord.Member, reason: str, evidence: discord.Attachment):
         try:
-            if member.is_banned() is True:
-                return await interaction.response.send_message("This user is already banned!", ephemeral=True)
             staff = interaction.user.id
             mod_logs = self.bot.get_channel(config.mod_logs)
             playerDB = mycol.find_one({"_id": member.id})
