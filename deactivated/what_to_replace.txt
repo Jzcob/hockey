@@ -1,0 +1,75 @@
+Of course. You only need to make changes in one primary location and one secondary location within the `admin_cog.py` file.
+
+-----
+
+### 1\. The Main API Implementation (`fetch_weekly_results` function)
+
+This is the most important part. You will replace the entire body of the mock function with your actual API logic.
+
+  * **File:** `admin_cog.py`
+  * **Location:** The function `fetch_weekly_results()`
+
+<!-- end list -->
+
+```python
+# --- Mock NHL API Function ---
+# This function now returns a dictionary with game outcomes for each team.
+def fetch_weekly_results():
+    """
+    (MOCK FUNCTION) Fetches a dictionary of game results for the week.
+    REPLACE THIS with a real API call.
+    Returns a dict like: {'Team Name': 'win' | 'ot_loss' | 'loss'}
+    """
+    # ------------------ START OF SECTION TO REPLACE ------------------ #
+    
+    print("MOCK API: Fetching weekly game results...")
+    nhl_teams = get_nhl_teams()
+    
+    results = {}
+    # Simulate results for a random number of teams
+    participating_teams = random.sample(nhl_teams, k=random.randint(20, 28))
+    
+    for team in participating_teams:
+        outcome = random.choice(['win', 'win', 'win', 'ot_loss', 'loss', 'loss'])
+        results[team] = outcome
+        
+    print(f"MOCK API: Results are {results}")
+    return results
+
+    # ------------------- END OF SECTION TO REPLACE ------------------- #
+```
+
+**What You Need to Change Here:**
+
+  * **API Call:** Add your code to call the NHL API. You'll likely need to import a library like `requests` or `aiohttp` at the top of the file.
+  * **Date Range:** Your API call should fetch all games from the past week (or whatever your desired scoring period is).
+  * **Parse Results:** Go through the game data from the API and determine the outcome for each team.
+  * **Return the Dictionary:** The most critical step is to format your final data into the **exact dictionary structure** that the rest of the command expects. The keys should be the full team names, and the values must be one of `'win'`, `'ot_loss'`, or `'loss'`.
+
+-----
+
+### 2\. Team Name Consistency (`get_nhl_teams` function)
+
+This is a crucial data-checking step. Your bot's internal team names must **perfectly match** the team names provided by your API.
+
+  * **File:** `admin_cog.py`
+  * **Location:** The function `get_nhl_teams()`
+
+<!-- end list -->
+
+```python
+# --- Helper function for simulation ---
+def get_nhl_teams():
+    """Returns a list of all NHL team names."""
+    return [
+        "Anaheim Ducks", "Boston Bruins", "Buffalo Sabres", "Calgary Flames",
+        # ... and so on
+    ]
+```
+
+**What You Need to Change Here:**
+
+  * **Verify Names:** Once you have your API working, compare the team names it provides with the names in this list. For example, if your API returns "St. Louis Blues" but your list has "St Louis Blues", the code will not be able to match them and no points will be awarded.
+  * **Update List:** Modify the team names in this list to be an exact match to the ones from your API.
+
+Once you replace the logic in `fetch_weekly_results` and verify the names in `get_nhl_teams`, your bot will be fully operational with live data.
