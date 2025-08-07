@@ -3,19 +3,50 @@ import asyncio
 from discord.ext import commands
 import os
 import config
+import mysql.connector.pooling
 from dotenv import load_dotenv
-
 import topgg
-load_dotenv()
 
+# --- Initial Setup ---
+load_dotenv()
 
 intents = discord.Intents.default()
 intents.message_content = True
 intents.auto_moderation_configuration = True
 intents.reactions = True
-bot = commands.Bot(command_prefix=';;', intents=intents, help_command=None)
 status = discord.Status.online
 
+# --- Database Pool Setup ---
+db_pool = None  # Initialize pool as None
+try:
+    db_pool = mysql.connector.pooling.MySQLConnectionPool(
+        pool_name="bot_pool",
+        pool_size=5,
+        host=os.getenv("db_host"),
+        user=os.getenv("db_user"),
+        password=os.getenv("db_password"),
+        database=os.getenv("db_name")
+    )
+    print("✅ Successfully created database connection pool.")
+except mysql.connector.Error as err:
+    print(f"❌ FAILED to create database connection pool: {err}")
+    exit() # Exit if the bot can't connect to the database on start
+
+# --- Custom Bot Class Definition ---
+# This class inherits from commands.Bot and adds the db_pool to it.
+class MyBot(commands.Bot):
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        self.db_pool = db_pool
+        # You can also attach other things here if needed
+        self.topggpy = None
+
+# --- Bot Instantiation ---
+# We now create an instance of OUR custom MyBot class.
+# All @bot.command() and @bot.event decorators below will now attach to this instance.
+bot = MyBot(command_prefix=';;', intents=intents, help_command=None)
+
+# --- Bot Admin Commands & Events ---
 @bot.command()
 async def sync(ctx) -> None:
     if ctx.author.id == config.jacob:
@@ -57,12 +88,12 @@ async def triviaquestions(ctx):
 @bot.command()
 async def servers(ctx):
     if ctx.author.id == config.jacob:
-        if ctx.channel.type == discord.ChannelType.private or ctx.channel.id in config.allowed_channels:   
+        if ctx.channel.type == discord.ChannelType.private or ctx.channel.id in config.allowed_channels:
             guilds = bot.guilds
             try:
                 desc = ""
                 members = 0
-                desc += f"Total Servers: {len(guilds)}\n" 
+                desc += f"Total Servers: {len(guilds)}\n"
                 for guild in guilds:
                     members += guild.member_count
                     try:
@@ -70,7 +101,7 @@ async def servers(ctx):
                     except:
                         desc += ("---Error getting server information---\n")
                 file_path = "server_info.txt"
-                with open(file_path, "w") as file:
+                with open(file_path, "w", encoding="utf-8") as file: # Added encoding for safety
                     file.write(desc)
                 await ctx.send(file=discord.File(file_path))
                 os.remove(file_path)
@@ -82,80 +113,88 @@ async def servers(ctx):
                 embed = discord.Embed(title="Error", description=f"Something went wrong. `{e}`", color=0xff0000)
                 return await ctx.send(embed=embed)
         else:
-            embed = discord.Embed(title="Error", description="This command can only be used in DMs.", color=0xff0000)
+            embed = discord.Embed(title="Error", description="This command can only be used in specified channels or DMs.", color=0xff0000)
             return await ctx.send(embed=embed)
     else:
-        embed = discord.Embed(title="Error", description="This is a bot admin command restricted to only the bot owner, used to sync the servers the bot is in.", color=0xff0000)
+        embed = discord.Embed(title="Error", description="This is a bot admin command restricted to only the bot owner.", color=0xff0000)
         return await ctx.send(embed=embed)
 
 
 @bot.event
 async def on_ready():
     print(f"Logged on as {bot.user}")
+    print(f"Bot is ready and connected to {len(bot.guilds)} servers.")
+    # Initialize top.gg client and attach it to the bot instance
     bot.topggpy = topgg.DBLClient(bot, os.getenv("topgg-token"), autopost=True, post_shard_count=True)
-
-async def load():
-    for filename in os.listdir('./cogs'):
-        if filename.endswith('.py'):
-            await bot.load_extension(f'cogs.{filename[:-3]}')
-            print(f'FOUND: `{filename}`')
-
-async def main():
-    await load()
-    await bot.start(token=os.getenv("token"))
-
 
 @bot.event
 async def on_guild_join(guild):
     join_leave_channel = bot.get_channel(1168939285274177627)
     try:
-        embed = discord.Embed(title="Joined Server", description=f"Name: {guild.name}\n" +
-                                            f"Members: {guild.member_count}\n", color=0x00ff00)
-        embed.set_thumbnail(url=f"{guild.icon}")
+        embed = discord.Embed(title="Joined Server", description=f"Name: {guild.name}\nMembers: {guild.member_count}\n", color=0x00ff00)
+        if guild.icon:
+            embed.set_thumbnail(url=guild.icon.url)
+        await join_leave_channel.send(embed=embed)
+    except Exception as e:
+        await join_leave_channel.send(f"Joined a server but couldn't get server information. Error: {e}")
 
-        global msg 
-        msg = await join_leave_channel.send(embed=embed)
-    except:
-        msg = await join_leave_channel.send("Joined a server but couldn't get server information")
+    # Update server/member counts
     try:
         guilds = bot.guilds
-        members = 0
-        for guild in guilds:
-            members += guild.member_count
+        members = sum(g.member_count for g in guilds)
         vc = bot.get_channel(1173304351872253952)
         membersVC = bot.get_channel(1186445778043031722)
+        await vc.edit(name=f"Servers: {len(guilds)}")
         await membersVC.edit(name=f"Members: {int(members):,}")
-        await vc.edit(name=f"Servers: {len(bot.guilds)}")
-        if len(bot.guilds) % 100 == 0:
-            await join_leave_channel.send(f"<@920797181034778655> Bot has reached a milestone of `{len(bot.guilds)}` servers!")
+        if len(guilds) % 100 == 0:
+            await join_leave_channel.send(f"<@920797181034778655> Bot has reached a milestone of `{len(guilds)}` servers!")
     except Exception as e:
-        print(e)
+        print(f"Error updating stats on guild join: {e}")
 
 
 @bot.event
 async def on_guild_remove(guild):
     join_leave_channel = bot.get_channel(1168939285274177627)
     try:
-        embed = discord.Embed(title="Left Server", description=f"Name: {guild.name}\n" +
-                                        f"Members: {guild.member_count}\n", color=0xff0000)
-        embed.set_thumbnail(url=f"{guild.icon}")
+        embed = discord.Embed(title="Left Server", description=f"Name: {guild.name}\nMembers: {guild.member_count}\n", color=0xff0000)
+        if guild.icon:
+            embed.set_thumbnail(url=guild.icon.url)
         await join_leave_channel.send(embed=embed)
-    except:
-        await join_leave_channel.send("Left a server but couldn't get server information")
+    except Exception as e:
+        await join_leave_channel.send(f"Left a server but couldn't get server information. Error: {e}")
+
+    # Update server/member counts
     try:
         guilds = bot.guilds
-        members = 0
-        for guild in guilds:
-            members += guild.member_count
+        members = sum(g.member_count for g in guilds)
         vc = bot.get_channel(1173304351872253952)
         membersVC = bot.get_channel(1186445778043031722)
+        await vc.edit(name=f"Servers: {len(guilds)}")
         await membersVC.edit(name=f"Members: {int(members):,}")
-        await vc.edit(name=f"Servers: {len(bot.guilds)}")
     except Exception as e:
-        print(e)
+        print(f"Error updating stats on guild remove: {e}")
 
+# --- Main Application Logic ---
+async def load_cogs():
+    """Finds and loads all cogs in the /cogs directory."""
+    print("--- Loading Cogs ---")
+    for filename in os.listdir('./cogs'):
+        if filename.endswith('.py'):
+            try:
+                await bot.load_extension(f'cogs.{filename[:-3]}')
+                print(f'✅ Loaded: `{filename}`')
+            except Exception as e:
+                print(f"❌ Failed to load cog {filename}: {e}")
+    print("--------------------")
 
+async def main():
+    """Main function to load cogs and start the bot."""
+    async with bot:
+        await load_cogs()
+        await bot.start(os.getenv("token"))
 
-asyncio.run(main())
-
-
+if __name__ == "__main__":
+    try:
+        asyncio.run(main())
+    except KeyboardInterrupt:
+        print("Bot is shutting down.")
