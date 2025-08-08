@@ -28,6 +28,11 @@ class SetBenchModal(ui.Modal, title="Set Your Bench Teams (Step 2 of 2)"):
             with self.db_pool.get_connection() as cnx:
                 with cnx.cursor() as cursor:
                     # --- VALIDATION: Check for duplicate teams across all 8 picks ---
+                    for team in all_teams:
+                        teams = ['Anaheim Ducks', 'Arizona Coyotes', 'Boston Bruins', 'Buffalo Sabres', 'Calgary Flames', 'Carolina Hurricanes', 'Chicago Blackhawks', 'Colorado Avalanche', 'Columbus Blue Jackets', 'Dallas Stars', 'Detroit Red Wings', 'Edmonton Oilers', 'Florida Panthers', 'Los Angeles Kings', 'Minnesota Wild', 'Montreal Canadiens', 'Nashville Predators', 'New Jersey Devils', 'New York Islanders', 'New York Rangers', 'Ottawa Senators', 'Philadelphia Flyers', 'Pittsburgh Penguins', 'San Jose Sharks', 'Seattle Kraken', 'St. Louis Blues', 'Tampa Bay Lightning', 'Toronto Maple Leafs', 'Vancouver Canucks', 'Vegas Golden Knights', 'Washington Capitals', 'Winnipeg Jets']
+                        if team not in teams:
+                            await interaction.response.send_message("❌ Invalid team selection. Please select valid NHL teams.", ephemeral=True)
+                            return
                     if len(set(all_teams)) != len(all_teams):
                         await interaction.response.send_message("❌ You cannot select the same team more than once. Please start over with `/join_league`.", ephemeral=True)
                         # Clean up the partial entry
@@ -37,6 +42,7 @@ class SetBenchModal(ui.Modal, title="Set Your Bench Teams (Step 2 of 2)"):
                         except mysql.connector.Error as cleanup_err:
                             print(f"Failed to clean up partial entry for user {interaction.user.id}: {cleanup_err}")
                         return
+                    
 
                     sql = "UPDATE rosters SET bench_one = %s, bench_two = %s, bench_three = %s WHERE user_id = %s"
                     val = (*bench_teams, interaction.user.id)

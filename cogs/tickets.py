@@ -27,66 +27,70 @@ class SelectMenu(discord.ui.Select):
         super().__init__(placeholder="Select a category", min_values=1, max_values=1, options=menu)
     
     async def callback(self, interaction: discord.Interaction):
-        managementTicket = utils.get(interaction.guild.text_channels, name=f"mgmt-{interaction.user.name.lower()}")
-        developmentTicket = utils.get(interaction.guild.text_channels, name=f"dev-{interaction.user.name.lower()}")
-        generalTicket = utils.get(interaction.guild.text_channels, name=f"gen-{interaction.user.name.lower()}")
-        overwritesManagement = {
-            interaction.guild.default_role: discord.PermissionOverwrite(read_messages=False),
-            interaction.user: discord.PermissionOverwrite(read_messages=True),
-            interaction.guild.get_role(management): discord.PermissionOverwrite(read_messages=True),
-            interaction.guild.me: discord.PermissionOverwrite(read_messages=True)
-        }
-        overwritesDevelopment = {
-            interaction.guild.default_role: discord.PermissionOverwrite(read_messages=False),
-            interaction.user: discord.PermissionOverwrite(read_messages=True),
-            interaction.guild.get_role(developer): discord.PermissionOverwrite(read_messages=True),
-            interaction.guild.get_role(tester): discord.PermissionOverwrite(read_messages=True),
-            interaction.guild.me: discord.PermissionOverwrite(read_messages=True)
-        }
-        overwritesGeneral = {
-            interaction.guild.default_role: discord.PermissionOverwrite(read_messages=False),
-            interaction.user: discord.PermissionOverwrite(read_messages=True),
-            interaction.guild.get_role(staff): discord.PermissionOverwrite(read_messages=True),
-            interaction.guild.me: discord.PermissionOverwrite(read_messages=True)
-        }
-        ticketCategory = utils.get(interaction.guild.categories, name="Tickets")
-        if managementTicket is None and developmentTicket is None and generalTicket is None:
-            if self.values[0] == "Management":
-                if managementTicket is None:
-                    try:
-                        await interaction.response.send_message(f"Hey {interaction.user.mention}, I've created a ticket for you in {managementTicket.mention}", ephemeral=True)
-                        ticket = await interaction.guild.create_text_channel(name=f"mgmt-{interaction.user.name.lower()}", category=ticketCategory, overwrites=overwritesManagement)
+        try:
+            managementTicket = utils.get(interaction.guild.text_channels, name=f"mgmt-{interaction.user.name.lower()}")
+            developmentTicket = utils.get(interaction.guild.text_channels, name=f"dev-{interaction.user.name.lower()}")
+            generalTicket = utils.get(interaction.guild.text_channels, name=f"gen-{interaction.user.name.lower()}")
+            overwritesManagement = {
+                interaction.guild.default_role: discord.PermissionOverwrite(read_messages=False),
+                interaction.user: discord.PermissionOverwrite(read_messages=True),
+                interaction.guild.get_role(management): discord.PermissionOverwrite(read_messages=True),
+                interaction.guild.me: discord.PermissionOverwrite(read_messages=True)
+            }
+            overwritesDevelopment = {
+                interaction.guild.default_role: discord.PermissionOverwrite(read_messages=False),
+                interaction.user: discord.PermissionOverwrite(read_messages=True),
+                interaction.guild.get_role(developer): discord.PermissionOverwrite(read_messages=True),
+                interaction.guild.get_role(tester): discord.PermissionOverwrite(read_messages=True),
+                interaction.guild.me: discord.PermissionOverwrite(read_messages=True)
+            }
+            overwritesGeneral = {
+                interaction.guild.default_role: discord.PermissionOverwrite(read_messages=False),
+                interaction.user: discord.PermissionOverwrite(read_messages=True),
+                interaction.guild.get_role(staff): discord.PermissionOverwrite(read_messages=True),
+                interaction.guild.me: discord.PermissionOverwrite(read_messages=True)
+            }
+            ticketCategory = utils.get(interaction.guild.categories, name="Tickets")
+            if managementTicket is None and developmentTicket is None and generalTicket is None:
+                if self.values[0] == "Management":
+                    if managementTicket is None:
+                        try:
+                            await interaction.response.send_message(f"Hey {interaction.user.mention}, I've created a ticket for you in {managementTicket.mention}", ephemeral=True)
+                            ticket = await interaction.guild.create_text_channel(name=f"mgmt-{interaction.user.name.lower()}", category=ticketCategory, overwrites=overwritesManagement)
+                            await ticket.send(f"<@{interaction.user.id}> please specify below this what your issue is.")
+                        except Exception as e:
+                            error_channel = self.bot.get_channel(config.error_channel)
+                            await error_channel.send(f"<@920797181034778655> Error with Tickets!\n ```{e}```")
+                    else: await interaction.response.send_message(f"Hey {interaction.user.mention}, you already have a ticket in {managementTicket.mention}", ephemeral=True)
+                elif self.values[0] == "Development":
+                    if developmentTicket is None:
+                        await interaction.response.send_message(f"Hey {interaction.user.mention}, I've created a ticket for you in {developmentTicket.mention}", ephemeral=True)
+                        ticket = await interaction.guild.create_text_channel(name=f"dev-{interaction.user.name.lower()}", category=ticketCategory, overwrites=overwritesDevelopment)
                         await ticket.send(f"<@{interaction.user.id}> please specify below this what your issue is.")
-                    except Exception as e:
-                        error_channel = self.bot.get_channel(config.error_channel)
-                        await error_channel.send(f"<@920797181034778655> Error with Tickets!\n ```{e}```")
-                else: await interaction.response.send_message(f"Hey {interaction.user.mention}, you already have a ticket in {managementTicket.mention}", ephemeral=True)
-            elif self.values[0] == "Development":
-                if developmentTicket is None:
-                    await interaction.response.send_message(f"Hey {interaction.user.mention}, I've created a ticket for you in {developmentTicket.mention}", ephemeral=True)
-                    ticket = await interaction.guild.create_text_channel(name=f"dev-{interaction.user.name.lower()}", category=ticketCategory, overwrites=overwritesDevelopment)
-                    await ticket.send(f"<@{interaction.user.id}> please specify below this what your issue is.")
-                else: await interaction.response.send_message(f"Hey {interaction.user.mention}, you already have a ticket in {developmentTicket.mention}", ephemeral=True)
-            elif self.values[0] == "General":
-                if generalTicket is None:
-                    await interaction.response.send_message(f"Hey {interaction.user.mention}, I've created a ticket for you in {generalTicket.mention}", ephemeral=True)
-                    ticket = await interaction.guild.create_text_channel(name=f"gen-{interaction.user.name.lower()}", category=ticketCategory, overwrites=overwritesGeneral)
-                    await ticket.send(f"<@{interaction.user.id}> please specify below this what your issue is.")
-                else: await interaction.response.send_message(f"Hey {interaction.user.mention}, you already have a ticket in {generalTicket.mention}", ephemeral=True)
-        elif managementTicket is not None or developmentTicket is not None or generalTicket is not None:
-            try:
-                return await interaction.response.send_message(f"Hey {interaction.user.mention}, you already have a ticket in {managementTicket.mention}", ephemeral=True)
-            except:
-                pass
-            try:
-                return await interaction.response.send_message(f"Hey {interaction.user.mention}, you already have a ticket in {developmentTicket.mention}", ephemeral=True)
-            except:
-                pass
-            try:
-                return await interaction.response.send_message(f"Hey {interaction.user.mention}, you already have a ticket in {generalTicket.mention}", ephemeral=True)
-            except:
-                pass    
-            
+                    else: await interaction.response.send_message(f"Hey {interaction.user.mention}, you already have a ticket in {developmentTicket.mention}", ephemeral=True)
+                elif self.values[0] == "General":
+                    if generalTicket is None:
+                        await interaction.response.send_message(f"Hey {interaction.user.mention}, I've created a ticket for you in {generalTicket.mention}", ephemeral=True)
+                        ticket = await interaction.guild.create_text_channel(name=f"gen-{interaction.user.name.lower()}", category=ticketCategory, overwrites=overwritesGeneral)
+                        await ticket.send(f"<@{interaction.user.id}> please specify below this what your issue is.")
+                    else: await interaction.response.send_message(f"Hey {interaction.user.mention}, you already have a ticket in {generalTicket.mention}", ephemeral=True)
+            elif managementTicket is not None or developmentTicket is not None or generalTicket is not None:
+                try:
+                    return await interaction.response.send_message(f"Hey {interaction.user.mention}, you already have a ticket in {managementTicket.mention}", ephemeral=True)
+                except:
+                    pass
+                try:
+                    return await interaction.response.send_message(f"Hey {interaction.user.mention}, you already have a ticket in {developmentTicket.mention}", ephemeral=True)
+                except:
+                    pass
+                try:
+                    return await interaction.response.send_message(f"Hey {interaction.user.mention}, you already have a ticket in {generalTicket.mention}", ephemeral=True)
+                except:
+                    pass    
+        except Exception as e:
+            error_channel = self.bot.get_channel(config.error_channel)
+            await error_channel.send(f"<@920797181034778655> Error with Tickets!\n ```{e}```")
+            await interaction.followup.send("Error with command, Message has been sent to Bot Developers", ephemeral=True)
 class SelectView(discord.ui.View):
     try:
         def __init__(self, *, timeout = 60):
