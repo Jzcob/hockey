@@ -37,6 +37,9 @@ class MyPoints(commands.Cog, name="MyPoints"):
     @app_commands.allowed_installs(guilds=True, users=True)
     @app_commands.allowed_contexts(guilds=True, dms=True, private_channels=True)
     async def fantasy_points(self, interaction: discord.Interaction):
+        if interaction.guild.id is not config.hockey_discord_server:
+            await interaction.response.send_message("This command can only be used in the hockey server for now.", ephemeral=True)
+            return
         await self.log_command(interaction)
         db_conn = None
         cursor = None
