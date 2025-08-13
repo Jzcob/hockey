@@ -8,13 +8,13 @@ import traceback
 watching = discord.CustomActivity(name="👀 New Feature Coming?")
 
 
-class announcement(commands.Cog):
+class admin(commands.Cog):
     def __init__(self, bot): 
         self.bot = bot
     
     @commands.Cog.listener()
     async def on_ready(self):
-        print(f"LOADED: `announcement.py`")
+        print(f"LOADED: `admin.py`")
         await self.bot.change_presence(activity=discord.CustomActivity(name="👀 New Feature Coming?"))
     
     @app_commands.command(name="dev-mode", description="Toggles dev mode!")
@@ -53,13 +53,13 @@ class announcement(commands.Cog):
             string = f"{traceback.format_exc()}"
             await error_channel.send(f"```{string}```")
     
-    app_commands.command(name="announce_league", description="Posts the fantasy league announcement embed.")
+    @app_commands.command(name="announce_league", description="Posts the fantasy league announcement embed.")
     @app_commands.default_permissions(administrator=True)
     async def announce_league(self, interaction: discord.Interaction):
         embed = discord.Embed(
             title="🏒 Announcing the First Annual Hockey Bot League! 🏒",
             description=(
-                "Get ready to put your hockey knowledge to the test! I thrilled to launch our brand-new, discord-wide "
+                "Get ready to put your hockey knowledge to the test! I am thrilled to launch a brand-new, discord-wide "
                 "**NHL Fantasy League**, a season-long competition where you can prove you're the best armchair GM.\n\n"
                 "This is all about the love of the game, bragging rights, and friendly competition. "
                 "There are no prizes—just the glory of finishing at the top!\n\n"
@@ -106,19 +106,31 @@ class announcement(commands.Cog):
             name="🚀 How to Get Started",
             value=(
                 "Ready to build your dynasty? Here are the commands you'll need:\n\n"
-                "- `/join_league` - **Start here!** A two-step process to pick your 5 active and 3 bench teams.\n"
-                "- `/my_roster` - View your current team selections, total points, and remaining swaps.\n"
-                "- `/swap_teams` - Use one of your 10 seasonal swaps.\n"
-                "- `/ace_team` - Choose your weekly x3 points multiplier team.\n"
+                "- `/join-league` - **Start here!** A two-step process to pick your 5 active and 3 bench teams.\n"
+                "- `/my-roster` - View your current team selections, total points, and remaining swaps.\n"
+                "- `/swap-teams` - Use one of your 10 seasonal swaps.\n"
+                "- `/ace-team` - Choose your weekly x3 points multiplier team.\n"
                 "- `/leaderboard fantasy` - See how you stack up against the competition!\n\n"
                 "The puck drops soon! Draft your teams, make your picks, and may the best fan win!"
             ),
             inline=False
         )
+
+        embed.add_field(
+            name="⚠️ Important Notes",
+            value=(
+                "The NHL season kicks off on October 7th. Please ensure your rosters are set before then as you won't be able to join after that!\n"
+                "I REPEAT: **SET YOUR ROSTERS BEFORE OCTOBER 7TH!**\n"
+                "You will not be able to join the league after the season starts!\n\n"
+                "Please remember that this is a friendly competition, and I want everyone to have fun!"
+            )
+        )
+
+        embed.set_footer(text="For any questions, please join the bots discord server in `/info`")
         
         embed.set_thumbnail(url="https://www-league.nhlstatic.com/images/logos/league-dark/133-flat.svg")
 
         await interaction.response.send_message(embed=embed)
 
 async def setup(bot):
-    await bot.add_cog(announcement(bot), guilds=[discord.Object(id=config.hockey_discord_server)])
+    await bot.add_cog(admin(bot), guilds=[discord.Object(id=config.hockey_discord_server)])

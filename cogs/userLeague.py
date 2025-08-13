@@ -61,7 +61,7 @@ class SetBenchModal(ui.Modal, title="Set Your Bench Teams (Step 2 of 2)"):
 
             # --- VALIDATION 2: Check for duplicates across all 8 picks ---
             if len(set(all_teams)) != len(all_teams):
-                await interaction.response.send_message("❌ You cannot select the same team more than once. Please start over with `/join_league`.", ephemeral=True)
+                await interaction.response.send_message("❌ You cannot select the same team more than once. Please start over with `/join-league`.", ephemeral=True)
                 db_conn = self.db_pool.get_connection()
                 cursor = db_conn.cursor()
                 cursor.execute("DELETE FROM rosters WHERE user_id = %s", (interaction.user.id,))
@@ -77,7 +77,7 @@ class SetBenchModal(ui.Modal, title="Set Your Bench Teams (Step 2 of 2)"):
             db_conn.commit()
             
             await interaction.response.edit_message(
-                content="🎉 **Welcome to the league!** Your full roster is set. Use `/my_roster` to view it.",
+                content="🎉 **Welcome to the league!** Your full roster is set. Use `/my-roster` to view it.",
                 view=None
             )
         except Exception as e:
@@ -115,7 +115,7 @@ class SetBenchButtonView(ui.View):
                 modal = SetBenchModal(self.bot, self.db_pool, active_teams)
                 await interaction.response.send_modal(modal)
             else:
-                await interaction.response.send_message("Could not find your active roster. Please try `/join_league` again.", ephemeral=True)
+                await interaction.response.send_message("Could not find your active roster. Please try `/join-league` again.", ephemeral=True)
         except Exception as e:
             error_channel = self.bot.get_channel(config.error_channel)
             await error_channel.send(f"<@920797181034778655>```{traceback.format_exc()}```")
@@ -291,7 +291,6 @@ class userLeague(commands.Cog, name="userLeague"):
                 db_conn.close()
 
     async def log_command(self, interaction: discord.Interaction):
-        """Helper function to log command usage."""
         if config.command_log_bool:
             try:
                 command_log_channel = self.bot.get_channel(config.command_log)
@@ -301,7 +300,7 @@ class userLeague(commands.Cog, name="userLeague"):
             except Exception as e:
                 print(f"Command logging failed for /{interaction.command.name}: {e}")
 
-    @app_commands.command(name="join_league", description="Sign up for the fantasy league and set your roster.")
+    @app_commands.command(name="join-league", description="Sign up for the fantasy league and set your roster.")
     @app_commands.allowed_installs(guilds=True, users=True)
     @app_commands.allowed_contexts(guilds=True, dms=True, private_channels=True)
     async def join_league(self, interaction: discord.Interaction):
@@ -309,7 +308,7 @@ class userLeague(commands.Cog, name="userLeague"):
         try:
             roster = self.get_user_roster(interaction.user.id)
             if roster:
-                await interaction.response.send_message("You are already in the league! Use `/my_roster` to see your teams.", ephemeral=True)
+                await interaction.response.send_message("You are already in the league! Use `/my-roster` to see your teams.", ephemeral=True)
                 return
             
             modal = JoinLeagueModal(self.bot, self.db_pool)
@@ -323,7 +322,7 @@ class userLeague(commands.Cog, name="userLeague"):
             else:
                 await interaction.followup.send("An error occurred. The issue has been reported.", ephemeral=True)
 
-    @app_commands.command(name="my_roster", description="View your current team roster, points, and swaps.")
+    @app_commands.command(name="my-roster", description="View your current team roster, points, and swaps.")
     @app_commands.allowed_installs(guilds=True, users=True)
     @app_commands.allowed_contexts(guilds=True, dms=True, private_channels=True)
     async def my_roster(self, interaction: discord.Interaction):
@@ -332,7 +331,7 @@ class userLeague(commands.Cog, name="userLeague"):
             await interaction.response.defer(ephemeral=True)
             roster = self.get_user_roster(interaction.user.id)
             if not roster:
-                await interaction.followup.send("You haven't joined the league yet! Use `/join_league` to get started.", ephemeral=True)
+                await interaction.followup.send("You haven't joined the league yet! Use `/join-league` to get started.", ephemeral=True)
                 return
 
             embed = discord.Embed(title=f"{interaction.user.display_name}'s Roster", color=discord.Color.green())
@@ -352,7 +351,7 @@ class userLeague(commands.Cog, name="userLeague"):
             await error_channel.send(f"<@920797181034778655>```{traceback.format_exc()}```")
             await interaction.followup.send("An error occurred. The issue has been reported.", ephemeral=True)
 
-    @app_commands.command(name="swap_teams", description="Swap an active team with a bench team.")
+    @app_commands.command(name="swap-teams", description="Swap an active team with a bench team.")
     @app_commands.allowed_installs(guilds=True, users=True)
     @app_commands.allowed_contexts(guilds=True, dms=True, private_channels=True)
     async def swap_teams(self, interaction: discord.Interaction):
@@ -378,7 +377,7 @@ class userLeague(commands.Cog, name="userLeague"):
             await error_channel.send(f"<@920797181034778655>```{traceback.format_exc()}```")
             await interaction.followup.send("An error occurred. The issue has been reported.", ephemeral=True)
 
-    @app_commands.command(name="ace_team", description="Select one active team to earn triple points for the week.")
+    @app_commands.command(name="ace-team", description="Select one active team to earn triple points for the week.")
     @app_commands.allowed_installs(guilds=True, users=True)
     @app_commands.allowed_contexts(guilds=True, dms=True, private_channels=True)
     async def ace_team(self, interaction: discord.Interaction):

@@ -32,8 +32,6 @@ except mysql.connector.Error as err:
     print(f"❌ FAILED to create database connection pool: {err}")
     exit() # Exit if the bot can't connect to the database on start
 
-# --- Custom Bot Class Definition ---
-# This class inherits from commands.Bot and adds the db_pool to it.
 class MyBot(commands.Bot):
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
@@ -41,9 +39,6 @@ class MyBot(commands.Bot):
         # You can also attach other things here if needed
         self.topggpy = None
 
-# --- Bot Instantiation ---
-# We now create an instance of OUR custom MyBot class.
-# All @bot.command() and @bot.event decorators below will now attach to this instance.
 bot = MyBot(command_prefix=';;', intents=intents, help_command=None)
 
 # --- Bot Admin Commands & Events ---
@@ -138,7 +133,7 @@ async def on_guild_join(guild):
     except Exception as e:
         await join_leave_channel.send(f"Joined a server but couldn't get server information. Error: {e}")
 
-    # Update server/member counts
+
     try:
         guilds = bot.guilds
         members = sum(g.member_count for g in guilds)
@@ -163,7 +158,7 @@ async def on_guild_remove(guild):
     except Exception as e:
         await join_leave_channel.send(f"Left a server but couldn't get server information. Error: {e}")
 
-    # Update server/member counts
+
     try:
         guilds = bot.guilds
         members = sum(g.member_count for g in guilds)
@@ -174,9 +169,7 @@ async def on_guild_remove(guild):
     except Exception as e:
         print(f"Error updating stats on guild remove: {e}")
 
-# --- Main Application Logic ---
 async def load_cogs():
-    """Finds and loads all cogs in the /cogs directory."""
     print("--- Loading Cogs ---")
     for filename in os.listdir('./cogs'):
         if filename.endswith('.py'):
@@ -188,7 +181,6 @@ async def load_cogs():
     print("--------------------")
 
 async def main():
-    """Main function to load cogs and start the bot."""
     async with bot:
         await load_cogs()
         await bot.start(os.getenv("token"))
