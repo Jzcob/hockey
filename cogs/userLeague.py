@@ -390,6 +390,12 @@ class userLeague(commands.Cog, name="userLeague"):
             if not roster:
                 await interaction.followup.send("You haven't joined the league yet!", ephemeral=True)
                 return
+            
+            # --- NEW: Check if an ace team is already set ---
+            if roster.get('aced_team_slot') is not None:
+                aced_team_name = roster.get(roster['aced_team_slot'], "your aced team")
+                await interaction.followup.send(f"❌ You have already selected **{aced_team_name}** as your ace for this week. It can be reset by an admin.", ephemeral=True)
+                return
 
             team_slots = ['team_one', 'team_two', 'team_three', 'team_four', 'team_five']
             options = [discord.SelectOption(label=roster[slot], value=slot) for slot in team_slots if roster.get(slot)]

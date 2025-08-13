@@ -82,7 +82,8 @@ class admin(commands.Cog):
                 "**3. Ace Your Pick (`/ace_team`)**\n"
                 "- Each week, you can select **one team** from your active roster to be your \"Aced\" team.\n"
                 "- This Aced team will earn a **massive x3 point multiplier** for all of its games that week!\n"
-                "- Ace selections are reset every week, so be sure to make your pick!"
+                "- Ace selections are reset every week, so be sure to make your pick!\n"
+                "- Once selected, you cannot change your Aced team until the next week."
             ),
             inline=False
         )
