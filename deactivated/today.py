@@ -208,8 +208,12 @@ class today(commands.Cog):
                     away = game2["awayTeam"]["commonName"]["default"]
                     homeAbbreviation = game2["homeTeam"]["abbrev"]
                     awayAbbreviation = game2["awayTeam"]["abbrev"]
+                    gameoutcome = game2["GameOutcome"]["LastPeriodType"]
                     awayString, homeString = strings(awayAbbreviation, homeAbbreviation, home, away)
-                    embed.add_field(name=f"Final!", value=f"\n{awayString} @ {homeString}\nScore: {awayScore} | {homeScore}\n", inline=False)
+                    if gameoutcome == "OT":
+                        embed.add_field(name=f"Final!", value=f"\n{awayString} @ {homeString}\nScore: {awayScore} | {homeScore}\n(OT)", inline=False)
+                    else:
+                        embed.add_field(name=f"Final!", value=f"\n{awayString} @ {homeString}\nScore: {awayScore} | {homeScore}\n", inline=False)
                 elif gameState == "LIVE" or gameState == "CRIT":
                     homeScore = game2['homeTeam']['score']
                     awayScore = game2['awayTeam']['score']

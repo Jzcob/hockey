@@ -7,7 +7,7 @@ import traceback
 
 watching = discord.CustomActivity(name="👀 New Feature Coming?")
 
-#hello world
+
 class announcement(commands.Cog):
     def __init__(self, bot): 
         self.bot = bot
@@ -52,6 +52,73 @@ class announcement(commands.Cog):
             error_channel = self.bot.get_channel(config.error_channel)
             string = f"{traceback.format_exc()}"
             await error_channel.send(f"```{string}```")
+    
+    app_commands.command(name="announce_league", description="Posts the fantasy league announcement embed.")
+    @app_commands.default_permissions(administrator=True)
+    async def announce_league(self, interaction: discord.Interaction):
+        embed = discord.Embed(
+            title="🏒 Announcing the First Annual Hockey Bot League! 🏒",
+            description=(
+                "Get ready to put your hockey knowledge to the test! I thrilled to launch our brand-new, discord-wide "
+                "**NHL Fantasy League**, a season-long competition where you can prove you're the best armchair GM.\n\n"
+                "This is all about the love of the game, bragging rights, and friendly competition. "
+                "There are no prizes—just the glory of finishing at the top!\n\n"
+                "This league is inspired by MyAnimeList's Fantasy Anime League."
+            ),
+            color=discord.Color.blue()
+        )
+
+        embed.add_field(
+            name="📜 How It Works: The Basics",
+            value=(
+                "The league is simple to join and play. Here’s everything you need to know to build your team and start earning points.\n\n"
+                "**1. Build Your Roster (`/join_league`)**\n"
+                "- Every player will draft a roster of **8 NHL teams**.\n"
+                "- **5 Active Teams:** These are your starters. Only teams in your active roster will earn you points each week.\n"
+                "- **3 Bench Teams:** These are your reserves. They don't earn points, but you can swap them with your active teams.\n\n"
+                "**2. Make Strategic Swaps (`/swap_teams`)**\n"
+                "- You have **10 swaps** to use for the entire season. Use them wisely!\n"
+                "- You can swap any active team with any bench team to adapt to matchups, hot streaks, or injuries.\n\n"
+                "**3. Ace Your Pick (`/ace_team`)**\n"
+                "- Each week, you can select **one team** from your active roster to be your \"Aced\" team.\n"
+                "- This Aced team will earn a **massive x3 point multiplier** for all of its games that week!\n"
+                "- Ace selections are reset every week, so be sure to make your pick!"
+            ),
+            inline=False
+        )
+
+        embed.add_field(
+            name="📊 The Scoring System",
+            value=(
+                "Points are awarded automatically based on how your **5 active teams** perform in their real-world games.\n\n"
+                "- **Win:** `+4 Points`\n"
+                "- **Overtime / Shootout Loss:** `+2 Points`\n"
+                "- **Regulation Loss:** `-2 Points`\n\n"
+                "**Aced Team Multiplier:**\n"
+                "- Aced Win: `+12 Points` (4 x 3)\n"
+                "- Aced OT / SO Loss: `+6 Points` (2 x 3)\n"
+                "- Aced Regulation Loss: `-6 Points` (-2 x 3)"
+            ),
+            inline=False
+        )
+        
+        embed.add_field(
+            name="🚀 How to Get Started",
+            value=(
+                "Ready to build your dynasty? Here are the commands you'll need:\n\n"
+                "- `/join_league` - **Start here!** A two-step process to pick your 5 active and 3 bench teams.\n"
+                "- `/my_roster` - View your current team selections, total points, and remaining swaps.\n"
+                "- `/swap_teams` - Use one of your 10 seasonal swaps.\n"
+                "- `/ace_team` - Choose your weekly x3 points multiplier team.\n"
+                "- `/leaderboard fantasy` - See how you stack up against the competition!\n\n"
+                "The puck drops soon! Draft your teams, make your picks, and may the best fan win!"
+            ),
+            inline=False
+        )
+        
+        embed.set_thumbnail(url="https://www-league.nhlstatic.com/images/logos/league-dark/133-flat.svg")
+
+        await interaction.response.send_message(embed=embed)
 
 async def setup(bot):
     await bot.add_cog(announcement(bot), guilds=[discord.Object(id=config.hockey_discord_server)])
