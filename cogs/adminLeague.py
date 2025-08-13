@@ -1,3 +1,4 @@
+# admin_cog.py
 import discord
 from discord.ext import commands
 from discord import app_commands, ui
@@ -11,9 +12,12 @@ import config
 from datetime import datetime, timedelta
 import requests
 
+# Load environment variables from .env file
 load_dotenv()
 
+# --- Helper function for team names ---
 def get_nhl_teams():
+    """Returns a list of all official NHL team names."""
     return [
         "Anaheim Ducks", "Boston Bruins", "Buffalo Sabres", "Calgary Flames",
         "Carolina Hurricanes", "Chicago Blackhawks", "Colorado Avalanche",
@@ -27,7 +31,12 @@ def get_nhl_teams():
         "Vancouver Canucks", "Vegas Golden Knights", "Washington Capitals", "Winnipeg Jets"
     ]
 
+# --- Real NHL API Function ---
 def fetch_game_results(start_date_str: str, end_date_str: str):
+    """
+    Fetches game results from the NHL API for a given date range.
+    Returns a dict like: {'Team Name': ['win', 'loss', 'ot_loss', ...]}
+    """
     print(f"API: Fetching game results from {start_date_str} to {end_date_str}...")
     
     results = {}
@@ -78,9 +87,38 @@ def fetch_game_results(start_date_str: str, end_date_str: str):
     print(f"API: Fetched {sum(len(v) for v in results.values())} total game results.")
     return results
 
+# --- UI View for Reset Confirmation ---
 class ConfirmResetView(ui.View):
-    pass
+    def __init__(self, bot: commands.Bot):
+        super().__init__(timeout=60)
+        self.bot = bot
+        self.db_pool = self.bot.get_cog("adminLeague").db_pool
 
+    @ui.button(label="Confirm & Reset Season", style=discord.ButtonStyle.danger)
+    async def confirm_button(self, interaction: discord.Interaction, button: ui.Button):
+        db_conn = None
+        cursor = None
+        try:
+            db_conn = self.db_pool.get_connection()
+            cursor = db_conn.cursor()
+            cursor.execute("TRUNCATE TABLE rosters")
+            db_conn.commit()
+            await interaction.response.edit_message(content="✅ **The league has been reset!** All rosters and points are cleared.", view=None)
+        except Exception as e:
+            error_channel = self.bot.get_channel(config.error_channel)
+            await error_channel.send(f"<@920797181034778655>```{traceback.format_exc()}```")
+            await interaction.response.edit_message(content="❌ An error occurred during the reset. The issue has been reported.", view=None)
+        finally:
+            if cursor: cursor.close()
+            if db_conn: db_conn.close()
+        self.stop()
+
+    @ui.button(label="Cancel", style=discord.ButtonStyle.secondary)
+    async def cancel_button(self, interaction: discord.Interaction, button: ui.Button):
+        await interaction.response.edit_message(content="Reset cancelled.", view=None)
+        self.stop()
+
+# --- Admin Cog ---
 class adminLeague(commands.Cog, name="adminLeague"):
     def __init__(self, bot: commands.Bot):
         self.bot = bot
@@ -104,20 +142,60 @@ class adminLeague(commands.Cog, name="adminLeague"):
         print(f"LOADED: `admin_cog.py`")
 
     def create_table(self):
-        pass
+        db_conn = None
+        cursor = None
+        try:
+            db_conn = self.db_pool.get_connection()
+            cursor = db_conn.cursor()
+            cursor.execute("""
+                CREATE TABLE IF NOT EXISTS rosters (
+                    user_id BIGINT PRIMARY KEY,
+                    team_one VARCHAR(255), team_two VARCHAR(255), team_three VARCHAR(255),
+                    team_four VARCHAR(255), team_five VARCHAR(255),
+                    bench_one VARCHAR(255), bench_two VARCHAR(255), bench_three VARCHAR(255),
+                    points INT DEFAULT 0, swaps_used TINYINT DEFAULT 0,
+                    aced_team_slot VARCHAR(50) NULL
+                )
+            """)
+            print("Admin Cog: Rosters table is ready.")
+        except mysql.connector.Error as err:
+            print(f"Admin Cog: Failed to create table: {err}")
+        finally:
+            if cursor: cursor.close()
+            if db_conn: db_conn.close()
+
+    @app_commands.command(name="remove_user", description="Removes a user from the fantasy league.")
+    @app_commands.default_permissions(administrator=True)
+    @app_commands.describe(user="The user to remove from the league.")
+    async def remove_user(self, interaction: discord.Interaction, user: discord.User):
+        db_conn = None
+        cursor = None
+        try:
+            await interaction.response.defer(ephemeral=True)
+            db_conn = self.db_pool.get_connection()
+            cursor = db_conn.cursor()
+            cursor.execute("DELETE FROM rosters WHERE user_id = %s", (user.id,))
+            db_conn.commit()
+
+            if cursor.rowcount > 0:
+                await interaction.followup.send(f"✅ Successfully removed **{user.display_name}** from the league.", ephemeral=True)
+            else:
+                await interaction.followup.send(f"⚠️ **{user.display_name}** was not found in the league.", ephemeral=True)
+        except Exception as e:
+            error_channel = self.bot.get_channel(config.error_channel)
+            await error_channel.send(f"<@920797181034778655>```{traceback.format_exc()}```")
+            await interaction.followup.send("An error occurred. The issue has been reported.", ephemeral=True)
+        finally:
+            if cursor: cursor.close()
+            if db_conn: db_conn.close()
 
     @app_commands.command(name="calculate_points", description="Backs up data, then calculates points for a specified date range.")
     @app_commands.default_permissions(administrator=True)
-    @app_commands.allowed_installs(guilds=True, users=True)
-    @app_commands.allowed_contexts(guilds=True)
     @app_commands.describe(
         start_date="The start date for the calculation period (Format: YYYY-MM-DD).",
         end_date="The end date for the calculation period (Format: YYYY-MM-DD)."
     )
     async def calculate_points(self, interaction: discord.Interaction, start_date: str, end_date: str):
-        if config.command_log_bool:
-            pass
-        
         await interaction.response.defer(ephemeral=True)
 
         # --- 1. BACKUP DATABASE ---
@@ -167,7 +245,6 @@ class adminLeague(commands.Cog, name="adminLeague"):
         # --- 2. PROCEED WITH POINT CALCULATION ---
         db_conn_calc, cursor_calc = None, None
         try:
-            # --- Date Validation ---
             try:
                 datetime.strptime(start_date, '%Y-%m-%d')
                 datetime.strptime(end_date, '%Y-%m-%d')
@@ -226,12 +303,7 @@ class adminLeague(commands.Cog, name="adminLeague"):
 
     @app_commands.command(name="league_admin", description="Manage the global hockey league.")
     @app_commands.default_permissions(administrator=True)
-    @app_commands.allowed_installs(guilds=True, users=True)
-    @app_commands.allowed_contexts(guilds=True)
     async def admin_league(self, interaction: discord.Interaction):
-        if config.command_log_bool:
-            pass
-
         view = ui.View(timeout=180)
 
         reset_button = ui.Button(label="Reset League Season", style=discord.ButtonStyle.danger, emoji="🔄")
@@ -255,10 +327,8 @@ class adminLeague(commands.Cog, name="adminLeague"):
             except Exception as e:
                 await callback_interaction.response.send_message("❌ A database error occurred. The issue has been reported.", ephemeral=True)
             finally:
-                if cursor:
-                    cursor.close()
-                if db_conn:
-                    db_conn.close()
+                if cursor: cursor.close()
+                if db_conn: db_conn.close()
         reset_aces_button.callback = reset_aces_callback
         view.add_item(reset_aces_button)
 
@@ -277,10 +347,8 @@ class adminLeague(commands.Cog, name="adminLeague"):
             except Exception as e:
                 await callback_interaction.response.send_message("❌ A database error occurred. The issue has been reported.", ephemeral=True)
             finally:
-                if cursor:
-                    cursor.close()
-                if db_conn:
-                    db_conn.close()
+                if cursor: cursor.close()
+                if db_conn: db_conn.close()
         stats_button.callback = stats_callback
         view.add_item(stats_button)
 
