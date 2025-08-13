@@ -13,7 +13,7 @@ load_dotenv()
 class MyPoints(commands.Cog, name="MyPoints"):
     def __init__(self, bot: commands.Bot):
         self.bot = bot
-        self.db_pool = self.bot.get_cog("adminLeague").db_pool
+        self.db_pool = bot.db_pool 
         print("MyPoints Cog: Database pool is accessible.")
 
     @commands.Cog.listener()

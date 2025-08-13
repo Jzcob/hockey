@@ -1,5 +1,3 @@
-
-
 jacob = 920797181034778655
 dev_server_dev_channel = 1165858822183735316
 suggestion_channel = 1323184650708979733

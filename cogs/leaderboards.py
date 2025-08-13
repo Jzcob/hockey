@@ -13,7 +13,7 @@ load_dotenv()
 class Leaderboards(commands.Cog, name="Leaderboards"):
     def __init__(self, bot: commands.Bot):
         self.bot = bot
-        self.db_pool = self.bot.get_cog("adminLeague").db_pool
+        self.db_pool = bot.db_pool 
         print("Leaderboards Cog: Database pool is accessible.")
 
     @commands.Cog.listener()
