@@ -149,7 +149,7 @@ class JoinLeagueModal(ui.Modal, title="Join the League (Step 1 of 2)"):
             # --- VALIDATION 1: Check if all teams are valid NHL teams ---
             invalid_teams = [team for team in active_teams if team not in valid_teams]
             if invalid_teams:
-                await interaction.response.send_message(f"❌ Invalid team(s) found: `{', '.join(invalid_teams)}`. Please use official NHL team names. Check out `/teams`", ephemeral=True)
+                await interaction.response.send_message(f"❌ Invalid team(s) found: `{', '.join(invalid_teams)}`. Please use official NHL team names and start over. Try checking out `/teams`", ephemeral=True)
                 return
 
             # --- VALIDATION 2: Check for duplicate active teams ---
