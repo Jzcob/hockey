@@ -52,7 +52,7 @@ class SetBenchModal(ui.Modal, title="Set Your Bench Teams (Step 2 of 2)"):
             # --- VALIDATION 1: Check if all teams are valid NHL teams ---
             invalid_teams = [team for team in all_teams if team not in valid_teams]
             if invalid_teams:
-                await interaction.response.send_message(f"❌ Invalid team(s) found: `{', '.join(invalid_teams)}`. Please use official NHL team names and start over.", ephemeral=True)
+                await interaction.response.send_message(f"❌ Invalid team(s) found: `{', '.join(invalid_teams)}`. Please use official NHL team names and start over. Check out `/teams`", ephemeral=True)
                 db_conn = self.db_pool.get_connection()
                 cursor = db_conn.cursor()
                 cursor.execute("DELETE FROM rosters WHERE user_id = %s", (interaction.user.id,))
@@ -149,7 +149,7 @@ class JoinLeagueModal(ui.Modal, title="Join the League (Step 1 of 2)"):
             # --- VALIDATION 1: Check if all teams are valid NHL teams ---
             invalid_teams = [team for team in active_teams if team not in valid_teams]
             if invalid_teams:
-                await interaction.response.send_message(f"❌ Invalid team(s) found: `{', '.join(invalid_teams)}`. Please use official NHL team names.", ephemeral=True)
+                await interaction.response.send_message(f"❌ Invalid team(s) found: `{', '.join(invalid_teams)}`. Please use official NHL team names. Check out `/teams`", ephemeral=True)
                 return
 
             # --- VALIDATION 2: Check for duplicate active teams ---
