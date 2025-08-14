@@ -50,16 +50,10 @@ def find_closest_team(input_name: str, team_list: list):
     if not input_name:
         return None
     
-    # Calculate similarity for each team
-    # A lower distance means a better match
     scores = {team: levenshtein_distance(input_name.lower(), team.lower()) for team in team_list}
-    
-    # Find the best match
     best_match = min(scores, key=scores.get)
     best_score = scores[best_match]
     
-    # Set a threshold. A simple threshold is a max distance.
-    # For example, max distance of 3 might be reasonable.
     if best_score <= 3:
         return best_match
     return None
@@ -84,23 +78,19 @@ class SetBenchModal(ui.Modal, title="Set Your Bench Teams (Step 2 of 2)"):
             all_teams = self.active_teams + bench_teams
             valid_teams = get_nhl_teams()
 
-            # --- VALIDATION 1: Check if all teams are valid NHL teams with fuzzy matching ---
             for team_input in all_teams:
                 if team_input not in valid_teams:
                     suggestion = find_closest_team(team_input, valid_teams)
+                    msg = f"❌ Invalid team: `{team_input}`. Please use an official NHL team name. Check `/teams` for a list."
                     if suggestion:
-                        await interaction.response.send_message(f"❌ Invalid team: `{team_input}`. Did you mean `{suggestion}`? Please correct it and try again.", ephemeral=True)
-                    else:
-                        await interaction.response.send_message(f"❌ Invalid team: `{team_input}`. Please use an official NHL team name. Check `/teams` for a list.", ephemeral=True)
-                    # DO NOT delete the partial entry, allow user to retry
+                        msg = f"❌ Invalid team: `{team_input}`. Did you mean `{suggestion}`? Please correct it and try again."
+                    await interaction.response.send_message(msg, ephemeral=True)
                     return
 
-            # --- VALIDATION 2: Check for duplicates across all 8 picks ---
             if len(set(all_teams)) != len(all_teams):
                 await interaction.response.send_message("❌ You cannot select the same team more than once. Please click the button to try again.", ephemeral=True)
                 return
 
-            # --- DATABASE UPDATE ---
             db_conn = self.db_pool.get_connection()
             cursor = db_conn.cursor()
             sql = "UPDATE rosters SET bench_one = %s, bench_two = %s, bench_three = %s WHERE user_id = %s"
@@ -126,7 +116,7 @@ class SetBenchModal(ui.Modal, title="Set Your Bench Teams (Step 2 of 2)"):
 # --- UI View with Button to Trigger Step 2 ---
 class SetBenchButtonView(ui.View):
     def __init__(self, bot, db_pool, user_id: int):
-        super().__init__(timeout=300) # Button will time out after 5 minutes
+        super().__init__(timeout=300)
         self.bot = bot
         self.db_pool = db_pool
         self.user_id = user_id
@@ -156,7 +146,6 @@ class SetBenchButtonView(ui.View):
             if db_conn: db_conn.close()
 
     async def on_timeout(self):
-        """If the user doesn't click the button in time, delete their partial registration."""
         db_conn = None
         cursor = None
         try:
@@ -165,7 +154,6 @@ class SetBenchButtonView(ui.View):
             cursor.execute("DELETE FROM rosters WHERE user_id = %s", (self.user_id,))
             db_conn.commit()
             print(f"Cleaned up timed-out partial registration for user {self.user_id}")
-            # Optionally, you can try to edit the original message if you store it
         except Exception as e:
             print(f"Error during timeout cleanup for user {self.user_id}: {e}")
         finally:
@@ -192,22 +180,19 @@ class JoinLeagueModal(ui.Modal, title="Join the League (Step 1 of 2)"):
             active_teams = [team.strip().title() for team in [self.team_one.value, self.team_two.value, self.team_three.value, self.team_four.value, self.team_five.value]]
             valid_teams = get_nhl_teams()
 
-            # --- VALIDATION 1: Check if all teams are valid NHL teams with fuzzy matching ---
             for team_input in active_teams:
                 if team_input not in valid_teams:
                     suggestion = find_closest_team(team_input, valid_teams)
+                    msg = f"❌ Invalid team: `{team_input}`. Please use an official NHL team name. Check `/teams` for a list."
                     if suggestion:
-                        await interaction.response.send_message(f"❌ Invalid team: `{team_input}`. Did you mean `{suggestion}`? Please correct it and try again.", ephemeral=True)
-                    else:
-                        await interaction.response.send_message(f"❌ Invalid team: `{team_input}`. Please use an official NHL team name. Check `/teams` for a list.", ephemeral=True)
+                        msg = f"❌ Invalid team: `{team_input}`. Did you mean `{suggestion}`? Please correct it and try again."
+                    await interaction.response.send_message(msg, ephemeral=True)
                     return
 
-            # --- VALIDATION 2: Check for duplicate active teams ---
             if len(set(active_teams)) != len(active_teams):
                 await interaction.response.send_message("❌ You cannot select the same active team more than once. Please try again.", ephemeral=True)
                 return
 
-            # --- DATABASE INSERT ---
             db_conn = self.db_pool.get_connection()
             cursor = db_conn.cursor()
             sql = "INSERT INTO rosters (user_id, team_one, team_two, team_three, team_four, team_five) VALUES (%s, %s, %s, %s, %s, %s)"
@@ -215,7 +200,6 @@ class JoinLeagueModal(ui.Modal, title="Join the League (Step 1 of 2)"):
             cursor.execute(sql, val)
             db_conn.commit()
             
-            # Pass the user_id to the view for timeout handling
             view = SetBenchButtonView(self.bot, self.db_pool, interaction.user.id)
             await interaction.response.send_message(
                 "✅ Active roster saved! Click the button below to set your bench teams.",
@@ -236,9 +220,6 @@ class JoinLeagueModal(ui.Modal, title="Join the League (Step 1 of 2)"):
         finally:
             if cursor: cursor.close()
             if db_conn: db_conn.close()
-
-# --- The rest of the cog remains the same ---
-# (SwapView and userLeague class)
 
 # --- User Commands Cog ---
 class userLeague(commands.Cog, name="userLeague"):
@@ -289,7 +270,6 @@ class userLeague(commands.Cog, name="userLeague"):
             
             modal = JoinLeagueModal(self.bot, self.db_pool)
             await interaction.response.send_modal(modal)
-
         except Exception as e:
             error_channel = self.bot.get_channel(config.error_channel)
             await error_channel.send(f"<@920797181034778655>```{traceback.format_exc()}```")
@@ -321,7 +301,6 @@ class userLeague(commands.Cog, name="userLeague"):
             embed.add_field(name="Swaps Remaining", value=f"🔄 {10 - roster.get('swaps_used', 0)} / 10", inline=False)
 
             await interaction.followup.send(embed=embed, ephemeral=True)
-
         except Exception as e:
             error_channel = self.bot.get_channel(config.error_channel)
             await error_channel.send(f"<@920797181034778655>```{traceback.format_exc()}```")
@@ -347,7 +326,6 @@ class userLeague(commands.Cog, name="userLeague"):
             
             view = SwapView(self.bot, interaction.user.id, self.db_pool, active_teams, bench_teams)
             await interaction.followup.send("Select one active team and one bench team to swap:", view=view, ephemeral=True)
-
         except Exception as e:
             error_channel = self.bot.get_channel(config.error_channel)
             await error_channel.send(f"<@920797181034778655>```{traceback.format_exc()}```")
@@ -358,8 +336,6 @@ class userLeague(commands.Cog, name="userLeague"):
     @app_commands.allowed_contexts(guilds=True, dms=True, private_channels=True)
     async def ace_team(self, interaction: discord.Interaction):
         await self.log_command(interaction)
-        db_conn = None
-        cursor = None
         try:
             await interaction.response.defer(ephemeral=True)
             roster = self.get_user_roster(interaction.user.id)
@@ -409,9 +385,6 @@ class userLeague(commands.Cog, name="userLeague"):
             error_channel = self.bot.get_channel(config.error_channel)
             await error_channel.send(f"<@920797181034778655>```{traceback.format_exc()}```")
             await interaction.followup.send("An error occurred. The issue has been reported.", ephemeral=True)
-        finally:
-            if cursor: cursor.close()
-            if db_conn: db_conn.close()
 
 async def setup(bot):
     await bot.add_cog(userLeague(bot), guilds=[discord.Object(id=config.hockey_discord_server)])
