@@ -190,9 +190,13 @@ class JoinLeagueModal(ui.Modal, title="Join the League (Step 1 of 2)"):
             cursor.execute(sql, val)
             db_conn.commit()
             
+            # --- MODIFIED RESPONSE ---
+            team_list_str = "\n".join([f"**{i}.** {team}" for i, team in enumerate(active_teams, 1)])
+            message_content = f"✅ **Active Roster Saved!**\n{team_list_str}\n\nClick the button below to set your 3 bench teams."
+            
             view = SetBenchButtonView(self.bot, self.db_pool, interaction.user.id)
             await interaction.response.send_message(
-                "✅ Active roster saved! Click the button below to set your bench teams.",
+                content=message_content,
                 view=view,
                 ephemeral=True
             )
