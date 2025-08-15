@@ -213,6 +213,78 @@ class JoinLeagueModal(ui.Modal, title="Join the League (Step 1 of 2)"):
             if cursor: cursor.close()
             if db_conn: db_conn.close()
 
+# --- UI View for Swapping Teams ---
+class SwapView(ui.View):
+    def __init__(self, bot, user_id, db_pool, active_teams, bench_teams):
+        super().__init__(timeout=180)
+        self.bot = bot
+        self.user_id = user_id
+        self.db_pool = db_pool
+        self.active_selection = None
+        self.bench_selection = None
+
+        active_options = [discord.SelectOption(label=team[1], value=team[0]) for team in active_teams if team[1]]
+        self.active_dropdown = ui.Select(placeholder="Choose an active team to swap out...", options=active_options)
+
+        bench_options = [discord.SelectOption(label=team[1], value=team[0]) for team in bench_teams if team[1]]
+        self.bench_dropdown = ui.Select(placeholder="Choose a bench team to swap in...", options=bench_options)
+        
+        self.active_dropdown.callback = self.on_active_select
+        self.bench_dropdown.callback = self.on_bench_select
+
+        self.add_item(self.active_dropdown)
+        self.add_item(self.bench_dropdown)
+
+    async def on_active_select(self, interaction: discord.Interaction):
+        await interaction.response.defer()
+        self.active_selection = self.active_dropdown.values[0]
+        await self.check_and_execute_swap(interaction)
+
+    async def on_bench_select(self, interaction: discord.Interaction):
+        await interaction.response.defer()
+        self.bench_selection = self.bench_dropdown.values[0]
+        await self.check_and_execute_swap(interaction)
+
+    async def check_and_execute_swap(self, interaction: discord.Interaction):
+        if self.active_selection and self.bench_selection:
+            db_conn = None
+            cursor = None
+            try:
+                db_conn = self.db_pool.get_connection()
+                cursor = db_conn.cursor(dictionary=True)
+                
+                cursor.execute(f"SELECT `{self.active_selection}`, `{self.bench_selection}` FROM rosters WHERE user_id = %s", (self.user_id,))
+                team_names = cursor.fetchone()
+                if not team_names:
+                    await interaction.followup.send("❌ Could not find your roster to perform the swap.", ephemeral=True)
+                    self.stop()
+                    return
+                    
+                active_team_name = team_names[self.active_selection]
+                bench_team_name = team_names[self.bench_selection]
+
+                sql = f"UPDATE rosters SET `{self.active_selection}` = %s, `{self.bench_selection}` = %s, swaps_used = swaps_used + 1 WHERE user_id = %s"
+                cursor.execute(sql, (bench_team_name, active_team_name, self.user_id))
+                db_conn.commit()
+                
+                await interaction.followup.send(f"✅ Swap successful! **{bench_team_name}** is now active, and **{active_team_name}** is on the bench.", ephemeral=True)
+                
+                for item in self.children:
+                    item.disabled = True
+                await interaction.edit_original_response(view=self)
+                self.stop()
+
+            except Exception as e:
+                error_channel = self.bot.get_channel(config.error_channel)
+                await error_channel.send(f"<@920797181034778655>```{traceback.format_exc()}```")
+                await interaction.followup.send("❌ A database error occurred. The issue has been reported.", ephemeral=True)
+                self.stop()
+            finally:
+                if cursor:
+                    cursor.close()
+                if db_conn:
+                    db_conn.close()
+
 # --- User Commands Cog ---
 class userLeague(commands.Cog, name="userLeague"):
     def __init__(self, bot: commands.Bot):
@@ -255,15 +327,12 @@ class userLeague(commands.Cog, name="userLeague"):
     async def join_league(self, interaction: discord.Interaction):
         await self.log_command(interaction)
         try:
-            # --- FIX: REMOVED the initial database check to prevent timeouts ---
-            # The check for an existing user is handled when the first modal is submitted.
             modal = JoinLeagueModal(self.bot, self.db_pool)
             await interaction.response.send_modal(modal)
         except Exception as e:
             error_channel = self.bot.get_channel(config.error_channel)
             await error_channel.send(f"<@920797181034778655>```{traceback.format_exc()}```")
             if not interaction.response.is_done():
-                # Check if we can still respond to the initial interaction
                 try:
                     await interaction.response.send_message("An error occurred. The issue has been reported.", ephemeral=True)
                 except discord.errors.InteractionResponded:
