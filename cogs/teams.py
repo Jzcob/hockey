@@ -114,6 +114,8 @@ class teams(commands.Cog):
                     embed.description += f"**{team}** - {teams[team]} {config.philadelphia_flyers_emoji}\n"
                 elif team == "PIT":
                     embed.description += f"**{team}** - {teams[team]} {config.pittsburgh_penguins_emoji}\n"
+                elif team == "SEA":
+                    embed.description += f"**{team}** - {teams[team]} {config.seattle_kraken_emoji}\n"
                 elif team == "SJS":
                     embed.description += f"**{team}** - {teams[team]} {config.san_jose_sharks_emoji}\n"
                 elif team == "STL":
