@@ -80,6 +80,8 @@ class Leaderboards(commands.Cog, name="Leaderboards"):
             if db_conn: db_conn.close()
 
     @leaderboard.command(name="trivia", description="View the trivia leaderboards!")
+    @app_commands.allowed_installs(guilds=True, users=True)
+    @app_commands.allowed_contexts(guilds=True, dms=True, private_channels=True)
     @app_commands.describe(global_view="Show global leaderboard instead of just this server.")
     async def trivia_leaderboard(self, interaction: discord.Interaction, global_view: bool = False):
         await self.log_command(interaction)
@@ -138,6 +140,8 @@ class Leaderboards(commands.Cog, name="Leaderboards"):
             if db_conn: db_conn.close()
 
     @leaderboard.command(name="gtp", description="View the Guess The Player leaderboard.")
+    @app_commands.allowed_installs(guilds=True, users=True)
+    @app_commands.allowed_contexts(guilds=True, dms=True, private_channels=True)
     @app_commands.describe(global_view="Show global leaderboard instead of just this server.")
     async def gtp_leaderboard(self, interaction: discord.Interaction, global_view: bool = False):
         await self.log_command(interaction)
@@ -196,6 +200,8 @@ class Leaderboards(commands.Cog, name="Leaderboards"):
             if db_conn: db_conn.close()
 
     @leaderboard.command(name="trivia-status", description="Toggles if you are displayed on the trivia leaderboard.")
+    @app_commands.allowed_installs(guilds=True, users=True)
+    @app_commands.allowed_contexts(guilds=True, dms=True, private_channels=True)
     @app_commands.describe(allow="Choose 'on' to be shown (default), or 'off' to be hidden.")
     @app_commands.choices(allow=[
         app_commands.Choice(name='on', value='t'),
@@ -228,6 +234,8 @@ class Leaderboards(commands.Cog, name="Leaderboards"):
             if db_conn: db_conn.close()
 
     @leaderboard.command(name="gtp-status", description="Toggles if you are displayed on the Guess The Player leaderboard.")
+    @app_commands.allowed_installs(guilds=True, users=True)
+    @app_commands.allowed_contexts(guilds=True, dms=True, private_channels=True)
     @app_commands.describe(allow="Choose 'on' to be shown (default), or 'off' to be hidden.")
     @app_commands.choices(allow=[
         app_commands.Choice(name='on', value='t'),
