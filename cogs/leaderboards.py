@@ -1,3 +1,4 @@
+# leaderboards.py
 import discord
 from discord.ext import commands
 from discord import app_commands
@@ -8,12 +9,14 @@ import config
 import traceback
 from datetime import datetime
 
+# Load environment variables from .env file
 load_dotenv()
 
 class Leaderboards(commands.Cog, name="Leaderboards"):
     def __init__(self, bot: commands.Bot):
         self.bot = bot
-        self.db_pool = bot.db_pool 
+        # Access the connection pool created in the admin cog
+        self.db_pool = self.bot.get_cog("adminLeague").db_pool
         print("Leaderboards Cog: Database pool is accessible.")
 
     @commands.Cog.listener()
@@ -21,25 +24,27 @@ class Leaderboards(commands.Cog, name="Leaderboards"):
         print(f"LOADED: `leaderboards.py`")
 
     async def log_command(self, interaction: discord.Interaction):
+        """Helper function to log command usage."""
         if config.command_log_bool:
             try:
                 command_log_channel = self.bot.get_channel(config.command_log)
                 if command_log_channel:
                     guild_name = interaction.guild.name if interaction.guild else "DMs"
+                    # For grouped commands, the full name is needed
                     full_command_name = f"{interaction.command.parent.name} {interaction.command.name}"
                     await command_log_channel.send(f"`/{full_command_name}` used by `{interaction.user.name}` in `{guild_name}` at `{datetime.now()}`\n---")
             except Exception as e:
                 print(f"Command logging failed for /{interaction.command.name}: {e}")
 
+    # --- Parent Command Group ---
     leaderboard = app_commands.Group(name="leaderboard", description="Commands for viewing game leaderboards and stats.")
 
+    # --- Fantasy League Leaderboard ---
     @leaderboard.command(name="fantasy", description="Displays the top 10 players in the fantasy league.")
     @app_commands.allowed_installs(guilds=True, users=True)
     @app_commands.allowed_contexts(guilds=True, dms=True, private_channels=True)
     async def fantasy_leaderboard(self, interaction: discord.Interaction):
         if interaction.guild.id != config.hockey_discord_server:
-            print(interaction.guild.id)
-            print(config.hockey_discord_server)
             await interaction.response.send_message("This command can only be used in the bot development server for now.", ephemeral=True)
             return
         await self.log_command(interaction)
@@ -53,7 +58,8 @@ class Leaderboards(commands.Cog, name="Leaderboards"):
             leaders = cursor.fetchall()
 
             if not leaders:
-                await interaction.followup.send("There are no players on the fantasy leaderboard yet!")
+                if not interaction.is_expired():
+                    await interaction.followup.send("There are no players on the fantasy leaderboard yet!")
                 return
 
             embed = discord.Embed(title="🏆 Fantasy League Leaderboard", color=discord.Color.gold())
@@ -69,16 +75,19 @@ class Leaderboards(commands.Cog, name="Leaderboards"):
                 description.append(f"{rank_emoji} {user_name} - **{leader['points']}** points")
             
             embed.description = "\n".join(description)
-            await interaction.followup.send(embed=embed)
+            if not interaction.is_expired():
+                await interaction.followup.send(embed=embed)
 
         except Exception as e:
-            error_channel = self.bot.get_channel(config.error_channel)
-            await error_channel.send(f"<@920797181034778655>```{traceback.format_exc()}```")
-            await interaction.followup.send("An error occurred. The issue has been reported.", ephemeral=True)
+            if not interaction.is_expired():
+                error_channel = self.bot.get_channel(config.error_channel)
+                await error_channel.send(f"<@920797181034778655>```{traceback.format_exc()}```")
+                await interaction.followup.send("An error occurred. The issue has been reported.", ephemeral=True)
         finally:
             if cursor: cursor.close()
             if db_conn: db_conn.close()
 
+    # --- Trivia Leaderboard ---
     @leaderboard.command(name="trivia", description="View the trivia leaderboards!")
     @app_commands.allowed_installs(guilds=True, users=True)
     @app_commands.allowed_contexts(guilds=True, dms=True, private_channels=True)
@@ -129,16 +138,19 @@ class Leaderboards(commands.Cog, name="Leaderboards"):
                 description.append(f"{i}. `{name}` - `{points:,}` point{'s' if points != 1 else ''}")
 
             embed.description = "\n".join(description) if description else "No entries yet!"
-            await interaction.followup.send(embed=embed)
+            if not interaction.is_expired():
+                await interaction.followup.send(embed=embed)
 
         except Exception as e:
-            error_channel = self.bot.get_channel(config.error_channel)
-            await error_channel.send(f"<@920797181034778655>```{traceback.format_exc()}```")
-            await interaction.followup.send("An error occurred. The issue has been reported.", ephemeral=True)
+            if not interaction.is_expired():
+                error_channel = self.bot.get_channel(config.error_channel)
+                await error_channel.send(f"<@920797181034778655>```{traceback.format_exc()}```")
+                await interaction.followup.send("An error occurred. The issue has been reported.", ephemeral=True)
         finally:
             if cursor: cursor.close()
             if db_conn: db_conn.close()
 
+    # --- Guess The Player Leaderboard ---
     @leaderboard.command(name="gtp", description="View the Guess The Player leaderboard.")
     @app_commands.allowed_installs(guilds=True, users=True)
     @app_commands.allowed_contexts(guilds=True, dms=True, private_channels=True)
@@ -189,16 +201,19 @@ class Leaderboards(commands.Cog, name="Leaderboards"):
                 description.append(f"{i}. `{name}` - `{points:,}` point{'s' if points != 1 else ''}")
 
             embed.description = "\n".join(description) if description else "No entries yet!"
-            await interaction.followup.send(embed=embed)
+            if not interaction.is_expired():
+                await interaction.followup.send(embed=embed)
 
         except Exception as e:
-            error_channel = self.bot.get_channel(config.error_channel)
-            await error_channel.send(f"<@920797181034778655>```{traceback.format_exc()}```")
-            await interaction.followup.send("An error occurred. The issue has been reported.", ephemeral=True)
+            if not interaction.is_expired():
+                error_channel = self.bot.get_channel(config.error_channel)
+                await error_channel.send(f"<@920797181034778655>```{traceback.format_exc()}```")
+                await interaction.followup.send("An error occurred. The issue has been reported.", ephemeral=True)
         finally:
             if cursor: cursor.close()
             if db_conn: db_conn.close()
 
+    # --- Trivia Leaderboard Status ---
     @leaderboard.command(name="trivia-status", description="Toggles if you are displayed on the trivia leaderboard.")
     @app_commands.allowed_installs(guilds=True, users=True)
     @app_commands.allowed_contexts(guilds=True, dms=True, private_channels=True)
@@ -224,15 +239,18 @@ class Leaderboards(commands.Cog, name="Leaderboards"):
             """, (interaction.user.id, allow_bool, allow_bool))
             db_conn.commit()
             
-            await interaction.followup.send(f"Your trivia leaderboard visibility has been set to `{allow.name}`.", ephemeral=True)
+            if not interaction.is_expired():
+                await interaction.followup.send(f"Your trivia leaderboard visibility has been set to `{allow.name}`.", ephemeral=True)
         except Exception as e:
-            error_channel = self.bot.get_channel(config.error_channel)
-            await error_channel.send(f"<@920797181034778655>```{traceback.format_exc()}```")
-            await interaction.followup.send("An error occurred. The issue has been reported.", ephemeral=True)
+            if not interaction.is_expired():
+                error_channel = self.bot.get_channel(config.error_channel)
+                await error_channel.send(f"<@920797181034778655>```{traceback.format_exc()}```")
+                await interaction.followup.send("An error occurred. The issue has been reported.", ephemeral=True)
         finally:
             if cursor: cursor.close()
             if db_conn: db_conn.close()
 
+    # --- GTP Leaderboard Status ---
     @leaderboard.command(name="gtp-status", description="Toggles if you are displayed on the Guess The Player leaderboard.")
     @app_commands.allowed_installs(guilds=True, users=True)
     @app_commands.allowed_contexts(guilds=True, dms=True, private_channels=True)
@@ -258,11 +276,13 @@ class Leaderboards(commands.Cog, name="Leaderboards"):
             """, (interaction.user.id, allow_bool, allow_bool))
             db_conn.commit()
             
-            await interaction.followup.send(f"Your Guess The Player leaderboard visibility has been set to `{allow.name}`.", ephemeral=True)
+            if not interaction.is_expired():
+                await interaction.followup.send(f"Your Guess The Player leaderboard visibility has been set to `{allow.name}`.", ephemeral=True)
         except Exception as e:
-            error_channel = self.bot.get_channel(config.error_channel)
-            await error_channel.send(f"<@920797181034778655>```{traceback.format_exc()}```")
-            await interaction.followup.send("An error occurred. The issue has been reported.", ephemeral=True)
+            if not interaction.is_expired():
+                error_channel = self.bot.get_channel(config.error_channel)
+                await error_channel.send(f"<@920797181034778655>```{traceback.format_exc()}```")
+                await interaction.followup.send("An error occurred. The issue has been reported.", ephemeral=True)
         finally:
             if cursor: cursor.close()
             if db_conn: db_conn.close()
