@@ -287,12 +287,31 @@ class adminLeague(commands.Cog, name="adminLeague"):
                     players_updated += 1
             
             db_conn_calc.commit()
+            
+            view = ui.View(timeout=180)
+            reset_aces_button = ui.Button(label="Reset Weekly Aces", style=discord.ButtonStyle.primary, emoji="✨")
+            async def reset_aces_callback(callback_interaction: discord.Interaction):
+                db_conn = None
+                cursor = None
+                try:
+                    db_conn = self.db_pool.get_connection()
+                    cursor = db_conn.cursor()
+                    cursor.execute("UPDATE rosters SET aced_team_slot = NULL")
+                    db_conn.commit()
+                    await callback_interaction.response.send_message("✅ All player aces have been reset.", ephemeral=True)
+                except Exception as e:
+                    await callback_interaction.response.send_message("❌ A database error occurred. The issue has been reported.", ephemeral=True)
+                finally:
+                    if cursor: cursor.close()
+                    if db_conn: db_conn.close()
+            reset_aces_button.callback = reset_aces_callback
+            view.add_item(reset_aces_button)
 
             embed = discord.Embed(title=f"✅ Point Calculation Complete for {start_date} to {end_date}", color=discord.Color.green())
             embed.add_field(name="Players Updated", value=str(players_updated))
             embed.add_field(name="Net Points Awarded", value=str(total_points_awarded))
-            embed.set_footer(text="Use /league_admin to reset aces for the next week.")
-            await interaction.followup.send(embed=embed, ephemeral=True)
+            embed.set_footer(text="Use /league_admin to reset aces for the next week or click the button!")
+            await interaction.followup.send(embed=embed, view=view, ephemeral=True)
         except Exception as e:
             error_channel = self.bot.get_channel(config.error_channel)
             await error_channel.send(f"<@920797181034778655>```{traceback.format_exc()}```")
