@@ -15,8 +15,7 @@ load_dotenv()
 class Leaderboards(commands.Cog, name="Leaderboards"):
     def __init__(self, bot: commands.Bot):
         self.bot = bot
-        # Access the connection pool created in the admin cog
-        self.db_pool = self.bot.get_cog("adminLeague").db_pool
+        self.db_pool = self.bot.db_pool 
         print("Leaderboards Cog: Database pool is accessible.")
 
     @commands.Cog.listener()
@@ -24,7 +23,6 @@ class Leaderboards(commands.Cog, name="Leaderboards"):
         print(f"LOADED: `leaderboards.py`")
 
     async def log_command(self, interaction: discord.Interaction):
-        """Helper function to log command usage."""
         if config.command_log_bool:
             try:
                 command_log_channel = self.bot.get_channel(config.command_log)
