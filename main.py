@@ -5,6 +5,7 @@ import os
 import config
 import mysql.connector.pooling
 from dotenv import load_dotenv
+from datetime import datetime
 import topgg
 
 # --- Initial Setup ---
@@ -36,7 +37,6 @@ class MyBot(commands.Bot):
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
         self.db_pool = db_pool
-        # You can also attach other things here if needed
         self.topggpy = None
 
 bot = MyBot(command_prefix=';;', intents=intents, help_command=None)
@@ -185,8 +185,27 @@ async def main():
         await load_cogs()
         await bot.start(os.getenv("token"))
 
+# --- NEW: Graceful Shutdown Function ---
+async def shutdown(bot_instance: MyBot):
+    print("Bot is shutting down.")
+    owner = bot_instance.get_user(config.jacob)
+    if owner:
+        try:
+            await owner.send(f"Bot is shutting down now. ({datetime.now()})")
+        except discord.errors.Forbidden:
+            print("Could not send shutdown DM. Owner may have DMs disabled.")
+    
+    # Close the database pool before closing the bot
+    if bot_instance.db_pool:
+        bot_instance.db_pool.close()
+        print("Database connection pool closed.")
+        
+    await bot_instance.close()
+
 if __name__ == "__main__":
     try:
         asyncio.run(main())
     except KeyboardInterrupt:
-        print("Bot is shutting down.")
+        # When Ctrl+C is pressed, run the shutdown coroutine
+        print("Shutdown signal received.")
+        asyncio.run(shutdown(bot))
