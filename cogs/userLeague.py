@@ -352,6 +352,11 @@ class userLeague(commands.Cog, name="userLeague"):
                 await interaction.followup.send("You haven't joined the league yet! Use `/join-league` to get started.", ephemeral=True)
                 return
 
+            if not roster.get('bench_one'):
+                view = SetBenchButtonView(self.bot, self.db_pool, interaction.user.id)
+                await interaction.followup.send("⚠️ Your registration is incomplete! Please set your bench teams to continue.", view=view, ephemeral=True)
+                return
+
             embed = discord.Embed(title=f"{interaction.user.display_name}'s Roster", color=discord.Color.green())
             
             active_teams = [f"**{i}.** {roster.get(slot, 'Empty')}{' ✨' if roster.get('aced_team_slot') == slot else ''}" for i, slot in enumerate(['team_one', 'team_two', 'team_three', 'team_four', 'team_five'], 1)]
@@ -379,6 +384,12 @@ class userLeague(commands.Cog, name="userLeague"):
             if not roster:
                 await interaction.followup.send("You haven't joined the league yet!", ephemeral=True)
                 return
+            
+            if not roster.get('bench_one'):
+                view = SetBenchButtonView(self.bot, self.db_pool, interaction.user.id)
+                await interaction.followup.send("⚠️ Your registration is incomplete! Please set your bench teams to use this command.", view=view, ephemeral=True)
+                return
+
             if roster.get('swaps_used', 0) >= 10:
                 await interaction.followup.send("❌ You have used all 10 of your swaps for the season!", ephemeral=True)
                 return
@@ -403,6 +414,11 @@ class userLeague(commands.Cog, name="userLeague"):
             roster = self.get_user_roster(interaction.user.id)
             if not roster:
                 await interaction.followup.send("You haven't joined the league yet!", ephemeral=True)
+                return
+            
+            if not roster.get('bench_one'):
+                view = SetBenchButtonView(self.bot, self.db_pool, interaction.user.id)
+                await interaction.followup.send("⚠️ Your registration is incomplete! Please set your bench teams to use this command.", view=view, ephemeral=True)
                 return
             
             if roster.get('aced_team_slot') is not None:
