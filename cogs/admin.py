@@ -15,7 +15,7 @@ class admin(commands.Cog):
     @commands.Cog.listener()
     async def on_ready(self):
         print(f"LOADED: `admin.py`")
-        await self.bot.change_presence(activity=discord.CustomActivity(name="👀 New Feature Coming?"))
+        await self.bot.change_presence(activity=discord.CustomActivity(name="👀 NEW /join-league"))
     
     @app_commands.command(name="dev-mode", description="Toggles dev mode!")
     async def dev_mode(self, interaction: discord.Interaction):
