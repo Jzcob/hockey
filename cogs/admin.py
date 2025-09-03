@@ -146,6 +146,10 @@ class admin(commands.Cog):
                 error_channel = self.bot.get_channel(config.error_channel)
                 string = f"{traceback.format_exc()}"
                 await error_channel.send(f"<@920797181034778655>```{string}```")
+        except Exception as e:
+                error_channel = self.bot.get_channel(config.error_channel)
+                string = f"{traceback.format_exc()}"
+                await error_channel.send(f"<@920797181034778655>```{string}```")
 
 async def setup(bot):
     await bot.add_cog(admin(bot), guilds=[discord.Object(id=config.hockey_discord_server)])
