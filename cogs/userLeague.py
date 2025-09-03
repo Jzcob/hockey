@@ -465,4 +465,4 @@ class userLeague(commands.Cog, name="userLeague"):
             await interaction.followup.send("An error occurred. The issue has been reported.", ephemeral=True)
 
 async def setup(bot):
-    await bot.add_cog(userLeague(bot), guilds=[discord.Object(id=config.hockey_discord_server)])
+    await bot.add_cog(userLeague(bot))
