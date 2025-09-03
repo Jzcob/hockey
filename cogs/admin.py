@@ -131,21 +131,39 @@ class admin(commands.Cog):
             embed.set_footer(text="For any questions, please join the bots discord server in `/info`")
             
             embed.set_thumbnail(url="https://www-league.nhlstatic.com/images/logos/league-dark/133-flat.svg")
-            try:
-                if interaction.user.id == config.jacob:
-                    guilds = self.bot.guilds
-                    for guild in guilds:
-                        try:
-                            await guild.public_updates_channel.send(embed=embed)
-                        except:
-                            await guild.system_channel.send(embed=embed)
-                    return await interaction.response.send_message(content=f"Sent announcement!", embed=embed)
+            guilds = self.bot.guilds
+            successful_sends = 0
+            failed_sends = 0
+
+            for guild in guilds:
+                # First, try to get the public updates channel, otherwise fall back to the system channel
+                target_channel = guild.public_updates_channel or guild.system_channel
+
+                # Check if we actually found a channel to send to
+                if target_channel:
+                    try:
+                        await target_channel.send(embed=embed)
+                        print(f"✅ Successfully sent announcement to '{guild.name}'")
+                        successful_sends += 1
+                    except discord.Forbidden:
+                        # This handles the "Missing Permissions" error specifically
+                        print(f"❌ Failed to send to '{guild.name}' in #{target_channel.name} due to missing permissions.")
+                        failed_sends += 1
+                    except Exception as e:
+                        # Catch any other unexpected errors
+                        print(f"❌ An unexpected error occurred for '{guild.name}': {e}")
+                        failed_sends += 1
                 else:
-                    await interaction.response.send_message("You are not the bot owner.", ephemeral=True)
-            except Exception as e:
-                error_channel = self.bot.get_channel(config.error_channel)
-                string = f"{traceback.format_exc()}"
-                await error_channel.send(f"<@920797181034778655>```{string}```")
+                    # This handles servers with no suitable channel found
+                    print(f"⚠️ Could not find a suitable announcement channel in '{guild.name}'.")
+                    failed_sends += 1
+
+            # Send a final status back to the user who ran the command
+            await interaction.response.send_message(
+                f"Announcement process complete.\n"
+                f"✅ Sent successfully to **{successful_sends}** servers.\n"
+                f"❌ Failed for **{failed_sends}** servers. (Check console for details)"
+            )
         except Exception as e:
                 error_channel = self.bot.get_channel(config.error_channel)
                 string = f"{traceback.format_exc()}"
