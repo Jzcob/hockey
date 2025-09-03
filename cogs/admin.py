@@ -53,7 +53,7 @@ class admin(commands.Cog):
             string = f"{traceback.format_exc()}"
             await error_channel.send(f"```{string}```")
     
-    @app_commands.command(name="announce_league", description="Posts the fantasy league announcement embed.")
+    """@app_commands.command(name="announce_league", description="Posts the fantasy league announcement embed.")
     @app_commands.default_permissions(administrator=True)
     async def announce_league(self, interaction: discord.Interaction):
         try:
@@ -167,7 +167,7 @@ class admin(commands.Cog):
         except Exception as e:
                 error_channel = self.bot.get_channel(config.error_channel)
                 string = f"{traceback.format_exc()}"
-                await error_channel.send(f"<@920797181034778655>```{string}```")
+                await error_channel.send(f"<@920797181034778655>```{string}```")"""
 
 async def setup(bot):
     await bot.add_cog(admin(bot), guilds=[discord.Object(id=config.hockey_discord_server)])
