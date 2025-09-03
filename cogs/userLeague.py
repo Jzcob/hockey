@@ -327,6 +327,12 @@ class userLeague(commands.Cog, name="userLeague"):
     async def join_league(self, interaction: discord.Interaction):
         await self.log_command(interaction)
         try:
+            # --- FIX: Check if user is already in the league BEFORE sending the modal ---
+            roster = self.get_user_roster(interaction.user.id)
+            if roster:
+                await interaction.response.send_message("You are already in the league! Use `/my-roster` to see your teams.", ephemeral=True)
+                return
+            
             modal = JoinLeagueModal(self.bot, self.db_pool)
             await interaction.response.send_modal(modal)
         except Exception as e:
@@ -466,3 +472,4 @@ class userLeague(commands.Cog, name="userLeague"):
 
 async def setup(bot):
     await bot.add_cog(userLeague(bot))
+```eof
