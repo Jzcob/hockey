@@ -472,4 +472,3 @@ class userLeague(commands.Cog, name="userLeague"):
 
 async def setup(bot):
     await bot.add_cog(userLeague(bot))
-```eof

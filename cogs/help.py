@@ -70,8 +70,8 @@ class Help(commands.Cog):
             elif menu.value == "games":
                 embed.add_field(name="`/guess-the-player`", value="Guess a random NHL player!", inline=False)
                 embed.add_field(name="`/trivia`", value="Answer trivia questions to earn points!", inline=False)
-                embed.add_field(name="`/leaderboard <subcommand>`", value="View leaderboards (`trivia`, `gtp`) or manage your visibility (`trivia-status`, `gtp-status`).", inline=False)
-                embed.add_field(name="`/mypoints <subcommand>`", value="Check your points for a specific game (`trivia`, `gtp`).", inline=False)
+                embed.add_field(name="`/leaderboard <subcommand>`", value="View leaderboards (`trivia`, `gtp`, `fantasy`) or manage your visibility (`trivia-status`, `gtp-status`).", inline=False)
+                embed.add_field(name="`/mypoints <subcommand>`", value="Check your points for a specific game (`trivia`, `gtp`, `fantasy`).", inline=False)
                 embed.add_field(name="`/suggest-trivia <question> <answer>`", value="Suggest a trivia question!", inline=False)
 
             elif menu.value == "hockey-bot-league":
