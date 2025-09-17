@@ -469,7 +469,11 @@ class adminLeague(commands.Cog, name="adminLeague"):
                 await interaction.followup.send("No users found with incomplete rosters.", ephemeral=True)
                 return
             
-            message = "👋 **Friendly Reminder!**\nYour fantasy league registration is incomplete. Please use the button that was sent to you after you joined to set your **3 bench teams** and complete your roster!"
+            message = (
+                "👋 **Friendly Reminder!**\n\n"
+                "Your fantasy league registration is incomplete. To finish setting up, please run the `/my-roster` command. "
+                "A new button will appear allowing you to set your **3 bench teams** and complete your roster!"
+            )
             success_count, fail_count = 0, 0
             for user_id in user_ids:
                 try:
