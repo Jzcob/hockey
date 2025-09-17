@@ -372,6 +372,124 @@ class adminLeague(commands.Cog, name="adminLeague"):
         view.add_item(stats_button)
 
         await interaction.response.send_message("League Admin Panel:", view=view, ephemeral=True)
+    
+    @app_commands.commnand(name="alert-users", description="Alerts all users in the league with a DM.")
+    @app_commands.default_permissions(administrator=True)
+    @app_commands.describe(message="The message to send to all league users.")
+    async def alert_users(self, interaction: discord.Interaction, message: str):
+        #I want this command to be able to send a message to all users who have not added their benched teams yet as well as a message to all users of a message I can set in the command.
+        db_conn = None
+        cursor = None
+        try:
+            db_conn = self.db_pool.get_connection()
+            cursor = db_conn.cursor()
+            cursor.execute("SELECT user_id FROM rosters WHERE bench_one IS NULL")
+            bench_one = [row[0] for row in cursor.fetchall() if row[1]]
+            if bench_one is None:
+                await interaction.response.send_message("No users found without benched teams.", ephemeral=True)
+                return
+
+            cursor.execute("SELECT user_id FROM rosters")
+            user_ids = [row[0] for row in cursor.fetchall()]
+
+            success_count, fail_count = 0, 0
+            for user_id in user_ids:
+                user = self.bot.get_user(user_id)
+                if user:
+                    try:
+                        await user.send(message)
+                        success_count += 1
+                    except Exception as e:
+                        print(f"Failed to send DM to {user_id}: {e}")
+                        fail_count += 1
+                else:
+                    fail_count += 1
+
+            await interaction.followup.send(f"✅ Alert sent to {success_count} users. Failed to send to {fail_count} users.", ephemeral=True)
+        except Exception as e:
+            error_channel = self.bot.get_channel(config.error_channel)
+            await error_channel.send(f"<@920797181034778655>```{traceback.format_exc()}```")
+            await interaction.followup.send("An error occurred while sending alerts. The issue has been reported.", ephemeral=True)
+        finally:
+            if cursor: cursor.close()
+            if db_conn: db_conn.close()
+    
+    alert = app_commands.Group(name="alert", description="Send alerts to league members.")
+
+    @alert.command(name="custom", description="Sends a custom message to all league members.")
+    @app_commands.default_permissions(administrator=True)
+    @app_commands.describe(message="The message to send.")
+    async def alert_custom(self, interaction: discord.Interaction, message: str):
+        await self.log_command(interaction)
+        await interaction.response.defer(ephemeral=True)
+        db_conn, cursor = None, None
+        try:
+            db_conn = self.db_pool.get_connection()
+            cursor = db_conn.cursor(dictionary=True)
+            cursor.execute("SELECT user_id FROM rosters")
+            user_ids = [row['user_id'] for row in cursor.fetchall()]
+
+            if not user_ids:
+                await interaction.followup.send("There are no users in the league to alert.", ephemeral=True)
+                return
+
+            success_count, fail_count = 0, 0
+            for user_id in user_ids:
+                try:
+                    user = await self.bot.fetch_user(user_id)
+                    await user.send(f"📢 **League Alert:**\n\n{message}")
+                    success_count += 1
+                except (discord.errors.NotFound, discord.errors.Forbidden):
+                    fail_count += 1
+            
+            await interaction.followup.send(f"✅ Alert sent to **{success_count}** users.\n❌ Failed to send to **{fail_count}** users.", ephemeral=True)
+
+        except Exception as e:
+            error_channel = self.bot.get_channel(config.error_channel)
+            if error_channel:
+                await error_channel.send(f"<@920797181034778655>```{traceback.format_exc()}```")
+            await interaction.followup.send("An error occurred while sending alerts. The issue has been reported.", ephemeral=True)
+        finally:
+            if cursor: cursor.close()
+            if db_conn: db_conn.close()
+
+    @alert.command(name="incomplete-roster", description="Alerts users who haven't set their bench teams.")
+    @app_commands.default_permissions(administrator=True)
+    async def alert_incomplete(self, interaction: discord.Interaction):
+        await self.log_command(interaction)
+        await interaction.response.defer(ephemeral=True)
+        db_conn, cursor = None, None
+        try:
+            db_conn = self.db_pool.get_connection()
+            cursor = db_conn.cursor(dictionary=True)
+            cursor.execute("SELECT user_id FROM rosters WHERE bench_one IS NULL")
+            user_ids = [row['user_id'] for row in cursor.fetchall()]
+
+            if not user_ids:
+                await interaction.followup.send("No users found with incomplete rosters.", ephemeral=True)
+                return
+            
+            message = "👋 **Friendly Reminder!**\nYour fantasy league registration is incomplete. Please use the button that was sent to you after you joined to set your **3 bench teams** and complete your roster!"
+            success_count, fail_count = 0, 0
+            for user_id in user_ids:
+                try:
+                    user = await self.bot.fetch_user(user_id)
+                    await user.send(message)
+                    success_count += 1
+                except (discord.errors.NotFound, discord.errors.Forbidden):
+                    fail_count += 1
+            
+            await interaction.followup.send(f"✅ Incomplete roster alert sent to **{success_count}** users.\n❌ Failed to send to **{fail_count}** users.", ephemeral=True)
+
+        except Exception as e:
+            error_channel = self.bot.get_channel(config.error_channel)
+            if error_channel:
+                await error_channel.send(f"<@920797181034778655>```{traceback.format_exc()}```")
+            await interaction.followup.send("An error occurred while sending alerts. The issue has been reported.", ephemeral=True)
+        finally:
+            if cursor: cursor.close()
+            if db_conn: db_conn.close()
+
 
 async def setup(bot):
     await bot.add_cog(adminLeague(bot), guilds=[discord.Object(id=config.hockey_discord_server)])
