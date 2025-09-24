@@ -91,8 +91,11 @@ class Trivia(commands.Cog):
                                 confirm_response = await self.bot.wait_for('message', check=confirm_check, timeout=15.0)
                                 if confirm_response.content.lower() == 'yes' or confirm_response.content.lower() == 'y':
                                     correct = True
-                                await confirm_msg.delete()
-                                await confirm_response.delete()
+                                try:
+                                    await confirm_msg.delete()
+                                    await confirm_response.delete()
+                                except:
+                                    pass
                                 break
                             except asyncio.TimeoutError:
                                 await confirm_msg.edit(content="Confirmation timed out.", delete_after=5)
