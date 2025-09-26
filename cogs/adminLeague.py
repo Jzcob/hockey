@@ -316,13 +316,13 @@ class adminLeague(commands.Cog, name="adminLeague"):
         try:
             view = ui.View(timeout=180)
 
-            reset_button = ui.Button(label="Reset League Season", style=discord.ButtonStyle.danger, emoji="🔄")
+            """reset_button = ui.Button(label="Reset League Season", style=discord.ButtonStyle.danger, emoji="🔄")
             async def reset_callback(callback_interaction: discord.Interaction):
                 confirm_view = ConfirmResetView(self.bot)
                 await callback_interaction.response.send_message(
                     "⚠️ **Are you sure?** This deletes all rosters and points.", view=confirm_view, ephemeral=True)
             reset_button.callback = reset_callback
-            view.add_item(reset_button)
+            view.add_item(reset_button)"""
 
             reset_aces_button = ui.Button(label="Reset Weekly Aces", style=discord.ButtonStyle.primary, emoji="✨")
             async def reset_aces_callback(callback_interaction: discord.Interaction):
