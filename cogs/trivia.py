@@ -9,14 +9,17 @@ import mysql.connector
 from datetime import datetime
 import traceback
 import config
-import time
+from thefuzz import fuzz
 
+# --- Global Variables & Constants ---
 used = {}
+SIMILARITY_THRESHOLD = 85 # You can adjust this value (0-100)
 
+# --- Cog Class Definition ---
 class Trivia(commands.Cog):
     def __init__(self, bot):
         self.bot = bot
-        self.used = {}
+        self.used = {} # Instance-specific used dictionary
 
     def migrate_guild_id(self, cursor, user_id, actual_guild_id):
         cursor.execute("SELECT points FROM trivia_scores WHERE user_id = %s AND guild_id = 0", (user_id,))
@@ -41,25 +44,23 @@ class Trivia(commands.Cog):
 
     @app_commands.command(name="trivia", description="Answer trivia questions to earn points!")
     async def trivia(self, interaction: discord.Interaction):
-        if config.command_log_bool == True:
+        if config.command_log_bool:
             command_log_channel = self.bot.get_channel(config.command_log)
-            if interaction.guild == None:
-                await command_log_channel.send(f"`/trivia` used by `{interaction.user.name}` in DMs at `{datetime.now()}`\n---")
-            elif interaction.guild.name == "":
-                await command_log_channel.send(f"`/trivia` used by `{interaction.user.name}` in an unknown server at `{datetime.now()}`\n---")
-            else:
-                await command_log_channel.send(f"`/trivia` used by `{interaction.user.name}` in `{interaction.guild.name}` at `{datetime.now()}`\n---")
+            guild_name = "DMs" if interaction.guild is None else f"`{interaction.guild.name}`"
+            await command_log_channel.send(f"`/trivia` used by `{interaction.user.name}` in {guild_name} at `{datetime.now()}`\n---")
+            
         try:
+            if interaction.user.id in self.used:
+                await interaction.response.send_message("You already have an active trivia question!", ephemeral=True)
+                return
+            
             self.used[interaction.user.id] = True
             await interaction.response.defer()
 
             with open("trivia.json", "r", encoding="utf-8") as f:
                 trivia_data = json.load(f)
 
-            q1, a1 = random.choice(list(trivia_data.items()))
-            q2, a2 = random.choice(list(trivia_data.items()))
-            q3, a3 = random.choice(list(trivia_data.items()))
-            question, answer = random.choice([(q1, a1), (q2, a2), (q3, a3)])
+            question, answer = random.choice(list(trivia_data.items()))
 
             await interaction.followup.send(f"Trivia Question: {question}\nYou have 60 seconds to answer!")
 
@@ -70,14 +71,37 @@ class Trivia(commands.Cog):
                 msg = await self.bot.wait_for("message", check=check, timeout=60.0)
                 user_answer = msg.content.strip().lower()
 
+                possible_answers = [a.strip().lower() for a in answer.split(" or ")]
                 correct = False
-                if " or " in answer:
-                    correct = user_answer in [a.strip().lower() for a in answer.split(" or ")]
-                elif ", " in answer:
-                    correct = sorted(user_answer.split(", ")) == sorted(answer.lower().split(", "))
+                
+                # --- Fuzzy Matching Logic ---
+                if user_answer in possible_answers:
+                    correct = True
                 else:
-                    correct = user_answer == answer.lower()
-
+                    for correct_ans in possible_answers:
+                        similarity_score = fuzz.partial_ratio(user_answer, correct_ans)
+                        if similarity_score >= SIMILARITY_THRESHOLD:
+                            confirm_msg = await interaction.followup.send(
+                                f"Your answer is very close. Did you mean `{correct_ans.title()}`? (yes/no)",
+                                wait=True
+                            )
+                            def confirm_check(m):
+                                return m.author == interaction.user and m.channel == interaction.channel and m.content.lower() in ['yes', 'no', 'y', 'n']
+                            try:
+                                confirm_response = await self.bot.wait_for('message', check=confirm_check, timeout=15.0)
+                                if confirm_response.content.lower() == 'yes' or confirm_response.content.lower() == 'y':
+                                    correct = True
+                                try:
+                                    await confirm_msg.delete()
+                                    await confirm_response.delete()
+                                except:
+                                    pass
+                                break
+                            except asyncio.TimeoutError:
+                                await confirm_msg.edit(content="Confirmation timed out.", delete_after=5)
+                                break
+                
+                # --- Award Points or Give Correct Answer ---
                 if correct:
                     mydb = mysql.connector.connect(
                         host=os.getenv("db_host"),
@@ -86,34 +110,31 @@ class Trivia(commands.Cog):
                         database=os.getenv("db_name")
                     )
                     mycursor = mydb.cursor()
-                    self.migrate_guild_id(mycursor, interaction.user.id, interaction.guild.id)
+                    if interaction.guild:
+                        self.migrate_guild_id(mycursor, interaction.user.id, interaction.guild.id)
+                    
                     mycursor.execute("""
-                        INSERT INTO trivia_users (user_id, allow_leaderboard)
-                        VALUES (%s, 1)
+                        INSERT INTO trivia_users (user_id, allow_leaderboard) VALUES (%s, 1)
                         ON DUPLICATE KEY UPDATE user_id = user_id
                     """, (interaction.user.id,))
-
                     mycursor.execute("""
-                        INSERT INTO trivia_scores (user_id, guild_id, points)
-                        VALUES (%s, %s, 1)
+                        INSERT INTO trivia_scores (user_id, guild_id, points) VALUES (%s, %s, 1)
                         ON DUPLICATE KEY UPDATE points = points + 1
                     """, (interaction.user.id, interaction.guild.id))
                     mydb.commit()
                     mydb.close()
-
                     await interaction.followup.send(f"Correct! 🎉 {interaction.user.mention}, you earned a point!")
                 else:
-                    await interaction.followup.send(f"Wrong answer! The correct answer was: `{answer}`")
-
+                    await interaction.followup.send(f"Sorry, that's not correct. The answer was: `{answer}`")
             except asyncio.TimeoutError:
                 await interaction.followup.send(f"Time's up! The correct answer was: `{answer}`")
-
         except Exception as e:
             traceback.print_exc()
-            await interaction.followup.send("An error occurred. Please try again later.", ephemeral=True)
-
+            if not interaction.response.is_done():
+                await interaction.followup.send("An error occurred. Please try again later.", ephemeral=True)
         finally:
             self.used.pop(interaction.user.id, None)
 
+# --- Cog Setup Function ---
 async def setup(bot):
     await bot.add_cog(Trivia(bot))

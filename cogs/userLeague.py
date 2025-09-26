@@ -1,3 +1,4 @@
+# user_cog.py
 import discord
 from discord.ext import commands
 from discord import app_commands, ui
@@ -100,13 +101,13 @@ class SetBenchModal(ui.Modal, title="Set Your Bench Teams (Step 2 of 2)"):
                 content="🎉 **Welcome to the league!** Your full roster is set. Use `/my-roster` to view it.",
                 view=None
             )
-        except Exception as e:
+        except Exception:
             error_channel = self.bot.get_channel(config.error_channel)
-            await error_channel.send(f"<@920797181034778655>```{traceback.format_exc()}```")
+            if error_channel: await error_channel.send(f"<@920797181034778655>```{traceback.format_exc()}```")
             if not interaction.response.is_done():
                 await interaction.response.send_message("❌ An error occurred. The issue has been reported.", ephemeral=True)
             else:
-                await interaction.followup.send("❌ An error occurred. The issue has been reported.", ephemeral=True)
+                if not interaction.is_expired(): await interaction.followup.send("❌ An error occurred. The issue has been reported.", ephemeral=True)
         finally:
             if cursor: cursor.close()
             if db_conn: db_conn.close()
@@ -138,9 +139,9 @@ class SetBenchButtonView(ui.View):
                 await interaction.response.send_modal(modal)
             else:
                 await interaction.response.send_message("Could not find your active roster. Please try `/join-league` again.", ephemeral=True)
-        except Exception as e:
+        except Exception:
             error_channel = self.bot.get_channel(config.error_channel)
-            await error_channel.send(f"<@920797181034778655>```{traceback.format_exc()}```")
+            if error_channel: await error_channel.send(f"<@920797181034778655>```{traceback.format_exc()}```")
             await interaction.response.send_message("❌ An error occurred. The issue has been reported.", ephemeral=True)
         finally:
             if cursor: cursor.close()
@@ -199,12 +200,12 @@ class JoinLeagueModal(ui.Modal, title="Join the League (Step 1 of 2)"):
                 await interaction.response.send_message("❌ You are already in the league!", ephemeral=True)
             else:
                 error_channel = self.bot.get_channel(config.error_channel)
-                await error_channel.send(f"<@920797181034778655>```{traceback.format_exc()}```")
-                await interaction.response.send_message(f"❌ A database error occurred. The issue has been reported.", ephemeral=True)
-        except Exception as e:
+                if error_channel: await error_channel.send(f"<@920797181034778655>```{traceback.format_exc()}```")
+                if not interaction.response.is_done(): await interaction.response.send_message(f"❌ A database error occurred. The issue has been reported.", ephemeral=True)
+        except Exception:
             error_channel = self.bot.get_channel(config.error_channel)
-            await error_channel.send(f"<@920797181034778655>```{traceback.format_exc()}```")
-            await interaction.response.send_message(f"❌ An error occurred. The issue has been reported.", ephemeral=True)
+            if error_channel: await error_channel.send(f"<@920797181034778655>```{traceback.format_exc()}```")
+            if not interaction.response.is_done(): await interaction.response.send_message(f"❌ An error occurred. The issue has been reported.", ephemeral=True)
         finally:
             if cursor: cursor.close()
             if db_conn: db_conn.close()
@@ -269,9 +270,9 @@ class SwapView(ui.View):
                 if not interaction.is_expired(): await interaction.edit_original_response(view=self)
                 self.stop()
 
-            except Exception as e:
+            except Exception:
                 error_channel = self.bot.get_channel(config.error_channel)
-                await error_channel.send(f"<@920797181034778655>```{traceback.format_exc()}```")
+                if error_channel: await error_channel.send(f"<@920797181034778655>```{traceback.format_exc()}```")
                 if not interaction.is_expired(): await interaction.followup.send("❌ A database error occurred. The issue has been reported.", ephemeral=True)
                 self.stop()
             finally:
@@ -282,7 +283,7 @@ class SwapView(ui.View):
 class userLeague(commands.Cog, name="userLeague"):
     def __init__(self, bot: commands.Bot):
         self.bot = bot
-        self.db_pool = self.bot.get_cog("adminLeague").db_pool
+        self.db_pool = bot.db_pool
         print("User Cog: Database pool is accessible.")
             
     @commands.Cog.listener()
@@ -314,11 +315,10 @@ class userLeague(commands.Cog, name="userLeague"):
                 print(f"Command logging failed for /{interaction.command.name}: {e}")
 
     @app_commands.command(name="join-league", description="Sign up for the fantasy league and set your roster.")
-    @app_commands.allowed_installs(guilds=True, users=True)
-    @app_commands.allowed_contexts(guilds=True, dms=True, private_channels=True)
     async def join_league(self, interaction: discord.Interaction):
         await self.log_command(interaction)
         try:
+            # FIX: No initial defer, no initial DB check. Respond immediately.
             roster = self.get_user_roster(interaction.user.id)
             if roster:
                 await interaction.response.send_message("You are already in the league! Use `/my-roster` to see your teams.", ephemeral=True)
@@ -326,21 +326,19 @@ class userLeague(commands.Cog, name="userLeague"):
             
             modal = JoinLeagueModal(self.bot, self.db_pool)
             await interaction.response.send_modal(modal)
-        except Exception as e:
+        except Exception:
             error_channel = self.bot.get_channel(config.error_channel)
-            await error_channel.send(f"<@920797181034778655>```{traceback.format_exc()}```")
+            if error_channel: await error_channel.send(f"<@920797181034778655>```{traceback.format_exc()}```")
             if not interaction.response.is_done():
                 await interaction.response.send_message("An error occurred. The issue has been reported.", ephemeral=True)
             else:
-                await interaction.followup.send("An error occurred. The issue has been reported.", ephemeral=True)
+                if not interaction.is_expired(): await interaction.followup.send("An error occurred. The issue has been reported.", ephemeral=True)
 
     @app_commands.command(name="my-roster", description="View your current team roster, points, and swaps.")
-    @app_commands.allowed_installs(guilds=True, users=True)
-    @app_commands.allowed_contexts(guilds=True, dms=True, private_channels=True)
     async def my_roster(self, interaction: discord.Interaction):
         await self.log_command(interaction)
+        await interaction.response.defer(ephemeral=True) # Defer immediately
         try:
-            await interaction.response.defer(ephemeral=True)
             roster = self.get_user_roster(interaction.user.id)
             if not roster:
                 if not interaction.is_expired(): await interaction.followup.send("You haven't joined the league yet! Use `/join-league` to get started.", ephemeral=True)
@@ -362,18 +360,16 @@ class userLeague(commands.Cog, name="userLeague"):
             embed.add_field(name="Swaps Remaining", value=f"🔄 {10 - roster.get('swaps_used', 0)} / 10", inline=False)
 
             if not interaction.is_expired(): await interaction.followup.send(embed=embed, ephemeral=True)
-        except Exception as e:
+        except Exception:
             error_channel = self.bot.get_channel(config.error_channel)
-            await error_channel.send(f"<@920797181034778655>```{traceback.format_exc()}```")
+            if error_channel: await error_channel.send(f"<@920797181034778655>```{traceback.format_exc()}```")
             if not interaction.is_expired(): await interaction.followup.send("An error occurred. The issue has been reported.", ephemeral=True)
 
     @app_commands.command(name="swap-teams", description="Swap an active team with a bench team.")
-    @app_commands.allowed_installs(guilds=True, users=True)
-    @app_commands.allowed_contexts(guilds=True, dms=True, private_channels=True)
     async def swap_teams(self, interaction: discord.Interaction):
         await self.log_command(interaction)
+        await interaction.response.defer(ephemeral=True) # Defer immediately
         try:
-            await interaction.response.defer(ephemeral=True)
             roster = self.get_user_roster(interaction.user.id)
             if not roster:
                 if not interaction.is_expired(): await interaction.followup.send("You haven't joined the league yet!", ephemeral=True)
@@ -393,18 +389,16 @@ class userLeague(commands.Cog, name="userLeague"):
             
             view = SwapView(self.bot, interaction.user.id, self.db_pool, active_teams, bench_teams)
             if not interaction.is_expired(): await interaction.followup.send("Select one active team and one bench team to swap:", view=view, ephemeral=True)
-        except Exception as e:
+        except Exception:
             error_channel = self.bot.get_channel(config.error_channel)
-            await error_channel.send(f"<@920797181034778655>```{traceback.format_exc()}```")
+            if error_channel: await error_channel.send(f"<@920797181034778655>```{traceback.format_exc()}```")
             if not interaction.is_expired(): await interaction.followup.send("An error occurred. The issue has been reported.", ephemeral=True)
 
     @app_commands.command(name="ace-team", description="Select one active team to earn triple points for the week.")
-    @app_commands.allowed_installs(guilds=True, users=True)
-    @app_commands.allowed_contexts(guilds=True, dms=True, private_channels=True)
     async def ace_team(self, interaction: discord.Interaction):
         await self.log_command(interaction)
+        await interaction.response.defer(ephemeral=True) # Defer immediately
         try:
-            await interaction.response.defer(ephemeral=True)
             roster = self.get_user_roster(interaction.user.id)
             if not roster:
                 if not interaction.is_expired(): await interaction.followup.send("You haven't joined the league yet!", ephemeral=True)
@@ -439,9 +433,9 @@ class userLeague(commands.Cog, name="userLeague"):
                     conn.commit()
                     team_name = roster[chosen_slot]
                     await callback_interaction.response.edit_message(content=f"✅ **{team_name}** is now your aced team for the week!", view=None)
-                except Exception as e_inner:
+                except Exception:
                     error_channel = self.bot.get_channel(config.error_channel)
-                    await error_channel.send(f"<@920797181034778655>```{traceback.format_exc()}```")
+                    if error_channel: await error_channel.send(f"<@920797181034778655>```{traceback.format_exc()}```")
                     await callback_interaction.response.edit_message(content="❌ A database error occurred. The issue has been reported.", view=None)
                 finally:
                     if cur: cur.close()
@@ -452,10 +446,11 @@ class userLeague(commands.Cog, name="userLeague"):
             view.add_item(select)
             if not interaction.is_expired(): await interaction.followup.send("Select your ace team. This team will earn triple points from all games this week.", view=view, ephemeral=True)
         
-        except Exception as e:
+        except Exception:
             error_channel = self.bot.get_channel(config.error_channel)
-            await error_channel.send(f"<@920797181034778655>```{traceback.format_exc()}```")
+            if error_channel: await error_channel.send(f"<@920797181034778655>```{traceback.format_exc()}```")
             if not interaction.is_expired(): await interaction.followup.send("An error occurred. The issue has been reported.", ephemeral=True)
 
 async def setup(bot):
     await bot.add_cog(userLeague(bot))
+

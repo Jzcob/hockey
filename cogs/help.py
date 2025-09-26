@@ -21,7 +21,7 @@ class Help(commands.Cog):
         app_commands.Choice(name="general", value="general"),
         app_commands.Choice(name="nhl", value="nhl"),
         app_commands.Choice(name="games", value="games")#,
-        #app_commands.Choice(name="hockey-bot-league", value="hockey-bot-league"),
+        app_commands.Choice(name="hockey-bot-league", value="hockey-bot-league"),
     ])
     async def help(self, interaction: discord.Interaction, menu: app_commands.Choice[str]):
         if config.command_log_bool:
