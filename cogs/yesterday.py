@@ -9,139 +9,47 @@ import pytz
 import traceback
 import asyncio
 
+TEAM_EMOJIS = {
+    "ANA": config.anahiem_ducks_emoji,
+    "BOS": config.boston_bruins_emoji,
+    "BUF": config.buffalo_sabres_emoji,
+    "CGY": config.calgary_flames_emoji,
+    "CAR": config.carolina_hurricanes_emoji,
+    "CHI": config.chicago_blackhawks_emoji,
+    "COL": config.colorado_avalanche_emoji,
+    "CBJ": config.columbus_blue_jackets_emoji,
+    "DAL": config.dallas_stars_emoji,
+    "DET": config.detroit_red_wings_emoji,
+    "EDM": config.edmonton_oilers_emoji,
+    "FLA": config.florida_panthers_emoji,
+    "LAK": config.los_angeles_kings_emoji,
+    "MIN": config.minnesota_wild_emoji,
+    "MTL": config.montreal_canadiens_emoji,
+    "NSH": config.nashville_predators_emoji,
+    "NJD": config.new_jersey_devils_emoji,
+    "NYI": config.new_york_islanders_emoji,
+    "NYR": config.new_york_rangers_emoji,
+    "OTT": config.ottawa_senators_emoji,
+    "PHI": config.philadelphia_flyers_emoji,
+    "PIT": config.pittsburgh_penguins_emoji,
+    "SJS": config.san_jose_sharks_emoji,
+    "SEA": config.seattle_kraken_emoji,
+    "STL": config.st_louis_blues_emoji,
+    "TBL": config.tampa_bay_lightning_emoji,
+    "TOR": config.toronto_maple_leafs_emoji,
+    "UTA": config.utah_hockey_club_emoji,
+    "VAN": config.vancouver_canucks_emoji,
+    "VGK": config.vegas_golden_knights_emoji,
+    "WSH": config.washington_capitals_emoji,
+    "WPG": config.winnipeg_jets_emoji,
+}
+
 def strings(awayAbbreviation, homeAbbreviation, home, away):
-    if awayAbbreviation == "ANA":
-        awayString = f"{config.anahiem_ducks_emoji} {away}"
-    elif awayAbbreviation == "BOS":
-        awayString = f"{config.boston_bruins_emoji} {away}"
-    elif awayAbbreviation == "BUF":
-        awayString = f"{config.buffalo_sabres_emoji} {away}"
-    elif awayAbbreviation == "CGY":
-        awayString = f"{config.calgary_flames_emoji} {away}"
-    elif awayAbbreviation == "CAR":
-        awayString = f"{config.carolina_hurricanes_emoji} {away}"
-    elif awayAbbreviation == "CHI":
-        awayString = f"{config.chicago_blackhawks_emoji} {away}"
-    elif awayAbbreviation == "COL":
-        awayString = f"{config.colorado_avalanche_emoji} {away}"
-    elif awayAbbreviation == "CBJ":
-        awayString = f"{config.columbus_blue_jackets_emoji} {away}"
-    elif awayAbbreviation == "DAL":
-        awayString = f"{config.dallas_stars_emoji} {away}"
-    elif awayAbbreviation == "DET":
-        awayString = f"{config.detroit_red_wings_emoji} {away}"
-    elif awayAbbreviation == "EDM":
-        awayString = f"{config.edmonton_oilers_emoji} {away}"
-    elif awayAbbreviation == "FLA":
-        awayString = f"{config.florida_panthers_emoji} {away}"
-    elif awayAbbreviation == "LAK":
-        awayString = f"{config.los_angeles_kings_emoji} {away}"
-    elif awayAbbreviation == "MIN":
-        awayString = f"{config.minnesota_wild_emoji} {away}"
-    elif awayAbbreviation == "MTL":
-        awayString = f"{config.montreal_canadiens_emoji} {away}"
-    elif awayAbbreviation == "NSH":
-        awayString = f"{config.nashville_predators_emoji} {away}"
-    elif awayAbbreviation == "NJD":
-        awayString = f"{config.new_jersey_devils_emoji} {away}"
-    elif awayAbbreviation == "NYI":
-        awayString = f"{config.new_york_islanders_emoji} {away}"
-    elif awayAbbreviation == "NYR":
-        awayString = f"{config.new_york_rangers_emoji} {away}"
-    elif awayAbbreviation == "OTT":
-        awayString = f"{config.ottawa_senators_emoji} {away}"
-    elif awayAbbreviation == "PHI":
-        awayString = f"{config.philadelphia_flyers_emoji} {away}"
-    elif awayAbbreviation == "PIT":
-        awayString = f"{config.pittsburgh_penguins_emoji} {away}"
-    elif awayAbbreviation == "SJS":
-        awayString = f"{config.san_jose_sharks_emoji} {away}"
-    elif awayAbbreviation == "SEA":
-        awayString = f"{config.seattle_kraken_emoji} {away}"
-    elif awayAbbreviation == "STL":
-        awayString = f"{config.st_louis_blues_emoji} {away}"
-    elif awayAbbreviation == "TBL":
-        awayString = f"{config.tampa_bay_lightning_emoji} {away}"
-    elif awayAbbreviation == "TOR":
-        awayString = f"{config.toronto_maple_leafs_emoji} {away}"
-    elif awayAbbreviation == "UTA":
-        awayString = f"{config.utah_hockey_club_emoji} {away}"
-    elif awayAbbreviation == "VAN":
-        awayString = f"{config.vancouver_canucks_emoji} {away}"
-    elif awayAbbreviation == "VGK":
-        awayString = f"{config.vegas_golden_knights_emoji} {away}"
-    elif awayAbbreviation == "WSH":
-        awayString = f"{config.washington_capitals_emoji} {away}"
-    elif awayAbbreviation == "WPG":
-        awayString = f"{config.winnipeg_jets_emoji} {away}"
-    else:
-        awayString = f"{away}"
-    if homeAbbreviation == "ANA":
-        homeString = f"{home} {config.anahiem_ducks_emoji}"
-    elif homeAbbreviation == "BOS":
-        homeString = f"{home} {config.boston_bruins_emoji}"
-    elif homeAbbreviation == "BUF":
-        homeString = f"{home} {config.buffalo_sabres_emoji}"
-    elif homeAbbreviation == "CGY":
-        homeString = f"{home} {config.calgary_flames_emoji}"
-    elif homeAbbreviation == "CAR":
-        homeString = f"{home} {config.carolina_hurricanes_emoji}"
-    elif homeAbbreviation == "CHI":
-        homeString = f"{home} {config.chicago_blackhawks_emoji}"
-    elif homeAbbreviation == "COL":
-        homeString = f"{home} {config.colorado_avalanche_emoji}"
-    elif homeAbbreviation == "CBJ":
-        homeString = f"{home} {config.columbus_blue_jackets_emoji}"
-    elif homeAbbreviation == "DAL":
-        homeString = f"{home} {config.dallas_stars_emoji}"
-    elif homeAbbreviation == "DET":
-        homeString = f"{home} {config.detroit_red_wings_emoji}"
-    elif homeAbbreviation == "EDM":
-        homeString = f"{home} {config.edmonton_oilers_emoji}"
-    elif homeAbbreviation == "FLA":
-        homeString = f"{home} {config.florida_panthers_emoji}"
-    elif homeAbbreviation == "LAK":
-        homeString = f"{home} {config.los_angeles_kings_emoji}"
-    elif homeAbbreviation == "MIN":
-        homeString = f"{home} {config.minnesota_wild_emoji}"
-    elif homeAbbreviation == "MTL":
-        homeString = f"{home} {config.montreal_canadiens_emoji}"
-    elif homeAbbreviation == "NSH":
-        homeString = f"{home} {config.nashville_predators_emoji}"
-    elif homeAbbreviation == "NJD":
-        homeString = f"{home} {config.new_jersey_devils_emoji}"
-    elif homeAbbreviation == "NYI":
-        homeString = f"{home} {config.new_york_islanders_emoji}"
-    elif homeAbbreviation == "NYR":
-        homeString = f"{home} {config.new_york_rangers_emoji}"
-    elif homeAbbreviation == "OTT":
-        homeString = f"{home} {config.ottawa_senators_emoji}"
-    elif homeAbbreviation == "PHI":
-        homeString = f"{home} {config.philadelphia_flyers_emoji}"
-    elif homeAbbreviation == "PIT":
-        homeString = f"{home} {config.pittsburgh_penguins_emoji}"
-    elif homeAbbreviation == "SJS":
-        homeString = f"{home} {config.san_jose_sharks_emoji}"
-    elif homeAbbreviation == "SEA":
-        homeString = f"{home} {config.seattle_kraken_emoji}"
-    elif homeAbbreviation == "STL":
-        homeString = f"{home} {config.st_louis_blues_emoji}"
-    elif homeAbbreviation == "TBL":
-        homeString = f"{home} {config.tampa_bay_lightning_emoji}"
-    elif homeAbbreviation == "TOR":
-        homeString = f"{home} {config.toronto_maple_leafs_emoji}"
-    elif homeAbbreviation == "UTA":
-        homeString = f"{home} {config.utah_hockey_club_emoji}"
-    elif homeAbbreviation == "VAN":
-        homeString = f"{home} {config.vancouver_canucks_emoji}"
-    elif homeAbbreviation == "VGK":
-        homeString = f"{home} {config.vegas_golden_knights_emoji}"
-    elif homeAbbreviation == "WSH":
-        homeString = f"{home} {config.washington_capitals_emoji}"
-    elif homeAbbreviation == "WPG":
-        homeString = f"{home} {config.winnipeg_jets_emoji}"
-    else:
-        homeString = f"{home}"
+    away_emoji = TEAM_EMOJIS.get(awayAbbreviation, "")
+    home_emoji = TEAM_EMOJIS.get(homeAbbreviation, "")
+
+    awayString = f"{away_emoji} {away}".lstrip()
+    homeString = f"{home} {home_emoji}".rstrip()
     
     return awayString, homeString
 
