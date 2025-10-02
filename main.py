@@ -7,6 +7,7 @@ import mysql.connector.pooling
 from dotenv import load_dotenv
 from datetime import datetime
 import topgg
+import traceback
 
 # --- Initial Setup ---
 load_dotenv()
@@ -146,7 +147,23 @@ async def on_guild_join(guild):
     except Exception as e:
         print(f"Error updating stats on guild join: {e}")
 
-
+@bot.event
+async def on_command_error(ctx, error):
+    if isinstance(error, commands.CommandOnCooldown):
+        embed = discord.Embed(title="Cooldown", description=f"This command is on cooldown. Try again in {round(error.retry_after, 1)} seconds.", color=0xffa500)
+        await ctx.send(embed=embed, ephemeral=True)
+    elif isinstance(error, commands.MissingPermissions):
+        embed = discord.Embed(title="Permissions Error", description="You do not have the required permissions to use this command.", color=0xff0000)
+        await ctx.send(embed=embed, ephemeral=True)
+    elif isinstance(error, commands.BotMissingPermissions):
+        embed = discord.Embed(title="Bot Permissions Error", description="I do not have the required permissions to execute this command.", color=0xff0000)
+        await ctx.send(embed=embed, ephemeral=True)
+    else:
+        embed = discord.Embed(title="Error", description="An unexpected error occurred while processing your command.", color=0xff0000)
+        await ctx.send(embed=embed, ephemeral=True)
+        error_channel = bot.get_channel(config.error_channel)
+        string = f"{ctx.author} in {ctx.guild} (ID: {ctx.guild.id})\nCommand: {ctx.command}\nError: {traceback.format_exc()}"
+        await error_channel.send(f"```{string}```")
 @bot.event
 async def on_guild_remove(guild):
     join_leave_channel = bot.get_channel(1168939285274177627)

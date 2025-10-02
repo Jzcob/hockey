@@ -413,16 +413,19 @@ class adminLeague(commands.Cog, name="adminLeague"):
             db_conn = self.db_pool.get_connection()
             cursor = db_conn.cursor(dictionary=True)
             cursor.execute("SELECT user_id FROM rosters WHERE bench_one IS NULL")
-            user_ids = [row['user_id'] for row in cursor.fetchall()]
+            #user_ids = [row['user_id'] for row in cursor.fetchall()]
 
+            user_ids = [920797181034778655]  # TEMPORARY: Replace with actual query result for testing
             if not user_ids:
                 if not interaction.is_expired(): await interaction.followup.send("No users found with incomplete rosters.", ephemeral=True)
                 return
             
             message = (
                 "👋 **Friendly Reminder!**\n\n"
-                "Your fantasy league registration is incomplete. To finish setting up, please run the `/my-roster` command. "
-                "A new button will appear allowing you to set your **3 bench teams** and complete your roster!"
+                "Your fantasy league registration is incomplete. To finish setting up, please run the `/my-roster` command. \n"
+                "A new button will appear allowing you to set your **3 bench teams** and complete your roster!\n"
+                "There is only <t:1759827600:R> till the league closes for users to add their benched teams.\n"
+                "If you do not complete your roster by then, you will be unable to participate in the league this season."
             )
             success_count, fail_count = 0, 0
             for user_id in user_ids:
