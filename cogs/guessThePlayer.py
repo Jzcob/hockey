@@ -9,6 +9,10 @@ import requests
 import config
 from datetime import datetime
 import traceback
+from thefuzz import fuzz
+
+# --- Global Constants ---
+SIMILARITY_THRESHOLD = 85 # You can adjust this value (0-100)
 
 class GTP(commands.Cog):
     def __init__(self, bot):
@@ -38,51 +42,15 @@ class GTP(commands.Cog):
 
     @app_commands.command(name="guess-the-player", description="Guess the player!")
     async def guess_the_player(self, interaction: discord.Interaction):
-        if config.command_log_bool == True:
+        if config.command_log_bool:
             command_log_channel = self.bot.get_channel(config.command_log)
-            if interaction.guild == None:
-                await command_log_channel.send(f"`/guess-the-player` used by `{interaction.user.name}` in DMs at `{datetime.now()}`\n---")
-            elif interaction.guild.name == "":
-                await command_log_channel.send(f"`/guess-the-player` used by `{interaction.user.name}` in an unknown server at `{datetime.now()}`\n---")
-            else:
-                await command_log_channel.send(f"`/guess-the-player` used by `{interaction.user.name}` in `{interaction.guild.name}` at `{datetime.now()}`\n---")
+            guild_name = "DMs" if interaction.guild is None else f"`{interaction.guild.name}`"
+            await command_log_channel.send(f"`/guess-the-player` used by `{interaction.user.name}` in {guild_name} at `{datetime.now()}`\n---")
+        
         await interaction.response.defer()
 
         try:
-            teams = {
-                "ANA": "Anaheim Ducks",
-                "BOS": "Boston Bruins",
-                "BUF": "Buffalo Sabres",
-                "CGY": "Calgary Flames",
-                "CAR": "Carolina Hurricanes",
-                "CHI": "Chicago Blackhawks",
-                "COL": "Colorado Avalanche",
-                "CBJ": "Columbus Blue Jackets",
-                "DAL": "Dallas Stars",
-                "DET": "Detroit Red Wings",
-                "EDM": "Edmonton Oilers",
-                "FLA": "Florida Panthers",
-                "LAK": "Los Angeles Kings",
-                "MIN": "Minnesota Wild",
-                "MTL": "Montréal Canadiens",
-                "NSH": "Nashville Predators",
-                "NJD": "New Jersey Devils",
-                "NYI": "New York Islanders",
-                "NYR": "New York Rangers",
-                "OTT": "Ottawa Senators",
-                "PHI": "Philadelphia Flyers",
-                "PIT": "Pittsburgh Penguins",
-                "SEA": "Seattle Kraken",
-                "SJS": "San Jose Sharks",
-                "STL": "St. Louis Blues",
-                "TBL": "Tampa Bay Lightning",
-                "TOR": "Toronto Maple Leafs",
-                "UTA": "Utah Hockey Club",
-                "VAN": "Vancouver Canucks",
-                "VGK": "Vegas Golden Knights",
-                "WSH": "Washington Capitals",
-                "WPG": "Winnipeg Jets"
-            }
+            teams = { "ANA": "Anaheim Ducks", "BOS": "Boston Bruins", "BUF": "Buffalo Sabres", "CGY": "Calgary Flames", "CAR": "Carolina Hurricanes", "CHI": "Chicago Blackhawks", "COL": "Colorado Avalanche", "CBJ": "Columbus Blue Jackets", "DAL": "Dallas Stars", "DET": "Detroit Red Wings", "EDM": "Edmonton Oilers", "FLA": "Florida Panthers", "LAK": "Los Angeles Kings", "MIN": "Minnesota Wild", "MTL": "Montréal Canadiens", "NSH": "Nashville Predators", "NJD": "New Jersey Devils", "NYI": "New York Islanders", "NYR": "New York Rangers", "OTT": "Ottawa Senators", "PHI": "Philadelphia Flyers", "PIT": "Pittsburgh Penguins", "SEA": "Seattle Kraken", "SJS": "San Jose Sharks", "STL": "St. Louis Blues", "TBL": "Tampa Bay Lightning", "TOR": "Toronto Maple Leafs", "UTA": "Utah Hockey Club", "VAN": "Vancouver Canucks", "VGK": "Vegas Golden Knights", "WSH": "Washington Capitals", "WPG": "Winnipeg Jets" }
             team = random.choice(list(teams.keys()))
             team_name = teams[team]
             url = f"https://api-web.nhle.com/v1/roster/{team}/current"
@@ -108,41 +76,68 @@ class GTP(commands.Cog):
 
             await interaction.followup.send(f"Guess the player from the `{team_name}`! You have 15 seconds! {hint}")
 
+            # This check now only verifies the author and channel
             def check(m):
-                return m.channel == interaction.channel and m.author == interaction.user and m.content.lower() == full_name.lower()
+                return m.channel == interaction.channel and m.author == interaction.user
 
             try:
                 msg = await self.bot.wait_for("message", check=check, timeout=15.0)
+                user_answer = msg.content.strip().lower()
+                correct_answer = full_name.lower()
+                correct = False
 
-                mydb = mysql.connector.connect(
-                    host=os.getenv("db_host"),
-                    user=os.getenv("db_user"),
-                    password=os.getenv("db_password"),
-                    database=os.getenv("db_name")
-                )
-                mycursor = mydb.cursor()
-                self.migrate_gtp(mycursor, msg.author.id, interaction.guild.id)
+                # --- Fuzzy Matching Logic ---
+                if user_answer == correct_answer:
+                    correct = True
+                else:
+                    similarity_score = fuzz.partial_ratio(user_answer, correct_answer)
+                    if similarity_score >= SIMILARITY_THRESHOLD:
+                        confirm_msg = await interaction.followup.send(
+                            f"Your answer is very close. Did you mean `{full_name}`? (yes/no)",
+                            wait=True
+                        )
+                        def confirm_check(m):
+                            return m.author == interaction.user and m.channel == interaction.channel and m.content.lower() in ['yes', 'no']
+                        try:
+                            confirm_response = await self.bot.wait_for('message', check=confirm_check, timeout=15.0)
+                            if confirm_response.content.lower() == 'yes':
+                                correct = True
+                            await confirm_msg.delete()
+                            await confirm_response.delete()
+                        except asyncio.TimeoutError:
+                            await confirm_msg.edit(content="Confirmation timed out.", delete_after=5)
 
-                mycursor.execute("""
-                    INSERT INTO gtp_users (user_id, allow_leaderboard)
-                    VALUES (%s, 1)
-                    ON DUPLICATE KEY UPDATE user_id = user_id
-                """, (msg.author.id,))
+                if correct:
+                    mydb = mysql.connector.connect(
+                        host=os.getenv("db_host"),
+                        user=os.getenv("db_user"),
+                        password=os.getenv("db_password"),
+                        database=os.getenv("db_name")
+                    )
+                    mycursor = mydb.cursor()
+                    if interaction.guild:
+                        self.migrate_gtp(mycursor, msg.author.id, interaction.guild.id)
 
-                mycursor.execute("""
-                    INSERT INTO gtp_scores (user_id, guild_id, points)
-                    VALUES (%s, %s, 1)
-                    ON DUPLICATE KEY UPDATE points = points + 1
-                """, (msg.author.id, interaction.guild.id))
-                mydb.commit()
-                mydb.close()
+                    mycursor.execute("""
+                        INSERT INTO gtp_users (user_id, allow_leaderboard) VALUES (%s, 1)
+                        ON DUPLICATE KEY UPDATE user_id = user_id
+                    """, (msg.author.id,))
+                    mycursor.execute("""
+                        INSERT INTO gtp_scores (user_id, guild_id, points) VALUES (%s, %s, 1)
+                        ON DUPLICATE KEY UPDATE points = points + 1
+                    """, (msg.author.id, interaction.guild.id))
+                    mydb.commit()
+                    mydb.close()
 
-                await interaction.followup.send(f"Correct! 🎉 The player was `{full_name}`. Well done, {msg.author.mention}!")
+                    await interaction.followup.send(f"Correct! 🎉 The player was `{full_name}`. Well done, {msg.author.mention}!")
+                else:
+                    await interaction.followup.send(f"Sorry, that's not right. The player was `{full_name}`.")
 
             except asyncio.TimeoutError:
                 await interaction.followup.send(f"Time's up! The correct answer was `{full_name}`.")
 
-        except Exception:
+        except Exception as e:
+            traceback.print_exc()
             await interaction.followup.send("An error occurred while processing your request.", ephemeral=True)
 
 async def setup(bot):
