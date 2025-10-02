@@ -75,7 +75,7 @@ class Help(commands.Cog):
                 embed.add_field(name="`/suggest-trivia <question> <answer>`", value="Suggest a trivia question!", inline=False)
 
             elif menu.value == "hockey-bot-league":
-                embed.add_field(name="`/join-league`", value="Start here! A two-step process to pick your 5 active and 3 bench teams.", inline=False)
+                embed.add_field(name="`/join-league` ACTIVE UNTIL OCTOBER 7th", value="Start here! A two-step process to pick your 5 active and 3 bench teams.", inline=False)
                 embed.add_field(name="`/my-roster`", value="View your current team selections, total points, and remaining swaps.", inline=False)
                 embed.add_field(name="`/swap-teams`", value="Use one of your 10 seasonal swaps.", inline=False)
                 embed.add_field(name="`/ace-team`", value="Choose your weekly x3 points multiplier team.", inline=False)
