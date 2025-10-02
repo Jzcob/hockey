@@ -413,9 +413,9 @@ class adminLeague(commands.Cog, name="adminLeague"):
             db_conn = self.db_pool.get_connection()
             cursor = db_conn.cursor(dictionary=True)
             cursor.execute("SELECT user_id FROM rosters WHERE bench_one IS NULL")
-            #user_ids = [row['user_id'] for row in cursor.fetchall()]
+            user_ids = [row['user_id'] for row in cursor.fetchall()]
 
-            user_ids = [920797181034778655]  # TEMPORARY: Replace with actual query result for testing
+
             if not user_ids:
                 if not interaction.is_expired(): await interaction.followup.send("No users found with incomplete rosters.", ephemeral=True)
                 return
