@@ -161,29 +161,24 @@ class JoinLeagueModal(ui.Modal, title="Join the League (Step 1 of 2)"):
         self.db_pool = db_pool
 
     async def on_submit(self, interaction: discord.Interaction):
-        await interaction.response.defer(ephemeral=True, thinking=True)
-
         db_conn, cursor = None, None
         try:
             active_teams = [team.strip().title() for team in [self.team_one.value, self.team_two.value, self.team_three.value, self.team_four.value, self.team_five.value]]
             valid_teams = get_nhl_teams()
 
-            # --- Validation Logic ---
             for team_input in active_teams:
                 if team_input not in valid_teams:
                     suggestion = find_closest_team(team_input, valid_teams)
                     msg = f"❌ Invalid team: `{team_input}`. Please use an official NHL team name. Check `/teams` for a list."
                     if suggestion:
                         msg = f"❌ Invalid team: `{team_input}`. Did you mean `{suggestion}`? Please correct it and try again."
-                    # 2. Use followup.send() for all responses.
-                    await interaction.followup.send(msg, ephemeral=True)
+                    await interaction.response.send_message(msg, ephemeral=True)
                     return
 
             if len(set(active_teams)) != len(active_teams):
-                await interaction.followup.send("❌ You cannot select the same active team more than once. Please try again.", ephemeral=True)
+                await interaction.response.send_message("❌ You cannot select the same active team more than once. Please try again.", ephemeral=True)
                 return
 
-            # --- Database Operation ---
             db_conn = self.db_pool.get_connection()
             cursor = db_conn.cursor()
             sql = "INSERT INTO rosters (user_id, team_one, team_two, team_three, team_four, team_five) VALUES (%s, %s, %s, %s, %s, %s)"
@@ -191,30 +186,26 @@ class JoinLeagueModal(ui.Modal, title="Join the League (Step 1 of 2)"):
             cursor.execute(sql, val)
             db_conn.commit()
             
-            # --- Success Message ---
             team_list_str = "\n".join([f"**{i}.** {team}" for i, team in enumerate(active_teams, 1)])
             message_content = f"✅ **Active Roster Saved!**\n{team_list_str}\n\nClick the button below to set your 3 bench teams."
             
             view = SetBenchButtonView(self.bot, self.db_pool, interaction.user.id)
-            await interaction.followup.send(
+            await interaction.response.send_message(
                 content=message_content,
                 view=view,
                 ephemeral=True
             )
-
         except mysql.connector.Error as err:
             if err.errno == 1062:
-                await interaction.followup.send("❌ You are already in the league!", ephemeral=True)
+                await interaction.response.send_message("❌ You are already in the league!", ephemeral=True)
             else:
                 error_channel = self.bot.get_channel(config.error_channel)
                 if error_channel: await error_channel.send(f"<@920797181034778655>```{traceback.format_exc()}```")
-                if not interaction.is_expired():
-                    await interaction.followup.send(f"❌ A database error occurred. The issue has been reported.", ephemeral=True)
+                if not interaction.response.is_done(): await interaction.response.send_message(f"❌ A database error occurred. The issue has been reported.", ephemeral=True)
         except Exception:
             error_channel = self.bot.get_channel(config.error_channel)
             if error_channel: await error_channel.send(f"<@920797181034778655>```{traceback.format_exc()}```")
-            if not interaction.is_expired():
-                await interaction.followup.send(f"❌ An error occurred. The issue has been reported.", ephemeral=True)
+            if not interaction.response.is_done(): await interaction.response.send_message(f"❌ An error occurred. The issue has been reported.", ephemeral=True)
         finally:
             if cursor: cursor.close()
             if db_conn: db_conn.close()
