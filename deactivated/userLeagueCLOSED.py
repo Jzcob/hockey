@@ -58,158 +58,6 @@ def find_closest_team(input_name: str, team_list: list):
         return best_match
     return None
 
-# --- UI Modal for Bench Teams (Step 2) ---
-class SetBenchModal(ui.Modal, title="Set Your Bench Teams (Step 2 of 2)"):
-    bench_one = ui.TextInput(label="Bench Team 1", placeholder="Enter NHL Team Name")
-    bench_two = ui.TextInput(label="Bench Team 2", placeholder="Enter NHL Team Name")
-    bench_three = ui.TextInput(label="Bench Team 3", placeholder="Enter NHL Team Name")
-
-    def __init__(self, bot, db_pool, active_teams: list):
-        super().__init__(timeout=300)
-        self.bot = bot
-        self.db_pool = db_pool
-        self.active_teams = active_teams
-
-    async def on_submit(self, interaction: discord.Interaction):
-        db_conn, cursor = None, None
-        try:
-            bench_teams = [team.strip().title() for team in [self.bench_one.value, self.bench_two.value, self.bench_three.value]]
-            all_teams = self.active_teams + bench_teams
-            valid_teams = get_nhl_teams()
-
-            for team_input in all_teams:
-                if team_input not in valid_teams:
-                    suggestion = find_closest_team(team_input, valid_teams)
-                    msg = f"❌ Invalid team: `{team_input}`. Please use an official NHL team name. Check `/teams` for a list."
-                    if suggestion:
-                        msg = f"❌ Invalid team: `{team_input}`. Did you mean `{suggestion}`? Please correct it and try again."
-                    await interaction.response.send_message(msg, ephemeral=True)
-                    return
-
-            if len(set(all_teams)) != len(all_teams):
-                await interaction.response.send_message("❌ You cannot select the same team more than once. Please click the button to try again.", ephemeral=True)
-                return
-
-            db_conn = self.db_pool.get_connection()
-            cursor = db_conn.cursor()
-            sql = "UPDATE rosters SET bench_one = %s, bench_two = %s, bench_three = %s WHERE user_id = %s"
-            val = (*bench_teams, interaction.user.id)
-            cursor.execute(sql, val)
-            db_conn.commit()
-            
-            await interaction.response.edit_message(
-                content="🎉 **Welcome to the league!** Your full roster is set. Use `/my-roster` to view it.",
-                view=None
-            )
-        except Exception:
-            error_channel = self.bot.get_channel(config.error_channel)
-            if error_channel: await error_channel.send(f"<@920797181034778655>```{traceback.format_exc()}```")
-            if not interaction.response.is_done():
-                await interaction.response.send_message("❌ An error occurred. The issue has been reported.", ephemeral=True)
-            else:
-                if not interaction.is_expired(): await interaction.followup.send("❌ An error occurred. The issue has been reported.", ephemeral=True)
-        finally:
-            if cursor: cursor.close()
-            if db_conn: db_conn.close()
-
-# --- UI View with Button to Trigger Step 2 ---
-class SetBenchButtonView(ui.View):
-    def __init__(self, bot, db_pool, user_id: int):
-        super().__init__(timeout=None)
-        self.bot = bot
-        self.db_pool = db_pool
-        self.user_id = user_id
-
-    @ui.button(label="Set Bench Teams", style=discord.ButtonStyle.success)
-    async def set_bench(self, interaction: discord.Interaction, button: ui.Button):
-        db_conn, cursor = None, None
-        if interaction.user.id != self.user_id:
-            await interaction.response.send_message("This is not for you!", ephemeral=True)
-            return
-            
-        try:
-            db_conn = self.db_pool.get_connection()
-            cursor = db_conn.cursor(dictionary=True)
-            cursor.execute("SELECT team_one, team_two, team_three, team_four, team_five FROM rosters WHERE user_id = %s", (interaction.user.id,))
-            roster = cursor.fetchone()
-            
-            if roster:
-                active_teams = list(roster.values())
-                modal = SetBenchModal(self.bot, self.db_pool, active_teams)
-                await interaction.response.send_modal(modal)
-            else:
-                await interaction.response.send_message("Could not find your active roster. Please try `/join-league` again.", ephemeral=True)
-        except Exception:
-            error_channel = self.bot.get_channel(config.error_channel)
-            if error_channel: await error_channel.send(f"<@920797181034778655>```{traceback.format_exc()}```")
-            await interaction.response.send_message("❌ An error occurred. The issue has been reported.", ephemeral=True)
-        finally:
-            if cursor: cursor.close()
-            if db_conn: db_conn.close()
-
-# --- UI Modal for Active Teams (Step 1) ---
-class JoinLeagueModal(ui.Modal, title="Join the League (Step 1 of 2)"):
-    team_one = ui.TextInput(label="Active Team 1", placeholder="Enter NHL Team Name")
-    team_two = ui.TextInput(label="Active Team 2", placeholder="Enter NHL Team Name")
-    team_three = ui.TextInput(label="Active Team 3", placeholder="Enter NHL Team Name")
-    team_four = ui.TextInput(label="Active Team 4", placeholder="Enter NHL Team Name")
-    team_five = ui.TextInput(label="Active Team 5", placeholder="Enter NHL Team Name")
-
-    def __init__(self, bot, db_pool):
-        super().__init__(timeout=300)
-        self.bot = bot
-        self.db_pool = db_pool
-
-    async def on_submit(self, interaction: discord.Interaction):
-        db_conn, cursor = None, None
-        try:
-            active_teams = [team.strip().title() for team in [self.team_one.value, self.team_two.value, self.team_three.value, self.team_four.value, self.team_five.value]]
-            valid_teams = get_nhl_teams()
-
-            for team_input in active_teams:
-                if team_input not in valid_teams:
-                    suggestion = find_closest_team(team_input, valid_teams)
-                    msg = f"❌ Invalid team: `{team_input}`. Please use an official NHL team name. Check `/teams` for a list."
-                    if suggestion:
-                        msg = f"❌ Invalid team: `{team_input}`. Did you mean `{suggestion}`? Please correct it and try again."
-                    await interaction.response.send_message(msg, ephemeral=True)
-                    return
-
-            if len(set(active_teams)) != len(active_teams):
-                await interaction.response.send_message("❌ You cannot select the same active team more than once. Please try again.", ephemeral=True)
-                return
-
-            db_conn = self.db_pool.get_connection()
-            cursor = db_conn.cursor()
-            sql = "INSERT INTO rosters (user_id, team_one, team_two, team_three, team_four, team_five) VALUES (%s, %s, %s, %s, %s, %s)"
-            val = (interaction.user.id, *active_teams)
-            cursor.execute(sql, val)
-            db_conn.commit()
-            
-            team_list_str = "\n".join([f"**{i}.** {team}" for i, team in enumerate(active_teams, 1)])
-            message_content = f"✅ **Active Roster Saved!**\n{team_list_str}\n\nClick the button below to set your 3 bench teams."
-            
-            view = SetBenchButtonView(self.bot, self.db_pool, interaction.user.id)
-            await interaction.response.send_message(
-                content=message_content,
-                view=view,
-                ephemeral=True
-            )
-        except mysql.connector.Error as err:
-            if err.errno == 1062:
-                await interaction.response.send_message("❌ You are already in the league!", ephemeral=True)
-            else:
-                error_channel = self.bot.get_channel(config.error_channel)
-                if error_channel: await error_channel.send(f"<@920797181034778655>```{traceback.format_exc()}```")
-                if not interaction.response.is_done(): await interaction.response.send_message(f"❌ A database error occurred. The issue has been reported.", ephemeral=True)
-        except Exception:
-            error_channel = self.bot.get_channel(config.error_channel)
-            if error_channel: await error_channel.send(f"<@920797181034778655>```{traceback.format_exc()}```")
-            if not interaction.response.is_done(): await interaction.response.send_message(f"❌ An error occurred. The issue has been reported.", ephemeral=True)
-        finally:
-            if cursor: cursor.close()
-            if db_conn: db_conn.close()
-
 # --- UI View for Swapping Teams ---
 class SwapView(ui.View):
     def __init__(self, bot, user_id, db_pool, active_teams, bench_teams):
@@ -314,26 +162,6 @@ class userLeague(commands.Cog, name="userLeague"):
             except Exception as e:
                 print(f"Command logging failed for /{interaction.command.name}: {e}")
 
-    @app_commands.command(name="join-league", description="Sign up for the fantasy league and set your roster.")
-    async def join_league(self, interaction: discord.Interaction):
-        await self.log_command(interaction)
-        try:
-            # FIX: No initial defer, no initial DB check. Respond immediately.
-            roster = self.get_user_roster(interaction.user.id)
-            if roster:
-                await interaction.response.send_message("You are already in the league! Use `/my-roster` to see your teams.", ephemeral=True)
-                return
-            
-            modal = JoinLeagueModal(self.bot, self.db_pool)
-            await interaction.response.send_modal(modal)
-        except Exception:
-            error_channel = self.bot.get_channel(config.error_channel)
-            if error_channel: await error_channel.send(f"<@920797181034778655>```{traceback.format_exc()}```")
-            if not interaction.response.is_done():
-                await interaction.response.send_message("An error occurred. The issue has been reported.", ephemeral=True)
-            else:
-                if not interaction.is_expired(): await interaction.followup.send("An error occurred. The issue has been reported.", ephemeral=True)
-
     @app_commands.command(name="my-roster", description="View your current team roster, points, and swaps.")
     async def my_roster(self, interaction: discord.Interaction):
         await self.log_command(interaction)
@@ -342,11 +170,6 @@ class userLeague(commands.Cog, name="userLeague"):
             roster = self.get_user_roster(interaction.user.id)
             if not roster:
                 if not interaction.is_expired(): await interaction.followup.send("You haven't joined the league yet! Use `/join-league` to get started.", ephemeral=True)
-                return
-
-            if not roster.get('bench_one'):
-                view = SetBenchButtonView(self.bot, self.db_pool, interaction.user.id)
-                if not interaction.is_expired(): await interaction.followup.send("⚠️ Your registration is incomplete! Please set your bench teams to continue.", view=view, ephemeral=True)
                 return
 
             embed = discord.Embed(title=f"{interaction.user.display_name}'s Roster", color=discord.Color.green())
@@ -375,11 +198,6 @@ class userLeague(commands.Cog, name="userLeague"):
                 if not interaction.is_expired(): await interaction.followup.send("You haven't joined the league yet!", ephemeral=True)
                 return
             
-            if not roster.get('bench_one'):
-                view = SetBenchButtonView(self.bot, self.db_pool, interaction.user.id)
-                if not interaction.is_expired(): await interaction.followup.send("⚠️ Your registration is incomplete! Please set your bench teams to use this command.", view=view, ephemeral=True)
-                return
-
             if roster.get('swaps_used', 0) >= 10:
                 if not interaction.is_expired(): await interaction.followup.send("❌ You have used all 10 of your swaps for the season!", ephemeral=True)
                 return
@@ -404,11 +222,6 @@ class userLeague(commands.Cog, name="userLeague"):
                 if not interaction.is_expired(): await interaction.followup.send("You haven't joined the league yet!", ephemeral=True)
                 return
             
-            if not roster.get('bench_one'):
-                view = SetBenchButtonView(self.bot, self.db_pool, interaction.user.id)
-                if not interaction.is_expired(): await interaction.followup.send("⚠️ Your registration is incomplete! Please set your bench teams to use this command.", view=view, ephemeral=True)
-                return
-            
             if roster.get('aced_team_slot') is not None:
                 aced_team_name = roster.get(roster['aced_team_slot'], "your aced team")
                 if not interaction.is_expired(): await interaction.followup.send(f"❌ You have already selected **{aced_team_name}** as your ace for this week. It can be reset by an admin.", ephemeral=True)
@@ -424,6 +237,7 @@ class userLeague(commands.Cog, name="userLeague"):
             select = ui.Select(placeholder="Choose a team to make your ace...", options=options)
 
             async def select_callback(callback_interaction: discord.Interaction):
+                await callback_interaction.response.defer()
                 chosen_slot = select.values[0]
                 conn, cur = None, None
                 try:
@@ -432,11 +246,13 @@ class userLeague(commands.Cog, name="userLeague"):
                     cur.execute("UPDATE rosters SET aced_team_slot = %s WHERE user_id = %s", (chosen_slot, callback_interaction.user.id))
                     conn.commit()
                     team_name = roster[chosen_slot]
-                    await callback_interaction.response.edit_message(content=f"✅ **{team_name}** is now your aced team for the week!", view=None)
+                    await callback_interaction.edit_original_response(content=f"✅ **{team_name}** is now your aced team for the week!", view=None)
                 except Exception:
                     error_channel = self.bot.get_channel(config.error_channel)
                     if error_channel: await error_channel.send(f"<@920797181034778655>```{traceback.format_exc()}```")
-                    await callback_interaction.response.edit_message(content="❌ A database error occurred. The issue has been reported.", view=None)
+                    
+                    if not callback_interaction.is_expired():
+                        await callback_interaction.edit_original_response(content="❌ A database error occurred. The issue has been reported.", view=None)
                 finally:
                     if cur: cur.close()
                     if conn: conn.close()

@@ -433,6 +433,7 @@ class userLeague(commands.Cog, name="userLeague"):
             select = ui.Select(placeholder="Choose a team to make your ace...", options=options)
 
             async def select_callback(callback_interaction: discord.Interaction):
+                await callback_interaction.response.defer()
                 chosen_slot = select.values[0]
                 conn, cur = None, None
                 try:
@@ -441,11 +442,14 @@ class userLeague(commands.Cog, name="userLeague"):
                     cur.execute("UPDATE rosters SET aced_team_slot = %s WHERE user_id = %s", (chosen_slot, callback_interaction.user.id))
                     conn.commit()
                     team_name = roster[chosen_slot]
-                    await callback_interaction.response.edit_message(content=f"✅ **{team_name}** is now your aced team for the week!", view=None)
+                    await callback_interaction.edit_original_response(content=f"✅ **{team_name}** is now your aced team for the week!", view=None)
                 except Exception:
                     error_channel = self.bot.get_channel(config.error_channel)
                     if error_channel: await error_channel.send(f"<@920797181034778655>```{traceback.format_exc()}```")
-                    await callback_interaction.response.edit_message(content="❌ A database error occurred. The issue has been reported.", view=None)
+                    
+                    # FIX: Changed to edit_original_response
+                    if not callback_interaction.is_expired():
+                        await callback_interaction.edit_original_response(content="❌ A database error occurred. The issue has been reported.", view=None)
                 finally:
                     if cur: cur.close()
                     if conn: conn.close()
