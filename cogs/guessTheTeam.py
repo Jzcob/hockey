@@ -6,6 +6,7 @@ import asyncio
 import config
 import traceback
 from datetime import datetime
+import json
 
 class GuessTheTeam(commands.Cog):
     def __init__(self, bot):
@@ -31,19 +32,8 @@ class GuessTheTeam(commands.Cog):
         await interaction.response.defer()
 
         try:
-            teams = [
-                "Anaheim Ducks", "Boston Bruins", "Buffalo Sabres", "Calgary Flames",
-                "Carolina Hurricanes", "Chicago Blackhawks", "Colorado Avalanche",
-                "Columbus Blue Jackets", "Dallas Stars", "Detroit Red Wings",
-                "Edmonton Oilers", "Florida Panthers", "Los Angeles Kings",
-                "Minnesota Wild", "Montréal Canadiens", "Nashville Predators",
-                "New Jersey Devils", "New York Islanders", "New York Rangers",
-                "Ottawa Senators", "Philadelphia Flyers", "Pittsburgh Penguins",
-                "Seattle Kraken", "San Jose Sharks", "St. Louis Blues",
-                "Tampa Bay Lightning", "Toronto Maple Leafs", "Utah Hockey Club",
-                "Vancouver Canucks", "Vegas Golden Knights", "Washington Capitals",
-                "Winnipeg Jets"
-            ]
+            with open("teams.json", "r") as f:
+                teams = json.load(f)
 
             allTeams = random.sample(teams, 3)
             correct_team = random.choice(allTeams)
