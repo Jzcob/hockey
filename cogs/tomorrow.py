@@ -96,7 +96,7 @@ class tomorrow(commands.Cog):
                 game2 = r2.json()
                 startTime = game["startTimeUTC"]
                 startTime = datetime.strptime(startTime, '%Y-%m-%dT%H:%M:%SZ')
-                startTime = startTime - timedelta(hours=5)
+                startTime = startTime - timedelta(hours=4)
                 timestampUTC = int(round(startTime.timestamp()))
                 startTime = startTime.strftime('%I:%M %p')
             
