@@ -1,6 +1,6 @@
-# Hockey Discord Bot
+# Hockey Discord Bot 
 
-A discord bot that shows NHL team stats that go in-depth to some degree. The bot also shows the games that are on today as well as the current standings and schedule for any team in the league.
+A discords 2nd biggest Hockey bot that shows NHL team stats that go in-depth to some degree. The bot also shows the games that are on today as well as the current standings and schedule for any team in the league.
 
 To suggest more trivia questions feel free to use `/suggest-trivia`. Keep in mind not all questions will be used. 
 
@@ -20,4 +20,5 @@ To suggest more trivia questions feel free to use `/suggest-trivia`. Keep in min
 - 600 servers: `11/22/2024`
 - 700 servers: `02/08/2025`
 - 800 servers: `04/20/2025`
-- 900 servers: Soon!
+- 900 servers: `10/07/2025`
+- 1000 servers: Soon!
