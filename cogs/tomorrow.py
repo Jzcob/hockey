@@ -77,8 +77,7 @@ class tomorrow(commands.Cog):
             await interaction.response.defer()
 
             eastern_tz = pytz.timezone('US/Hawaii')
-            timeoffset = timedelta(hours=-4)
-            tomorrow_date = (datetime.now(eastern_tz) + timeoffset + timedelta(days=1)).strftime('%Y-%m-%d')
+            tomorrow_date = (datetime.now(eastern_tz) + timedelta(days=1)).strftime('%Y-%m-%d')
             
             url = f"https://api-web.nhle.com/v1/schedule/{tomorrow_date}"
             
@@ -108,7 +107,8 @@ class tomorrow(commands.Cog):
                 away_string, home_string = strings(away_abbreviation, home_abbreviation, home_name, away_name)
 
                 start_time_utc = datetime.strptime(game["startTimeUTC"], '%Y-%m-%dT%H:%M:%SZ')
-                timestamp_utc = int(start_time_utc.timestamp())
+                aware_utc_time = start_time_utc.replace(tzinfo=pytz.utc)
+                timestamp_utc = int(aware_utc_time.timestamp())
 
                 embed.add_field(
                     name=f"<t:{timestamp_utc}:t>", 
@@ -121,7 +121,7 @@ class tomorrow(commands.Cog):
         except requests.exceptions.RequestException as e:
             await interaction.followup.send(f"Could not retrieve data from the NHL API: {e}", ephemeral=True)
         except Exception:
-            error_channel = self.bot.get_channel(config.error_channel)
+            error_channel = self.bot.get_channel(config.error_channel) # Assuming config.error_channel is defined
             string = f"{traceback.format_exc()}"
             await error_channel.send(f"<@920797181034778655>```{string}```")
             await interaction.followup.send("An error occurred. Bot developers have been notified.", ephemeral=True)
