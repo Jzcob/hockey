@@ -74,56 +74,56 @@ class tomorrow(commands.Cog):
             else:
                 await command_log_channel.send(f"`/tomorrow` used by `{interaction.user.name}` in `{interaction.guild.name}` at `{datetime.now()}`\n---")
         try:
-            hawaii = pytz.timezone('US/Hawaii')
-            dt = datetime.now(hawaii) + timedelta(days=1)
-            today = dt.strftime('%Y-%m-%d')
-            url = f"https://api-web.nhle.com/v1/schedule/{today}"
             await interaction.response.defer()
-            msg = await interaction.original_response()
+
+            eastern_tz = pytz.timezone('US/Hawaii')
+            tomorrow_date = (datetime.now(eastern_tz) + timedelta(days=1)).strftime('%Y-%m-%d')
+            
+            url = f"https://api-web.nhle.com/v1/schedule/{tomorrow_date}"
+            
             r = requests.get(url)
-            global data
+            r.raise_for_status()
             data = r.json()
+
+            if not data.get("gameWeek") or not data["gameWeek"][0].get("games"):
+                embed = discord.Embed(title="Tomorrow's Games", description="No games are scheduled for tomorrow.", color=config.color)
+                await interaction.followup.send(embed=embed)
+                return
+
             games = data["gameWeek"][0]["games"]
-            embed = discord.Embed(title=f"Tomorrow's Games", description=f"Total games tomorrow: {len(games)}", color=config.color)
+            embed = discord.Embed(title=f"Tomorrow's Games ({tomorrow_date})", description=f"Total games tomorrow: {len(games)}", color=config.color)
             embed.set_thumbnail(url="https://www-league.nhlstatic.com/images/logos/league-dark/133-flat.svg")
             embed.set_footer(text=config.footer)
-            for i in range(len(games)):
-                game = data["gameWeek"][0]["games"][i]
-                gameState = game["gameState"]
-                gameID = game['id']
-                url2 = f"https://api-web.nhle.com/v1/gamecenter/{gameID}/boxscore"
-                r2 = requests.get(url2)
-                game2 = r2.json()
-                startTime = game["startTimeUTC"]
-                startTime = datetime.strptime(startTime, '%Y-%m-%dT%H:%M:%SZ')
-                startTime = startTime - timedelta(hours=4)
-                timestampUTC = int(round(startTime.timestamp()))
-                startTime = startTime.strftime('%I:%M %p')
-            
-                if gameState == "FINAL" or gameState == "OFF":
-                    homeScore = game2['homeTeam']['score']
-                    awayScore = game2['awayTeam']['score']
-                    home = game2["homeTeam"]["commonName"]["default"]
-                    away = game2["awayTeam"]["commonName"]["default"]
-                    homeAbbreviation = game2["homeTeam"]["abbrev"]
-                    awayAbbreviation = game2["awayTeam"]["abbrev"]
-                    awayString, homeString = strings(awayAbbreviation, homeAbbreviation, home, away)
-                    embed.add_field(name=f"Final!", value=f"\n{awayString} @ {homeString}\nScore: {awayScore} | {homeScore}\n", inline=False)
-                    embed.set_footer(text=f"ID: {gameID}")
-                else:
-                    home = game2["homeTeam"]["commonName"]["default"]
-                    away = game2["awayTeam"]["commonName"]["default"]
-                    homeAbbreviation = game2["homeTeam"]["abbrev"]
-                    awayAbbreviation = game2["awayTeam"]["abbrev"]
-                    awayString, homeString = strings(awayAbbreviation, homeAbbreviation, home, away)
-                    embed.add_field(name=f"<t:{timestampUTC}:t>", value=f"{awayString} @ {homeString}\nGame is scheduled!", inline=False)
-                await asyncio.sleep(0.5)
-            return await msg.edit(embed=embed)
-        except:
-            error_channel = self.bot.get_channel(error_channel)
+
+            for game in games:
+                home_team = game["homeTeam"]
+                away_team = game["awayTeam"]
+
+                home_name = home_team["placeName"]["default"]
+                away_name = away_team["placeName"]["default"]
+                home_abbreviation = home_team["abbrev"]
+                away_abbreviation = away_team["abbrev"]
+
+                away_string, home_string = strings(away_abbreviation, home_abbreviation, home_name, away_name)
+
+                start_time_utc = datetime.strptime(game["startTimeUTC"], '%Y-%m-%dT%H:%M:%SZ')
+                timestamp_utc = int(start_time_utc.timestamp())
+
+                embed.add_field(
+                    name=f"<t:{timestamp_utc}:t>", 
+                    value=f"{away_string} @ {home_string}\nGame is scheduled!", 
+                    inline=False
+                )
+
+            await interaction.followup.send(embed=embed)
+
+        except requests.exceptions.RequestException as e:
+            await interaction.followup.send(f"Could not retrieve data from the NHL API: {e}", ephemeral=True)
+        except Exception:
+            error_channel = self.bot.get_channel(config.error_channel)
             string = f"{traceback.format_exc()}"
             await error_channel.send(f"<@920797181034778655>```{string}```")
-            await interaction.followup.send("Error with command, Message has been sent to Bot Developers", ephemeral=True)
+            await interaction.followup.send("An error occurred. Bot developers have been notified.", ephemeral=True)
 
 
 async def setup(bot):
