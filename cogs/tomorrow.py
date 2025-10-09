@@ -77,7 +77,8 @@ class tomorrow(commands.Cog):
             await interaction.response.defer()
 
             eastern_tz = pytz.timezone('US/Hawaii')
-            tomorrow_date = (datetime.now(eastern_tz) + timedelta(days=1)).strftime('%Y-%m-%d')
+            timeoffset = timedelta(hours=-4)
+            tomorrow_date = (datetime.now(eastern_tz) + timeoffset + timedelta(days=1)).strftime('%Y-%m-%d')
             
             url = f"https://api-web.nhle.com/v1/schedule/{tomorrow_date}"
             

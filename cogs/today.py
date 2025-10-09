@@ -64,10 +64,7 @@ class today(commands.Cog):
     @app_commands.allowed_installs(guilds=True, users=True)
     @app_commands.allowed_contexts(guilds=True, dms=True, private_channels=True)
     async def today(self, interaction: discord.Interaction):
-        # Your command logging can remain here
         try:
-            # --- TIMEZONE IMPROVEMENT ---
-            # Use US/Eastern to get the correct date for the NHL schedule
             eastern = pytz.timezone('US/Hawaii')
             today_str = datetime.now(eastern).strftime('%Y-%m-%d')
             
@@ -75,10 +72,9 @@ class today(commands.Cog):
             await interaction.response.defer()
             
             r = requests.get(url)
-            r.raise_for_status() # This will raise an error for bad responses (like 404 or 500)
+            r.raise_for_status()
             data = r.json()
             
-            # Check if there are any games today
             if not data["gameWeek"] or not data["gameWeek"][0]["games"]:
                 embed = discord.Embed(title="Today's Games", description="No games scheduled for today.", color=config.color)
                 embed.set_footer(text=config.footer)
