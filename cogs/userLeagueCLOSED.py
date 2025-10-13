@@ -224,7 +224,7 @@ class userLeague(commands.Cog, name="userLeague"):
             
             if roster.get('aced_team_slot') is not None:
                 aced_team_name = roster.get(roster['aced_team_slot'], "your aced team")
-                if not interaction.is_expired(): await interaction.followup.send(f"❌ You have already selected **{aced_team_name}** as your ace for this week. It can be reset by an admin.", ephemeral=True)
+                if not interaction.is_expired(): await interaction.followup.send(f"❌ You have already selected **{aced_team_name}** as your ace for this week. It can be reset by a league admin.", ephemeral=True)
                 return
 
             team_slots = ['team_one', 'team_two', 'team_three', 'team_four', 'team_five']

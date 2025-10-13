@@ -417,6 +417,7 @@ class adminLeague(commands.Cog, name="adminLeague"):
                 return
 
             success_count, fail_count = 0, 0
+            failed_users = []
             for user_id in user_ids:
                 try:
                     user = await self.bot.fetch_user(user_id)
@@ -424,8 +425,19 @@ class adminLeague(commands.Cog, name="adminLeague"):
                     success_count += 1
                 except (discord.errors.NotFound, discord.errors.Forbidden):
                     fail_count += 1
+                    failed_users.append(user_id)
+
             
             if not interaction.is_expired(): await interaction.followup.send(f"✅ Alert sent to **{success_count}** users.\n❌ Failed to send to **{fail_count}** users.", ephemeral=True)
+            if fail_count is not 0:
+                jacob_id = await self.bot.fetch_user(920797181034778655)
+                failed_usernames = []
+                for user_id in failed_users:
+                    user = await self.bot.fetch_user(user_id)
+                    failed_usernames.append(user.name)
+
+                await jacob_id.send(f"Failed to send alert to the following users: {', '.join(failed_usernames)}")
+
         except Exception:
             error_channel = self.bot.get_channel(config.error_channel)
             if error_channel: await error_channel.send(f"<@920797181034778655>```{traceback.format_exc()}```")
