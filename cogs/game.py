@@ -1,6 +1,7 @@
 import discord
 from discord.ext import commands
 from discord import app_commands
+from discord import ui
 import requests
 from datetime import datetime, timedelta
 import config
@@ -8,6 +9,182 @@ import pytz
 import traceback
 
 gameIDs = {}
+
+class GameStatsView(discord.ui.View):
+    def __init__(self, boxscore_data: dict, pbp_data: dict, original_embed: discord.Embed, game_state: str):
+        super().__init__(timeout=300)
+        self.boxscore_data = boxscore_data
+        self.pbp_data = pbp_data
+        self.original_embed = original_embed
+        
+        self.away_team_id = boxscore_data.get('awayTeam', {}).get('id')
+        self.away_team_abbrev = boxscore_data.get('awayTeam', {}).get('abbrev', 'AWAY')
+        self.home_team_id = boxscore_data.get('homeTeam', {}).get('id')
+        self.home_team_abbrev = boxscore_data.get('homeTeam', {}).get('abbrev', 'HOME')
+
+        self.player_map = {}
+        for player in self.pbp_data.get('rosterSpots', []):
+            try:
+                first_name = player.get('firstName', {}).get('default', '')
+                last_name = player.get('lastName', {}).get('default', '')
+                full_name = f"{first_name} {last_name}".strip()
+                if full_name:
+                    self.player_map[player['playerId']] = full_name
+            except (KeyError, TypeError):
+                continue
+
+        if game_state in ["FUT", "PRE"]:
+            for item in self.children:
+                if isinstance(item, discord.ui.Button) and item.label != "Summary":
+                    item.disabled = True
+
+    def _get_player_name(self, player_id: int) -> str:
+        return self.player_map.get(player_id, "Unknown Player")
+
+    def _get_team_abbrev(self, team_id: int) -> str:
+        if team_id == self.away_team_id:
+            return self.away_team_abbrev
+        if team_id == self.home_team_id:
+            return self.home_team_abbrev
+        return "TEAM"
+
+    def _build_roster_embed(self, team_type: str) -> discord.Embed:
+        if team_type == 'away':
+            team_data = self.boxscore_data['awayTeam']
+            stats_data = self.boxscore_data.get('playerByGameStats', {}).get('awayTeam', {})
+            title = f"{team_data.get('commonName', {}).get('default', 'Away Team')} Roster"
+        else:
+            team_data = self.boxscore_data['homeTeam']
+            stats_data = self.boxscore_data.get('playerByGameStats', {}).get('homeTeam', {})
+            title = f"{team_data.get('commonName', {}).get('default', 'Home Team')} Roster"
+
+        embed = discord.Embed(
+            title=title, 
+            color=self.original_embed.color
+        )
+        embed.set_thumbnail(url=team_data.get('logo'))
+
+        try:
+            forwards = "\n".join([f"#{p['sweaterNumber']} {p['name']['default']}" for p in stats_data.get('forwards', [])])
+            defense = "\n".join([f"#{p['sweaterNumber']} {p['name']['default']}" for p in stats_data.get('defense', [])])
+            goalies = "\n".join([f"#{p['sweaterNumber']} {p['name']['default']}" for p in stats_data.get('goalies', [])])
+
+            embed.add_field(name="Forwards", value=forwards if forwards else "N/A", inline=True)
+            embed.add_field(name="Defense", value=defense if defense else "N/A", inline=True)
+            embed.add_field(name="Goalies", value=goalies if goalies else "N/A", inline=True)
+        except KeyError:
+            embed.description = "Roster data is not available for this game."
+
+        embed.set_footer(text=self.original_embed.footer.text)
+        return embed
+
+    def _build_goals_embed(self) -> discord.Embed:
+        embed = discord.Embed(title="Scoring Summary", color=self.original_embed.color)
+        
+        goal_descs = []
+        plays = self.pbp_data.get('plays', [])
+        
+        if not plays:
+            embed.description = "Play-by-play data is not yet available."
+            return embed
+
+        for play in plays:
+            if play.get('typeDescKey') == 'goal':
+                details = play.get('details', {})
+                period = play.get('periodDescriptor', {}).get('number', 'P')
+                period_type = play.get('periodDescriptor', {}).get('periodType', '')
+                if period_type == "OT": period = "OT"
+                if period_type == "SO": period = "SO"
+                
+                time = play.get('timeInPeriod', '00:00') 
+                
+                team_id = details.get('eventOwnerTeamId')
+                team_abbrev = self._get_team_abbrev(team_id)
+                
+                scorer_id = details.get('scoringPlayerId')
+                scorer_name = self._get_player_name(scorer_id)
+                goal_str = f"P{period} {time} - **{scorer_name}** ({team_abbrev})"
+
+                assist_ids = details.get('assistPlayerIds', [])
+                assist_names = [self._get_player_name(pid) for pid in assist_ids]
+                
+                if len(assist_names) == 1:
+                    goal_str += f"\n*Assisted by: {assist_names[0]}*"
+                elif len(assist_names) == 2:
+                    goal_str += f"\n*Assisted by: {assist_names[0]} & {assist_names[1]}*"
+                
+                goal_descs.append(goal_str)
+
+        if not goal_descs:
+            embed.description = "No goals have been scored yet."
+        else:
+            embed.description = "\n\n".join(goal_descs)
+            
+        embed.set_footer(text=self.original_embed.footer.text)
+        return embed
+
+    def _build_penalties_embed(self) -> discord.Embed:
+        embed = discord.Embed(title="Penalty Summary", color=self.original_embed.color)
+        
+        penalty_descs = []
+        plays = self.pbp_data.get('plays', [])
+
+        if not plays:
+            embed.description = "Play-by-play data is not yet available."
+            return embed
+            
+        for play in plays:
+            if play.get('typeDescKey') == 'penalty':
+                details = play.get('details', {})
+                period = play.get('periodDescriptor', {}).get('number', 'P')
+                period_type = play.get('periodDescriptor', {}).get('periodType', '')
+                if period_type == "OT": period = "OT"
+                
+                time = play.get('timeInPeriod', '00:00')
+                
+                team_id = details.get('eventOwnerTeamId')
+                team_abbrev = self._get_team_abbrev(team_id)
+                
+                player_id = details.get('committedByPlayerId')
+                player_name = self._get_player_name(player_id)
+                duration = details.get('duration', 0)
+                penalty_type = details.get('descKey', 'N/A').title()
+                
+                penalty_str = f"P{period} {time} - **{player_name}** ({team_abbrev}) - *{duration} min* for *{penalty_type}*"
+                penalty_descs.append(penalty_str)
+
+        if not penalty_descs:
+            embed.description = "No penalties have been called yet."
+        else:
+            embed.description = "\n\n".join(penalty_descs)
+            
+        embed.set_footer(text=self.original_embed.footer.text)
+        return embed
+    
+    @discord.ui.button(label="Summary", style=discord.ButtonStyle.primary, row=0)
+    async def summary_button(self, interaction: discord.Interaction, button: discord.ui.Button):
+        await interaction.response.edit_message(embed=self.original_embed, view=self)
+
+    @discord.ui.button(label="Goals", style=discord.ButtonStyle.success, row=0)
+    async def goals_button(self, interaction: discord.Interaction, button: discord.ui.Button):
+        goals_embed = self._build_goals_embed()
+        await interaction.response.edit_message(embed=goals_embed, view=self)
+
+    @discord.ui.button(label="Penalties", style=discord.ButtonStyle.danger, row=0)
+    async def penalties_button(self, interaction: discord.Interaction, button: discord.ui.Button):
+        penalties_embed = self._build_penalties_embed()
+        await interaction.response.edit_message(embed=penalties_embed, view=self)
+
+    @discord.ui.button(label="Away Roster", style=discord.ButtonStyle.secondary, row=1)
+    async def away_roster_button(self, interaction: discord.Interaction, button: discord.ui.Button):
+        roster_embed = self._build_roster_embed('away')
+        await interaction.response.edit_message(embed=roster_embed, view=self)
+
+    @discord.ui.button(label="Home Roster", style=discord.ButtonStyle.secondary, row=1)
+    async def home_roster_button(self, interaction: discord.Interaction, button: discord.ui.Button):
+        roster_embed = self._build_roster_embed('home')
+        await interaction.response.edit_message(embed=roster_embed, view=self)
+
 
 class game(commands.Cog):
     def __init__(self, bot):
@@ -72,6 +249,7 @@ class game(commands.Cog):
                 return
 
             gameID = game.get('id')
+            game_state = game.get('gameState', 'FUT')
             if not gameID:
                 await interaction.followup.send("Could not retrieve game details. Please try again later.")
                 return
@@ -79,10 +257,17 @@ class game(commands.Cog):
             url2 = f"https://api-web.nhle.com/v1/gamecenter/{gameID}/boxscore"
             response2 = requests.get(url2)
             if response2.status_code != 200:
-                await interaction.followup.send("Failed to fetch game details. Please try again later.")
+                await interaction.followup.send("Failed to fetch game details (boxscore). Please try again later.")
                 return
-
             data2 = response2.json()
+
+            url3 = f"https://api-web.nhle.com/v1/gamecenter/{gameID}/play-by-play"
+            response3 = requests.get(url3)
+            if response3.status_code != 200:
+                await interaction.followup.send("Failed to fetch game details (play-by-play). Please try again later.")
+                return
+            data3 = response3.json()
+
             home = data2.get('homeTeam', {}).get('commonName', {}).get('default', 'Unknown Team')
             away = data2.get('awayTeam', {}).get('commonName', {}).get('default', 'Unknown Team')
             tvBroadcasts = data2.get('tvBroadcasts', [])
@@ -92,7 +277,7 @@ class game(commands.Cog):
                 if not (interaction.guild and interaction.guild.id in config.bruins_servers and b['network'] != "NESN")
             )
 
-            if game['gameState'] in ["FUT", "PRE"]:
+            if game_state in ["FUT", "PRE"]:
                 startTime = datetime.strptime(
                     data2.get("startTimeUTC", ""), '%Y-%m-%dT%H:%M:%SZ'
                 ) - timedelta(hours=5)
@@ -102,7 +287,7 @@ class game(commands.Cog):
                     description=f"Game is scheduled for {startTimeFormatted}",
                     color=config.color
                 )
-            elif game['gameState'] in ["FINAL", "OFF"]:
+            elif game_state in ["FINAL", "OFF"]:
                 homeScore = data2.get('homeTeam', {}).get('score', 0)
                 awayScore = data2.get('awayTeam', {}).get('score', 0)
                 embed = discord.Embed(
@@ -123,13 +308,30 @@ class game(commands.Cog):
                     description=f"GAME IS LIVE!!!\n\nScore: {awayScore} - {homeScore}\nShots: {awayShots} - {homeShots}",
                     color=config.color
                 )
-                embed.add_field(name="Clock", value="Intermission" if clockIntermission else f"{clock}\n{'Running' if clockRunning else ''}", inline=False)
+                
+                period = game.get('periodDescriptor', {}).get('number')
+                period_type = game.get('periodDescriptor', {}).get('periodType')
+                
+                if period_type == "OT":
+                    period_str = "Overtime"
+                elif period_type == "SO":
+                     period_str = "Shootout"
+                elif period:
+                    period_str = f"Period {period}"
+                else:
+                    period_str = "" 
 
-            embed.add_field(name="TV Broadcast", value=networks, inline=False)
+                clock_val = "Intermission" if clockIntermission else f"{clock}\n{period_str}".strip()
+                embed.add_field(name="Clock", value=clock_val, inline=False)
+
+            embed.add_field(name="TV Broadcast", value=networks if networks else "N/A", inline=False)
             embed.add_field(name="Game ID", value=gameID, inline=False)
             embed.set_footer(text=config.footer)
 
-            await interaction.followup.send(embed=embed)
+            view = GameStatsView(data2, data3, embed, game_state)
+
+            await interaction.followup.send(embed=embed, view=view)
+
         except Exception as e:
             error_channel = self.bot.get_channel(config.error_channel)
             await error_channel.send(f"<@920797181034778655>```{traceback.format_exc()}```")
@@ -137,7 +339,14 @@ class game(commands.Cog):
 
     @game.error
     async def game_error(self, interaction: discord.Interaction, error):
-        interaction.response.send_message("Error with command, Message has been sent to Bot Developers", ephemeral=True)
+        try:
+            if not interaction.response.is_done():
+                await interaction.response.send_message("Error with command, Message has been sent to Bot Developers", ephemeral=True)
+            else:
+                await interaction.followup.send("Error with command, Message has been sent to Bot Developers", ephemeral=True)
+        except discord.errors.InteractionResponded:
+            await interaction.followup.send("Error with command, Message has been sent to Bot Developers", ephemeral=True)
+            
         error_channel = self.bot.get_channel(config.error_channel)
         await error_channel.send(f"<@920797181034778655>```{error}```")
 
