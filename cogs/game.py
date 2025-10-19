@@ -65,13 +65,30 @@ class GameStatsView(discord.ui.View):
         embed.set_thumbnail(url=team_data.get('logo'))
 
         try:
-            forwards = "\n".join([f"#{p['sweaterNumber']} {p['name']['default']}" for p in stats_data.get('forwards', [])])
-            defense = "\n".join([f"#{p['sweaterNumber']} {p['name']['default']}" for p in stats_data.get('defense', [])])
-            goalies = "\n".join([f"#{p['sweaterNumber']} {p['name']['default']}" for p in stats_data.get('goalies', [])])
+            def format_skater(p):
+                g = p.get('goals', 0)
+                a = p.get('assists', 0)
+                sog = p.get('sog', 0)
+                pim = p.get('pim', 0)
+                return f"#{p['sweaterNumber']} {p['name']['default']} ({g}G, {a}A, {sog}SOG, {pim}PIM)"
 
-            embed.add_field(name="Forwards", value=forwards if forwards else "N/A", inline=True)
-            embed.add_field(name="Defense", value=defense if defense else "N/A", inline=True)
-            embed.add_field(name="Goalies", value=goalies if goalies else "N/A", inline=True)
+            forwards = "\n".join([format_skater(p) for p in stats_data.get('forwards', [])])
+            defense = "\n".join([format_skater(p) for p in stats_data.get('defense', [])])
+            
+            goalie_list = []
+            for p in stats_data.get('goalies', []):
+                if p.get('toi', '00:00') != '00:00':
+                    saves_shots = p.get('saveShotsAgainst', '0/0')
+                    save_pctg = p.get('savePctg', 0)
+                    goalie_list.append(f"#{p['sweaterNumber']} {p['name']['default']} ({saves_shots}, {save_pctg:.3f} SV%)")
+                else:
+                    goalie_list.append(f"#{p['sweaterNumber']} {p['name']['default']} (DNP)")
+            goalies = "\n".join(goalie_list)
+
+            embed.add_field(name="Forwards", value=forwards if forwards else "N/A", inline=False)
+            embed.add_field(name="Defense", value=defense if defense else "N/A", inline=False)
+            embed.add_field(name="Goalies", value=goalies if goalies else "N/A", inline=False)
+        
         except KeyError:
             embed.description = "Roster data is not available for this game."
 
@@ -157,7 +174,7 @@ class GameStatsView(discord.ui.View):
                 team_id = details.get('eventOwnerTeamId')
                 team_abbrev = self._get_team_abbrev(team_id)
                 
-                player_id = details.get('committedByPlayerId')
+                player_id = details.get('committedByPlayerId') 
                 player_name = self._get_player_name(player_id)
                 duration = details.get('duration', 0)
                 penalty_type = details.get('descKey', 'N/A').title()
@@ -172,6 +189,7 @@ class GameStatsView(discord.ui.View):
             
         embed.set_footer(text=self.original_embed.footer.text)
         return embed
+
     
     @discord.ui.button(label="Summary", style=discord.ButtonStyle.primary, row=0)
     async def summary_button(self, interaction: discord.Interaction, button: discord.ui.Button):
@@ -278,7 +296,7 @@ class game(commands.Cog):
             if response3.status_code != 200:
                 await interaction.followup.send("Failed to fetch game details (play-by-play). Please try again later.")
                 return
-            data3 = response3.json() # This is our pbp_data
+            data3 = response3.json()
 
             home = data2.get('homeTeam', {}).get('commonName', {}).get('default', 'Unknown Team')
             away = data2.get('awayTeam', {}).get('commonName', {}).get('default', 'Unknown Team')
@@ -307,6 +325,19 @@ class game(commands.Cog):
                     description=f"Final!\nScore: {awayScore} | {homeScore}",
                     color=config.color
                 )
+                
+                three_stars_data = data2.get('summary', {}).get('threeStars', [])
+                if three_stars_data:
+                    star_strings = []
+                    for star in three_stars_data:
+                        name = star.get('name', 'Unknown')
+                        team = star.get('teamAbbrev', 'TEAM')
+                        star_num = star.get('star', 0)
+                        star_strings.append(f"{star_num}. **{name}** ({team})")
+                    
+                    if star_strings:
+                        embed.add_field(name="Three Stars", value="\n".join(star_strings), inline=False)
+
             else:
                 homeScore = data2.get('homeTeam', {}).get('score', 0)
                 awayScore = data2.get('awayTeam', {}).get('score', 0)
@@ -358,6 +389,7 @@ class game(commands.Cog):
             embed.add_field(name="Game ID", value=gameID, inline=False)
             embed.set_footer(text=config.footer)
 
+            # --- Create and send the View ---
             view = GameStatsView(data2, data3, embed, game_state)
             await interaction.followup.send(embed=embed, view=view)
 
@@ -377,7 +409,7 @@ class game(commands.Cog):
             await interaction.followup.send("Error with command, Message has been sent to Bot Developers", ephemeral=True)
             
         error_channel = self.bot.get_channel(config.error_channel)
-        await error_channel.send(f"<@920797181034778655>```{error}```")
+        await error_channel.send(f"<@9Services_Bot>```{error}```")
 
 async def setup(bot):
     await bot.add_cog(game(bot))
