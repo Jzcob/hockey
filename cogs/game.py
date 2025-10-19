@@ -12,7 +12,7 @@ gameIDs = {}
 
 class GameStatsView(discord.ui.View):
     def __init__(self, boxscore_data: dict, pbp_data: dict, original_embed: discord.Embed, game_state: str):
-        super().__init__(timeout=300)
+        super().__init__(timeout=300)  # Buttons will stop working after 5 minutes
         self.boxscore_data = boxscore_data
         self.pbp_data = pbp_data
         self.original_embed = original_embed
@@ -53,7 +53,7 @@ class GameStatsView(discord.ui.View):
             team_data = self.boxscore_data['awayTeam']
             stats_data = self.boxscore_data.get('playerByGameStats', {}).get('awayTeam', {})
             title = f"{team_data.get('commonName', {}).get('default', 'Away Team')} Roster"
-        else:
+        else: # home
             team_data = self.boxscore_data['homeTeam']
             stats_data = self.boxscore_data.get('playerByGameStats', {}).get('homeTeam', {})
             title = f"{team_data.get('commonName', {}).get('default', 'Home Team')} Roster"
@@ -145,7 +145,7 @@ class GameStatsView(discord.ui.View):
                 team_id = details.get('eventOwnerTeamId')
                 team_abbrev = self._get_team_abbrev(team_id)
                 
-                player_id = details.get('committedByPlayerId')
+                player_id = details.get('committedByPlayerId') # Use 'committedByPlayerId'
                 player_name = self._get_player_name(player_id)
                 duration = details.get('duration', 0)
                 penalty_type = details.get('descKey', 'N/A').title()
@@ -266,7 +266,7 @@ class game(commands.Cog):
             if response3.status_code != 200:
                 await interaction.followup.send("Failed to fetch game details (play-by-play). Please try again later.")
                 return
-            data3 = response3.json()
+            data3 = response3.json() # This is our pbp_data
 
             home = data2.get('homeTeam', {}).get('commonName', {}).get('default', 'Unknown Team')
             away = data2.get('awayTeam', {}).get('commonName', {}).get('default', 'Unknown Team')
@@ -303,9 +303,27 @@ class game(commands.Cog):
                 clock = data2.get('clock', {}).get('timeRemaining', 'Unknown Time')
                 clockRunning = data2.get('clock', {}).get('running', False)
                 clockIntermission = data2.get('clock', {}).get('inIntermission', False)
+
+                situation = data2.get('situation', {})
+                situation_str = ""
+                if situation:
+                    home_sit = situation.get('homeTeam', {}).get('situationDescriptions', [])
+                    away_sit = situation.get('awayTeam', {}).get('situationDescriptions', [])
+                    time_rem = situation.get('timeRemaining', '0:00')
+                    home_strength = situation.get('homeTeam', {}).get('strength', 5)
+                    away_strength = situation.get('awayTeam', {}).get('strength', 5)
+                    strength_str = f"({home_strength} on {away_strength})"
+                    
+                    if "PP" in home_sit:
+                        home_abbrev = data2.get('homeTeam', {}).get('abbrev', 'HOME')
+                        situation_str = f"\n\n**{home_abbrev} Power Play {strength_str}**\n*Time Remaining: {time_rem}*"
+                    elif "PP" in away_sit:
+                        away_abbrev = data2.get('awayTeam', {}).get('abbrev', 'AWAY')
+                        situation_str = f"\n\n**{away_abbrev} Power Play {strength_str}**\n*Time Remaining: {time_rem}*"
+
                 embed = discord.Embed(
                     title=f"{away} @ {home}",
-                    description=f"GAME IS LIVE!!!\n\nScore: {awayScore} - {homeScore}\nShots: {awayShots} - {homeShots}",
+                    description=f"GAME IS LIVE!!!\n\nScore: {awayScore} - {homeScore}\nShots: {awayShots} - {homeShots}{situation_str}",
                     color=config.color
                 )
                 
@@ -315,7 +333,7 @@ class game(commands.Cog):
                 if period_type == "OT":
                     period_str = "Overtime"
                 elif period_type == "SO":
-                     period_str = "Shootout"
+                    period_str = "Shootout"
                 elif period:
                     period_str = f"Period {period}"
                 else:
@@ -329,7 +347,6 @@ class game(commands.Cog):
             embed.set_footer(text=config.footer)
 
             view = GameStatsView(data2, data3, embed, game_state)
-
             await interaction.followup.send(embed=embed, view=view)
 
         except Exception as e:
