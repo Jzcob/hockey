@@ -103,10 +103,22 @@ class GameStatsView(discord.ui.View):
                 
                 scorer_id = details.get('scoringPlayerId')
                 scorer_name = self._get_player_name(scorer_id)
-                goal_str = f"P{period} {time} - **{scorer_name}** ({team_abbrev})"
+                goal_total = details.get('scoringPlayerTotal', 0) 
+                
+                goal_str = f"P{period} {time} - **{scorer_name} ({goal_total})** ({team_abbrev})"
 
-                assist_ids = details.get('assistPlayerIds', [])
-                assist_names = [self._get_player_name(pid) for pid in assist_ids]
+                assist_names = []
+                if 'assist1PlayerId' in details:
+                    p_id = details['assist1PlayerId']
+                    p_name = self._get_player_name(p_id)
+                    p_total = details.get('assist1PlayerTotal', 0) 
+                    assist_names.append(f"{p_name} ({p_total})")
+                
+                if 'assist2PlayerId' in details:
+                    p_id = details['assist2PlayerId']
+                    p_name = self._get_player_name(p_id)
+                    p_total = details.get('assist2PlayerTotal', 0)
+                    assist_names.append(f"{p_name} ({p_total})")
                 
                 if len(assist_names) == 1:
                     goal_str += f"\n*Assisted by: {assist_names[0]}*"
@@ -145,7 +157,7 @@ class GameStatsView(discord.ui.View):
                 team_id = details.get('eventOwnerTeamId')
                 team_abbrev = self._get_team_abbrev(team_id)
                 
-                player_id = details.get('committedByPlayerId') # Use 'committedByPlayerId'
+                player_id = details.get('committedByPlayerId')
                 player_name = self._get_player_name(player_id)
                 duration = details.get('duration', 0)
                 penalty_type = details.get('descKey', 'N/A').title()
