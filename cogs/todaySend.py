@@ -77,6 +77,9 @@ class DailySchedule(commands.Cog):
                     await cursor.execute("SELECT daily_schedule_channel_id FROM servers WHERE daily_schedule_channel_id IS NOT NULL")
                     channel_records = await cursor.fetchall()
 
+
+                    
+
             if not channel_records:
                 print("DailySchedule: No channels are set. Skipping.")
                 return
