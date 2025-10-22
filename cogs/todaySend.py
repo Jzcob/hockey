@@ -55,6 +55,7 @@ run_time = time(hour=5, minute=30, tzinfo=eastern_tz)
 class DailySchedule(commands.Cog):
     def __init__(self, bot):
         self.bot = bot
+        self.db_pool = bot.db_pool
         self.send_daily_schedule.start()
 
     def cog_unload(self):
@@ -63,6 +64,9 @@ class DailySchedule(commands.Cog):
     @tasks.loop(time=run_time)
     async def send_daily_schedule(self):
         print(f"Running daily schedule task... (5:30 AM EST)")
+        db_conn = None
+        cursor = None
+        channel_records = []
         try:
             schedule_embed = await self.get_schedule_embed()
 
@@ -70,15 +74,23 @@ class DailySchedule(commands.Cog):
                 print("DailySchedule: Failed to generate schedule embed. Skipping.")
                 return
 
+            try:
+                db_conn = self.db_pool.get_connection()
+                cursor = db_conn.cursor()
+                
+                cursor.execute("SELECT daily_schedule_channel_id FROM servers WHERE daily_schedule_channel_id IS NOT NULL")
+                channel_records = cursor.fetchall()
+            
+            except Exception as e:
+                print(f"DailySchedule: Database error: {e}")
+                error_channel = self.bot.get_channel(config.error_channel)
+                await error_channel.send(f"**CRITICAL Error in daily_schedule task (DB query):**\n```{traceback.format_exc()}```")
+                return
+            
+            finally:
+                if cursor: cursor.close()
+                if db_conn: db_conn.close()
 
-            async with self.bot.db.acquire() as conn:
-                async with conn.cursor() as cursor:
-                    
-                    await cursor.execute("SELECT daily_schedule_channel_id FROM servers WHERE daily_schedule_channel_id IS NOT NULL")
-                    channel_records = await cursor.fetchall()
-
-
-                    
 
             if not channel_records:
                 print("DailySchedule: No channels are set. Skipping.")
@@ -96,7 +108,7 @@ class DailySchedule(commands.Cog):
         
         except Exception:
             error_channel = self.bot.get_channel(config.error_channel)
-            await error_channel.send(f"**CRITICAL Error in daily_schedule task:**\n```{traceback.format_exc()}```")
+            await error_channel.send(f"**CRITICAL Error in daily_schedule task (Main):**\n```{traceback.format_exc()}```")
 
     @send_daily_schedule.before_loop
     async def before_daily_schedule(self):
@@ -112,36 +124,49 @@ class DailySchedule(commands.Cog):
     @app_commands.describe(channel="The text channel where daily schedules will be sent.")
     @app_commands.checks.has_permissions(manage_guild=True)
     async def set_schedule_channel(self, interaction: discord.Interaction, channel: discord.TextChannel):
+        db_conn = None
+        cursor = None
         try:
-            async with self.bot.db.acquire() as conn:
-                async with conn.cursor() as cursor:
-                    
-                    sql = "INSERT INTO servers (guild_id, daily_schedule_channel_id) VALUES (%s, %s) ON DUPLICATE KEY UPDATE daily_schedule_channel_id = %s"
-                    values = (interaction.guild.id, channel.id, channel.id)
-                    await cursor.execute(sql, values)
-                await conn.commit()
+            db_conn = self.db_pool.get_connection()
+            cursor = db_conn.cursor()
+            
+            sql = "INSERT INTO servers (guild_id, daily_schedule_channel_id) VALUES (%s, %s) ON DUPLICATE KEY UPDATE daily_schedule_channel_id = %s"
+            values = (interaction.guild.id, channel.id, channel.id)
+            cursor.execute(sql, values)
+            db_conn.commit()
             
             await interaction.response.send_message(f"✅ Daily schedule messages will now be sent to {channel.mention}.", ephemeral=True)
 
         except Exception as e:
             print(f"Error in set_schedule_channel: {e}")
             await interaction.response.send_message("An error occurred while setting the schedule channel. Please try again later.", ephemeral=True)
+        
+        finally:
+            if cursor: cursor.close()
+            if db_conn: db_conn.close()
 
     @app_commands.command(name="remove-schedule-channel", description="Disables daily NHL schedule messages for this server.")
     @app_commands.checks.has_permissions(manage_guild=True)
     async def remove_schedule_channel(self, interaction: discord.Interaction):
+        db_conn = None
+        cursor = None
         try:
-            async with self.bot.db.acquire() as conn:
-                async with conn.cursor() as cursor:
-                    
-                    sql = "UPDATE servers SET daily_schedule_channel_id = NULL WHERE guild_id = %s"
-                    await cursor.execute(sql, (interaction.guild.id,))
-                await conn.commit()
+            db_conn = self.db_pool.get_connection()
+            cursor = db_conn.cursor()
+            
+            sql = "UPDATE servers SET daily_schedule_channel_id = NULL WHERE guild_id = %s"
+            cursor.execute(sql, (interaction.guild.id,))
+            db_conn.commit()
             
             await interaction.response.send_message("❌ Daily schedule messages have been disabled for this server.", ephemeral=True)
+        
         except Exception as e:
             print(f"Error in remove_schedule_channel: {e}")
             await interaction.response.send_message("An error occurred while disabling schedule messages. Please try again later.", ephemeral=True)
+        
+        finally:
+            if cursor: cursor.close()
+            if db_conn: db_conn.close()
 
     @set_schedule_channel.error
     @remove_schedule_channel.error
@@ -201,7 +226,7 @@ class DailySchedule(commands.Cog):
 
                 elif gameState in ("LIVE", "CRIT"):
                     game_id = game['id']
-                    url2 = f"https://api-web.nhle.com/v1/gamecenter/{game_id}/boxscore"
+                    url2 = f"https.api-web.nhle.com/v1/gamecenter/{game_id}/boxscore"
                     r2 = requests.get(url2)
                     game2 = r2.json()
                     home_score = game2['homeTeam']['score']
@@ -224,4 +249,3 @@ class DailySchedule(commands.Cog):
 
 async def setup(bot):
     await bot.add_cog(DailySchedule(bot))
-
