@@ -66,6 +66,8 @@ class Help(commands.Cog):
                 embed.add_field(name="`/today`", value="List today's games!", inline=False)
                 embed.add_field(name="`/tomorrow`", value="List tomorrow's games!", inline=False)
                 embed.add_field(name="`/yesterday`", value="List yesterday's games!", inline=False)
+                embed.add_field(name="`/set-schedule-channel <channel>`", value="Set the channel for daily NHL schedule messages!", inline=False)
+                embed.add_field(name="`/remove-schedule-channel`", value="Remove the channel for daily NHL schedule messages!", inline=False)
             
             elif menu.value == "games":
                 embed.add_field(name="`/guess-the-player`", value="Guess a random NHL player!", inline=False)
