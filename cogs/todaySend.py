@@ -124,26 +124,31 @@ class DailySchedule(commands.Cog):
     @app_commands.describe(channel="The text channel where daily schedules will be sent.")
     @app_commands.checks.has_permissions(manage_guild=True)
     async def set_schedule_channel(self, interaction: discord.Interaction, channel: discord.TextChannel):
-        db_conn = None
-        cursor = None
-        try:
-            db_conn = self.db_pool.get_connection()
-            cursor = db_conn.cursor()
-            
-            sql = "INSERT INTO servers (guild_id, daily_schedule_channel_id) VALUES (%s, %s) ON DUPLICATE KEY UPDATE daily_schedule_channel_id = %s"
-            values = (interaction.guild.id, channel.id, channel.id)
-            cursor.execute(sql, values)
-            db_conn.commit()
-            
-            await interaction.response.send_message(f"✅ Daily schedule messages will now be sent to {channel.mention}.", ephemeral=True)
+        try:    
+            db_conn = None
+            cursor = None
+            try:
+                db_conn = self.db_pool.get_connection()
+                cursor = db_conn.cursor()
+                
+                sql = "INSERT INTO servers (guild_id, daily_schedule_channel_id) VALUES (%s, %s) ON DUPLICATE KEY UPDATE daily_schedule_channel_id = %s"
+                values = (interaction.guild.id, channel.id, channel.id)
+                cursor.execute(sql, values)
+                db_conn.commit()
+                
+                await interaction.response.send_message(f"✅ Daily schedule messages will now be sent to {channel.mention}.", ephemeral=True)
 
-        except Exception as e:
-            print(f"Error in set_schedule_channel: {e}")
-            await interaction.response.send_message("An error occurred while setting the schedule channel. Please try again later.", ephemeral=True)
-        
-        finally:
-            if cursor: cursor.close()
-            if db_conn: db_conn.close()
+            except Exception as e:
+                print(f"Error in set_schedule_channel: {e}")
+                await interaction.response.send_message("An error occurred while setting the schedule channel. Please try again later.", ephemeral=True)
+            
+            finally:
+                if cursor: cursor.close()
+                if db_conn: db_conn.close()
+        except Exception:
+            error_channel = self.bot.get_channel(config.error_channel)
+            await error_channel.send(f"**CRITICAL Error in set_schedule_channel (outer):**\n```{traceback.format_exc()}```")
+            
 
     @app_commands.command(name="remove-schedule-channel", description="Disables daily NHL schedule messages for this server.")
     @app_commands.checks.has_permissions(manage_guild=True)
