@@ -121,6 +121,8 @@ class DailySchedule(commands.Cog):
 
 
     @app_commands.command(name="set-schedule-channel", description="Sets the channel for daily NHL schedule messages.")
+    @app_commands.allowed_installs(guilds=True, users=False)
+    @app_commands.allowed_contexts(guilds=True, dms=False, private_channels=False)
     @app_commands.describe(channel="The text channel where daily schedules will be sent.")
     @app_commands.checks.has_permissions(manage_guild=True)
     async def set_schedule_channel(self, interaction: discord.Interaction, channel: discord.TextChannel):
@@ -151,6 +153,8 @@ class DailySchedule(commands.Cog):
             
 
     @app_commands.command(name="remove-schedule-channel", description="Disables daily NHL schedule messages for this server.")
+    @app_commands.allowed_installs(guilds=True, users=False)
+    @app_commands.allowed_contexts(guilds=True, dms=False, private_channels=False)
     @app_commands.checks.has_permissions(manage_guild=True)
     async def remove_schedule_channel(self, interaction: discord.Interaction):
         db_conn = None
