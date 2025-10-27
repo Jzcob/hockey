@@ -65,6 +65,18 @@ class today(commands.Cog):
     @app_commands.allowed_contexts(guilds=True, dms=True, private_channels=True)
     async def today(self, interaction: discord.Interaction):
         try:
+            if config.command_log_bool:
+                try:
+                    command_log_channel = self.bot.get_channel(config.command_log)
+                    guild_name = interaction.guild.name if interaction.guild else "DMs"
+                    await command_log_channel.send(
+                        f"`/today` used by `{interaction.user.name}` in `{guild_name}` at `{datetime.now()}`\n---"
+                    )
+                except Exception as e:
+                    print(f"Command logging failed: {e}")
+        except Exception as e:
+            print(f"Command logging failed: {e}")
+        try:
             eastern = pytz.timezone('US/Hawaii')
             today_str = datetime.now(eastern).strftime('%Y-%m-%d')
             

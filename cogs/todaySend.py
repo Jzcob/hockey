@@ -126,6 +126,18 @@ class DailySchedule(commands.Cog):
     @app_commands.describe(channel="The text channel where daily schedules will be sent.")
     @app_commands.checks.has_permissions(manage_guild=True)
     async def set_schedule_channel(self, interaction: discord.Interaction, channel: discord.TextChannel):
+        try:
+            if config.command_log_bool:
+                try:
+                    command_log_channel = self.bot.get_channel(config.command_log)
+                    guild_name = interaction.guild.name if interaction.guild else "DMs"
+                    await command_log_channel.send(
+                        f"`/set-schedule-channel` used by `{interaction.user.name}` in `{guild_name}` to set channel `{channel.name}` at `{datetime.now()}`\n---"
+                    )
+                except Exception as e:
+                    print(f"Command logging failed: {e}")
+        except Exception as e:
+            print(f"Command logging failed: {e}")
         try:    
             db_conn = None
             cursor = None
@@ -157,6 +169,18 @@ class DailySchedule(commands.Cog):
     @app_commands.allowed_contexts(guilds=True, dms=False, private_channels=False)
     @app_commands.checks.has_permissions(manage_guild=True)
     async def remove_schedule_channel(self, interaction: discord.Interaction):
+        try:
+            if config.command_log_bool:
+                try:
+                    command_log_channel = self.bot.get_channel(config.command_log)
+                    guild_name = interaction.guild.name if interaction.guild else "DMs"
+                    await command_log_channel.send(
+                        f"`/remove-schedule-channel` used by `{interaction.user.name}` in `{guild_name}` at `{datetime.now()}`\n---"
+                    )
+                except Exception as e:
+                    print(f"Command logging failed: {e}")
+        except Exception as e:
+            print(f"Command logging failed: {e}")
         db_conn = None
         cursor = None
         try:
