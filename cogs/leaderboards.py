@@ -2,7 +2,7 @@
 import discord
 from discord.ext import commands
 from discord import app_commands
-import mysql.connector
+import aiomysql
 import os
 from dotenv import load_dotenv
 import config
@@ -43,14 +43,13 @@ class Leaderboards(commands.Cog, name="Leaderboards"):
     @app_commands.allowed_contexts(guilds=True, dms=True, private_channels=True)
     async def fantasy_leaderboard(self, interaction: discord.Interaction):
         await self.log_command(interaction)
-        db_conn = None
-        cursor = None
         try:
             await interaction.response.defer()
-            db_conn = self.db_pool.get_connection()
-            cursor = db_conn.cursor(dictionary=True)
-            cursor.execute("SELECT user_id, points FROM rosters ORDER BY points DESC LIMIT 10")
-            leaders = cursor.fetchall()
+            leaders = []
+            async with self.db_pool.acquire() as conn:
+                async with conn.cursor(aiomysql.DictCursor) as cursor:
+                    await cursor.execute("SELECT user_id, points FROM rosters ORDER BY points DESC LIMIT 10")
+                    leaders = await cursor.fetchall()
 
             if not leaders:
                 if not interaction.is_expired():
@@ -78,9 +77,6 @@ class Leaderboards(commands.Cog, name="Leaderboards"):
                 error_channel = self.bot.get_channel(config.error_channel)
                 await error_channel.send(f"<@920797181034778655>```{traceback.format_exc()}```")
                 await interaction.followup.send("An error occurred. The issue has been reported.", ephemeral=True)
-        finally:
-            if cursor: cursor.close()
-            if db_conn: db_conn.close()
 
     # --- Trivia Leaderboard ---
     @leaderboard.command(name="trivia", description="View the trivia leaderboards!")
@@ -89,34 +85,33 @@ class Leaderboards(commands.Cog, name="Leaderboards"):
     @app_commands.describe(global_view="Show global leaderboard instead of just this server.")
     async def trivia_leaderboard(self, interaction: discord.Interaction, global_view: bool = False):
         await self.log_command(interaction)
-        db_conn = None
-        cursor = None
         try:
             await interaction.response.defer()
-            db_conn = self.db_pool.get_connection()
-            cursor = db_conn.cursor(dictionary=True)
-
-            if global_view:
-                cursor.execute("""
-                    SELECT ts.user_id, SUM(ts.points) AS total_points
-                    FROM trivia_scores ts
-                    JOIN trivia_users tu ON ts.user_id = tu.user_id
-                    WHERE tu.allow_leaderboard = 1
-                    GROUP BY ts.user_id
-                    ORDER BY total_points DESC
-                    LIMIT 10
-                """)
-            else:
-                cursor.execute("""
-                    SELECT ts.user_id, ts.points
-                    FROM trivia_scores ts
-                    JOIN trivia_users tu ON ts.user_id = tu.user_id
-                    WHERE ts.guild_id = %s AND tu.allow_leaderboard = 1
-                    ORDER BY ts.points DESC
-                    LIMIT 10
-                """, (interaction.guild.id,))
-
-            myresult = cursor.fetchall()
+            myresult = []
+            async with self.db_pool.acquire() as conn:
+                async with conn.cursor(aiomysql.DictCursor) as cursor:
+                    if global_view:
+                        await cursor.execute("""
+                            SELECT ts.user_id, SUM(ts.points) AS total_points
+                            FROM trivia_scores ts
+                            JOIN trivia_users tu ON ts.user_id = tu.user_id
+                            WHERE tu.allow_leaderboard = 1
+                            GROUP BY ts.user_id
+                            ORDER BY total_points DESC
+                            LIMIT 10
+                        """)
+                    else:
+                        await cursor.execute("""
+                            SELECT ts.user_id, ts.points
+                            FROM trivia_scores ts
+                            JOIN trivia_users tu ON ts.user_id = tu.user_id
+                            WHERE ts.guild_id = %s AND tu.allow_leaderboard = 1
+                            ORDER BY ts.points DESC
+                            LIMIT 10
+                        """, (interaction.guild.id,))
+                    
+                    myresult = await cursor.fetchall()
+            
             title = "🌐 Global Trivia Leaderboard" if global_view else f"Trivia Leaderboard for {interaction.guild.name}"
             embed = discord.Embed(title=title, color=0x00ff00)
             embed.set_footer(text=config.footer)
@@ -141,9 +136,6 @@ class Leaderboards(commands.Cog, name="Leaderboards"):
                 error_channel = self.bot.get_channel(config.error_channel)
                 await error_channel.send(f"<@920797181034778655>```{traceback.format_exc()}```")
                 await interaction.followup.send("An error occurred. The issue has been reported.", ephemeral=True)
-        finally:
-            if cursor: cursor.close()
-            if db_conn: db_conn.close()
 
     # --- Guess The Player Leaderboard ---
     @leaderboard.command(name="gtp", description="View the Guess The Player leaderboard.")
@@ -152,34 +144,33 @@ class Leaderboards(commands.Cog, name="Leaderboards"):
     @app_commands.describe(global_view="Show global leaderboard instead of just this server.")
     async def gtp_leaderboard(self, interaction: discord.Interaction, global_view: bool = False):
         await self.log_command(interaction)
-        db_conn = None
-        cursor = None
         try:
             await interaction.response.defer()
-            db_conn = self.db_pool.get_connection()
-            cursor = db_conn.cursor(dictionary=True)
-
-            if global_view:
-                cursor.execute("""
-                    SELECT gs.user_id, SUM(gs.points) AS total_points
-                    FROM gtp_scores gs
-                    JOIN gtp_users gu ON gs.user_id = gu.user_id
-                    WHERE gu.allow_leaderboard = 1
-                    GROUP BY gs.user_id
-                    ORDER BY total_points DESC
-                    LIMIT 10
-                """)
-            else:
-                cursor.execute("""
-                    SELECT gs.user_id, gs.points
-                    FROM gtp_scores gs
-                    JOIN gtp_users gu ON gs.user_id = gu.user_id
-                    WHERE gs.guild_id = %s AND gu.allow_leaderboard = 1
-                    ORDER BY gs.points DESC
-                    LIMIT 10
-                """, (interaction.guild.id,))
-
-            rows = cursor.fetchall()
+            rows = []
+            async with self.db_pool.acquire() as conn:
+                async with conn.cursor(aiomysql.DictCursor) as cursor:
+                    if global_view:
+                        await cursor.execute("""
+                            SELECT gs.user_id, SUM(gs.points) AS total_points
+                            FROM gtp_scores gs
+                            JOIN gtp_users gu ON gs.user_id = gu.user_id
+                            WHERE gu.allow_leaderboard = 1
+                            GROUP BY gs.user_id
+                            ORDER BY total_points DESC
+                            LIMIT 10
+                        """)
+                    else:
+                        await cursor.execute("""
+                            SELECT gs.user_id, gs.points
+                            FROM gtp_scores gs
+                            JOIN gtp_users gu ON gs.user_id = gu.user_id
+                            WHERE gs.guild_id = %s AND gu.allow_leaderboard = 1
+                            ORDER BY gs.points DESC
+                            LIMIT 10
+                        """, (interaction.guild.id,))
+                    
+                    rows = await cursor.fetchall()
+            
             title = "🌐 Global Guess The Player Leaderboard" if global_view else f"GTP Leaderboard for {interaction.guild.name}"
             embed = discord.Embed(title=title, color=0x00ff00)
             embed.set_footer(text=config.footer)
@@ -204,9 +195,6 @@ class Leaderboards(commands.Cog, name="Leaderboards"):
                 error_channel = self.bot.get_channel(config.error_channel)
                 await error_channel.send(f"<@920797181034778655>```{traceback.format_exc()}```")
                 await interaction.followup.send("An error occurred. The issue has been reported.", ephemeral=True)
-        finally:
-            if cursor: cursor.close()
-            if db_conn: db_conn.close()
 
     # --- Trivia Leaderboard Status ---
     @leaderboard.command(name="trivia-status", description="Toggles if you are displayed on the trivia leaderboard.")
@@ -219,20 +207,18 @@ class Leaderboards(commands.Cog, name="Leaderboards"):
     ])
     async def trivia_leaderboard_status(self, interaction: discord.Interaction, allow: discord.app_commands.Choice[str]):
         await self.log_command(interaction)
-        db_conn = None
-        cursor = None
         try:
             await interaction.response.defer(ephemeral=True)
             allow_bool = allow.value == 't'
             
-            db_conn = self.db_pool.get_connection()
-            cursor = db_conn.cursor()
-            cursor.execute("""
-                INSERT INTO trivia_users (user_id, allow_leaderboard)
-                VALUES (%s, %s)
-                ON DUPLICATE KEY UPDATE allow_leaderboard = %s
-            """, (interaction.user.id, allow_bool, allow_bool))
-            db_conn.commit()
+            async with self.db_pool.acquire() as conn:
+                async with conn.cursor() as cursor:
+                    await cursor.execute("""
+                        INSERT INTO trivia_users (user_id, allow_leaderboard)
+                        VALUES (%s, %s)
+                        ON DUPLICATE KEY UPDATE allow_leaderboard = %s
+                    """, (interaction.user.id, allow_bool, allow_bool))
+            # No commit needed (autocommit)
             
             if not interaction.is_expired():
                 await interaction.followup.send(f"Your trivia leaderboard visibility has been set to `{allow.name}`.", ephemeral=True)
@@ -241,9 +227,6 @@ class Leaderboards(commands.Cog, name="Leaderboards"):
                 error_channel = self.bot.get_channel(config.error_channel)
                 await error_channel.send(f"<@920797181034778655>```{traceback.format_exc()}```")
                 await interaction.followup.send("An error occurred. The issue has been reported.", ephemeral=True)
-        finally:
-            if cursor: cursor.close()
-            if db_conn: db_conn.close()
 
     # --- GTP Leaderboard Status ---
     @leaderboard.command(name="gtp-status", description="Toggles if you are displayed on the Guess The Player leaderboard.")
@@ -256,20 +239,18 @@ class Leaderboards(commands.Cog, name="Leaderboards"):
     ])
     async def gtp_leaderboard_status(self, interaction: discord.Interaction, allow: discord.app_commands.Choice[str]):
         await self.log_command(interaction)
-        db_conn = None
-        cursor = None
         try:
             await interaction.response.defer(ephemeral=True)
             allow_bool = allow.value == 't'
             
-            db_conn = self.db_pool.get_connection()
-            cursor = db_conn.cursor()
-            cursor.execute("""
-                INSERT INTO gtp_users (user_id, allow_leaderboard)
-                VALUES (%s, %s)
-                ON DUPLICATE KEY UPDATE allow_leaderboard = %s
-            """, (interaction.user.id, allow_bool, allow_bool))
-            db_conn.commit()
+            async with self.db_pool.acquire() as conn:
+                async with conn.cursor() as cursor:
+                    await cursor.execute("""
+                        INSERT INTO gtp_users (user_id, allow_leaderboard)
+                        VALUES (%s, %s)
+                        ON DUPLICATE KEY UPDATE allow_leaderboard = %s
+                    """, (interaction.user.id, allow_bool, allow_bool))
+            # No commit needed (autocommit)
             
             if not interaction.is_expired():
                 await interaction.followup.send(f"Your Guess The Player leaderboard visibility has been set to `{allow.name}`.", ephemeral=True)
@@ -278,9 +259,6 @@ class Leaderboards(commands.Cog, name="Leaderboards"):
                 error_channel = self.bot.get_channel(config.error_channel)
                 await error_channel.send(f"<@920797181034778655>```{traceback.format_exc()}```")
                 await interaction.followup.send("An error occurred. The issue has been reported.", ephemeral=True)
-        finally:
-            if cursor: cursor.close()
-            if db_conn: db_conn.close()
 
 
 async def setup(bot):
