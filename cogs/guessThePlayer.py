@@ -1,11 +1,11 @@
 import discord
 from discord.ext import commands
 from discord import app_commands
-import mysql.connector
 import os
 import random
 import asyncio
-import requests
+import aiomysql
+import aiohttp
 import config
 from datetime import datetime
 import traceback
@@ -18,24 +18,34 @@ SIMILARITY_THRESHOLD = 85 # You can adjust this value (0-100)
 class GTP(commands.Cog):
     def __init__(self, bot):
         self.bot = bot
+        self.db_pool = bot.db_pool  # Get the async pool
+        self.http_session = aiohttp.ClientSession() # Create the async session
         self.used = {}
+        if self.db_pool:
+            print("GTP Cog: Database pool is accessible.")
+        else:
+            print("❌ GTP Cog: Database pool is NOT accessible.")
 
-    def migrate_gtp(self, cursor, user_id, actual_guild_id):
-        cursor.execute("SELECT points FROM gtp_scores WHERE user_id = %s AND guild_id = 0", (user_id,))
-        row = cursor.fetchone()
+    async def cog_unload(self):
+        """Called when the cog is unloaded."""
+        await self.http_session.close()
+
+    async def migrate_gtp_async(self, cursor, user_id, actual_guild_id):
+        await cursor.execute("SELECT points FROM gtp_scores WHERE user_id = %s AND guild_id = 0", (user_id,))
+        row = await cursor.fetchone()
         if row:
             points_from_zero = row[0]
-            cursor.execute("SELECT points FROM gtp_scores WHERE user_id = %s AND guild_id = %s", (user_id, actual_guild_id))
-            exists = cursor.fetchone()
+            await cursor.execute("SELECT points FROM gtp_scores WHERE user_id = %s AND guild_id = %s", (user_id, actual_guild_id))
+            exists = await cursor.fetchone()
             if exists:
-                cursor.execute("""
+                await cursor.execute("""
                     UPDATE gtp_scores
                     SET points = points + %s
                     WHERE user_id = %s AND guild_id = %s
                 """, (points_from_zero, user_id, actual_guild_id))
-                cursor.execute("DELETE FROM gtp_scores WHERE user_id = %s AND guild_id = 0", (user_id,))
+                await cursor.execute("DELETE FROM gtp_scores WHERE user_id = %s AND guild_id = 0", (user_id,))
             else:
-                cursor.execute("""
+                await cursor.execute("""
                     UPDATE gtp_scores
                     SET guild_id = %s
                     WHERE user_id = %s AND guild_id = 0
@@ -57,9 +67,9 @@ class GTP(commands.Cog):
             team_name = teams[team]
             url = f"https://api-web.nhle.com/v1/roster/{team}/current"
 
-            response = requests.get(url)
-            response.raise_for_status()
-            x = response.json()
+            async with self.http_session.get(url) as response:
+                response.raise_for_status()
+                x = await response.json()
 
             positions = ["forwards", "defensemen", "goalies"]
             position = random.choice(positions)
@@ -110,26 +120,27 @@ class GTP(commands.Cog):
                             await confirm_msg.edit(content="Confirmation timed out.", delete_after=5)
 
                 if correct:
-                    mydb = mysql.connector.connect(
-                        host=os.getenv("db_host"),
-                        user=os.getenv("db_user"),
-                        password=os.getenv("db_password"),
-                        database=os.getenv("db_name")
-                    )
-                    mycursor = mydb.cursor()
-                    if interaction.guild:
-                        self.migrate_gtp(mycursor, msg.author.id, interaction.guild.id)
-
-                    mycursor.execute("""
-                        INSERT INTO gtp_users (user_id, allow_leaderboard) VALUES (%s, 1)
-                        ON DUPLICATE KEY UPDATE user_id = user_id
-                    """, (msg.author.id,))
-                    mycursor.execute("""
-                        INSERT INTO gtp_scores (user_id, guild_id, points) VALUES (%s, %s, 1)
-                        ON DUPLICATE KEY UPDATE points = points + 1
-                    """, (msg.author.id, interaction.guild.id))
-                    mydb.commit()
-                    mydb.close()
+                    try:
+                        async with self.db_pool.acquire() as conn:
+                            async with conn.cursor() as cursor:
+                                if interaction.guild:
+                                    # Call the new async migrate function
+                                    await self.migrate_gtp_async(cursor, msg.author.id, interaction.guild.id)
+                                
+                                await cursor.execute("""
+                                    INSERT INTO gtp_users (user_id, allow_leaderboard) VALUES (%s, 1)
+                                    ON DUPLICATE KEY UPDATE user_id = user_id
+                                """, (msg.author.id,))
+                                await cursor.execute("""
+                                    INSERT INTO gtp_scores (user_id, guild_id, points) VALUES (%s, %s, 1)
+                                    ON DUPLICATE KEY UPDATE points = points + 1
+                                """, (msg.author.id, interaction.guild.id))
+                                # No commit needed (autocommit)
+                    except Exception as db_error:
+                        print(f"GTP DB Error: {db_error}")
+                        traceback.print_exc()
+                        await interaction.followup.send("A database error occurred while saving your score.", ephemeral=True)
+                        return # Stop execution if DB fails
 
                     await interaction.followup.send(f"Correct! 🎉 The player was `{full_name}`. Well done, {msg.author.mention}!")
                 else:
