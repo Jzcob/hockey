@@ -3,7 +3,7 @@ import asyncio
 from discord.ext import commands
 import os
 import config
-import mysql.connector.pooling
+import aiomysql  # <-- CHANGED
 from dotenv import load_dotenv
 from datetime import datetime
 import topgg
@@ -18,27 +18,47 @@ intents.auto_moderation_configuration = True
 intents.reactions = True
 status = discord.Status.online
 
-# --- Database Pool Setup ---
-db_pool = None  # Initialize pool as None
-try:
-    db_pool = mysql.connector.pooling.MySQLConnectionPool(
-        pool_name="bot_pool",
-        pool_size=5,
-        host=os.getenv("db_host"),
-        user=os.getenv("db_user"),
-        password=os.getenv("db_password"),
-        database=os.getenv("db_name")
-    )
-    print("✅ Successfully created database connection pool.")
-except mysql.connector.Error as err:
-    print(f"❌ FAILED to create database connection pool: {err}")
-    exit() # Exit if the bot can't connect to the database on start
+# --- Database Pool Setup (MOVED TO setup_hook) ---
 
 class MyBot(commands.Bot):
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
-        self.db_pool = db_pool
+        self.db_pool = None  # Will be initialized in setup_hook
         self.topggpy = None
+
+    async def setup_hook(self):
+        """This function runs before the bot logs in."""
+        
+        # --- 1. Create Database Pool ---
+        print("Creating database connection pool...")
+        try:
+            self.db_pool = await aiomysql.create_pool(
+                host=os.getenv("db_host"),
+                port=3306,
+                user=os.getenv("db_user"),
+                password=os.getenv("db_password"),
+                db=os.getenv("db_name"),
+                autocommit=True, # Automatically commit after each query
+                loop=asyncio.get_event_loop()
+            )
+            print("✅ Successfully created database connection pool.")
+        except Exception as e:
+            print(f"❌ FAILED to create database connection pool: {e}")
+            await self.close() # Close the bot if DB connection fails
+            return
+
+        # --- 2. Load Cogs ---
+        # Cogs are loaded here to ensure self.db_pool is available to them
+        print("--- Loading Cogs ---")
+        for filename in os.listdir('./cogs'):
+            if filename.endswith('.py'):
+                try:
+                    await self.load_extension(f'cogs.{filename[:-3]}')
+                    print(f'✅ Loaded: `{filename}`')
+                except Exception as e:
+                    print(f"❌ Failed to load cog {filename}: {e}")
+                    traceback.print_exc()
+        print("--------------------")
 
 bot = MyBot(command_prefix=';;', intents=intents, help_command=None)
 
@@ -121,6 +141,7 @@ async def on_ready():
     print(f"Logged on as {bot.user}")
     print(f"Bot is ready and connected to {len(bot.guilds)} servers.")
     # Initialize top.gg client and attach it to the bot instance
+    # This runs *after* setup_hook, so it's fine
     bot.topggpy = topgg.DBLClient(bot, os.getenv("topgg-token"), autopost=True, post_shard_count=True)
 
 @bot.event
@@ -186,20 +207,13 @@ async def on_guild_remove(guild):
     except Exception as e:
         print(f"Error updating stats on guild remove: {e}")
 
-async def load_cogs():
-    print("--- Loading Cogs ---")
-    for filename in os.listdir('./cogs'):
-        if filename.endswith('.py'):
-            try:
-                await bot.load_extension(f'cogs.{filename[:-3]}')
-                print(f'✅ Loaded: `{filename}`')
-            except Exception as e:
-                print(f"❌ Failed to load cog {filename}: {e}")
-    print("--------------------")
+# This function is no longer needed, as it's in setup_hook
+# async def load_cogs():
+#     ...
 
 async def main():
     async with bot:
-        await load_cogs()
+        # await load_cogs() # <-- REMOVED (now in setup_hook)
         await bot.start(os.getenv("token"))
 
 # --- NEW: Graceful Shutdown Function ---
@@ -215,6 +229,7 @@ async def shutdown(bot_instance: MyBot):
     # Close the database pool before closing the bot
     if bot_instance.db_pool:
         bot_instance.db_pool.close()
+        await bot_instance.db_pool.wait_closed() # <-- CHANGED
         print("Database connection pool closed.")
         
     await bot_instance.close()

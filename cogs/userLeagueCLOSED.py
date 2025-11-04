@@ -2,7 +2,7 @@
 import discord
 from discord.ext import commands
 from discord import app_commands, ui
-import mysql.connector
+import aiomysql
 import os
 from dotenv import load_dotenv
 import config
@@ -91,41 +91,40 @@ class SwapView(ui.View):
         await self.check_and_execute_swap(interaction)
 
     async def check_and_execute_swap(self, interaction: discord.Interaction):
-        if self.active_selection and self.bench_selection:
-            db_conn, cursor = None, None
-            try:
-                db_conn = self.db_pool.get_connection()
-                cursor = db_conn.cursor(dictionary=True)
-                
-                cursor.execute(f"SELECT `{self.active_selection}`, `{self.bench_selection}` FROM rosters WHERE user_id = %s", (self.user_id,))
-                team_names = cursor.fetchone()
-                if not team_names:
-                    if not interaction.is_expired(): await interaction.followup.send("❌ Could not find your roster to perform the swap.", ephemeral=True)
-                    self.stop()
-                    return
+        try:
+            # 'async with' handles getting and returning the connection
+            async with self.db_pool.acquire() as conn:
+                # 'async with' handles creating and closing the cursor
+                async with conn.cursor(aiomysql.DictCursor) as cursor:
                     
-                active_team_name = team_names[self.active_selection]
-                bench_team_name = team_names[self.bench_selection]
+                    # Use await for database calls
+                    await cursor.execute(f"SELECT `{self.active_selection}`, `{self.bench_selection}` FROM rosters WHERE user_id = %s", (self.user_id,))
+                    team_names = await cursor.fetchone()
+                    
+                    if not team_names:
+                        if not interaction.is_expired(): await interaction.followup.send("❌ Could not find your roster to perform the swap.", ephemeral=True)
+                        self.stop()
+                        return
+                        
+                    active_team_name = team_names[self.active_selection]
+                    bench_team_name = team_names[self.bench_selection]
 
-                sql = f"UPDATE rosters SET `{self.active_selection}` = %s, `{self.bench_selection}` = %s, swaps_used = swaps_used + 1 WHERE user_id = %s"
-                cursor.execute(sql, (bench_team_name, active_team_name, self.user_id))
-                db_conn.commit()
-                
-                if not interaction.is_expired(): await interaction.followup.send(f"✅ Swap successful! **{bench_team_name}** is now active, and **{active_team_name}** is on the bench.", ephemeral=True)
-                
-                for item in self.children:
-                    item.disabled = True
-                if not interaction.is_expired(): await interaction.edit_original_response(view=self)
-                self.stop()
+                    sql = f"UPDATE rosters SET `{self.active_selection}` = %s, `{self.bench_selection}` = %s, swaps_used = swaps_used + 1 WHERE user_id = %s"
+                    await cursor.execute(sql, (bench_team_name, active_team_name, self.user_id))
+                    # No db_conn.commit() needed, pool is set to autocommit
+            
+            if not interaction.is_expired(): await interaction.followup.send(f"✅ Swap successful! **{bench_team_name}** is now active, and **{active_team_name}** is on the bench.", ephemeral=True)
+            
+            for item in self.children:
+                item.disabled = True
+            if not interaction.is_expired(): await interaction.edit_original_response(view=self)
+            self.stop()
 
-            except Exception:
-                error_channel = self.bot.get_channel(config.error_channel)
-                if error_channel: await error_channel.send(f"<@920797181034778655>```{traceback.format_exc()}```")
-                if not interaction.is_expired(): await interaction.followup.send("❌ A database error occurred. The issue has been reported.", ephemeral=True)
-                self.stop()
-            finally:
-                if cursor: cursor.close()
-                if db_conn: db_conn.close()
+        except Exception:
+            error_channel = self.bot.get_channel(config.error_channel)
+            if error_channel: await error_channel.send(f"<@920797181034778655>```{traceback.format_exc()}```")
+            if not interaction.is_expired(): await interaction.followup.send("❌ A database error occurred. The issue has been reported.", ephemeral=True)
+            self.stop()
 
 # --- User Commands Cog ---
 class userLeague(commands.Cog, name="userLeague"):
@@ -138,19 +137,16 @@ class userLeague(commands.Cog, name="userLeague"):
     async def on_ready(self):
         print(f"LOADED: `user_cog.py`")
 
-    def get_user_roster(self, user_id: int):
-        db_conn, cursor = None, None
+    async def get_user_roster_async(self, user_id: int):
+        """Asynchronously fetches a user's roster."""
         try:
-            db_conn = self.db_pool.get_connection()
-            cursor = db_conn.cursor(dictionary=True)
-            cursor.execute("SELECT * FROM rosters WHERE user_id = %s", (user_id,))
-            return cursor.fetchone()
-        except mysql.connector.Error as err:
-            print(f"Error in get_user_roster for {user_id}: {err}")
+            async with self.db_pool.acquire() as conn:
+                async with conn.cursor(aiomysql.DictCursor) as cursor:
+                    await cursor.execute("SELECT * FROM rosters WHERE user_id = %s", (user_id,))
+                    return await cursor.fetchone()
+        except Exception as err:
+            print(f"Error in get_user_roster_async for {user_id}: {err}")
             return None
-        finally:
-            if cursor: cursor.close()
-            if db_conn: db_conn.close()
 
     async def log_command(self, interaction: discord.Interaction):
         if config.command_log_bool:
@@ -165,9 +161,10 @@ class userLeague(commands.Cog, name="userLeague"):
     @app_commands.command(name="my-roster", description="View your current team roster, points, and swaps.")
     async def my_roster(self, interaction: discord.Interaction):
         await self.log_command(interaction)
-        await interaction.response.defer(ephemeral=True) # Defer immediately
+        await interaction.response.defer(ephemeral=True)
         try:
-            roster = self.get_user_roster(interaction.user.id)
+            roster = await self.get_user_roster_async(interaction.user.id)
+
             if not roster:
                 if not interaction.is_expired(): await interaction.followup.send("You haven't joined the league yet! Use `/join-league` to get started.", ephemeral=True)
                 return
@@ -193,7 +190,7 @@ class userLeague(commands.Cog, name="userLeague"):
         await self.log_command(interaction)
         await interaction.response.defer(ephemeral=True) # Defer immediately
         try:
-            roster = self.get_user_roster(interaction.user.id)
+            roster = await self.get_user_roster_async(interaction.user.id)
             if not roster:
                 if not interaction.is_expired(): await interaction.followup.send("You haven't joined the league yet!", ephemeral=True)
                 return
@@ -217,7 +214,7 @@ class userLeague(commands.Cog, name="userLeague"):
         await self.log_command(interaction)
         await interaction.response.defer(ephemeral=True) # Defer immediately
         try:
-            roster = self.get_user_roster(interaction.user.id)
+            roster = await self.get_user_roster_async(interaction.user.id)
             if not roster:
                 if not interaction.is_expired(): await interaction.followup.send("You haven't joined the league yet!", ephemeral=True)
                 return
@@ -239,12 +236,11 @@ class userLeague(commands.Cog, name="userLeague"):
             async def select_callback(callback_interaction: discord.Interaction):
                 await callback_interaction.response.defer()
                 chosen_slot = select.values[0]
-                conn, cur = None, None
                 try:
-                    conn = self.db_pool.get_connection()
-                    cur = conn.cursor()
-                    cur.execute("UPDATE rosters SET aced_team_slot = %s WHERE user_id = %s", (chosen_slot, callback_interaction.user.id))
-                    conn.commit()
+                    async with self.db_pool.acquire() as conn:
+                        async with conn.cursor() as cur:
+                            await cur.execute("UPDATE rosters SET aced_team_slot = %s WHERE user_id = %s", (chosen_slot, callback_interaction.user.id))
+                    
                     team_name = roster[chosen_slot]
                     await callback_interaction.edit_original_response(content=f"✅ **{team_name}** is now your aced team for the week!", view=None)
                 except Exception:
@@ -253,9 +249,6 @@ class userLeague(commands.Cog, name="userLeague"):
                     
                     if not callback_interaction.is_expired():
                         await callback_interaction.edit_original_response(content="❌ A database error occurred. The issue has been reported.", view=None)
-                finally:
-                    if cur: cur.close()
-                    if conn: conn.close()
 
             select.callback = select_callback
             view = ui.View(timeout=180)
