@@ -73,7 +73,7 @@ class DailySchedule(commands.Cog):
         cursor = None
         channel_records = []
         try:
-            schedule_embed = await self.get_schedule_embed()
+            schedule_embed = await self.get_schedule_embed_async()
 
             if not schedule_embed:
                 print("DailySchedule: Failed to generate schedule embed. Skipping.")
@@ -250,9 +250,8 @@ class DailySchedule(commands.Cog):
                     game_id = game['id']
                     url2 = f"https://api-web.nhle.com/v1/gamecenter/{game_id}/boxscore"
                     
-                    # --- ASYNC REQUEST 2 (NESTED) ---
                     async with self.http_session.get(url2) as r2:
-                        game2 = await r2.json() # r2.raise_for_status() might be good here too
+                        game2 = await r2.json()
                     
                     home_score = game2['homeTeam']['score']
                     away_score = game2['awayTeam']['score']
@@ -271,6 +270,63 @@ class DailySchedule(commands.Cog):
         except Exception:
             print(f"Error in get_schedule_embed_async:\n{traceback.format_exc()}")
             return None
+        
+    @app_commands.command(name="manual-send-schedule", description="[Owner Only] Manually sends the daily schedule to all servers.")
+    @app_commands.allowed_installs(guilds=True, users=True)
+    async def manual_send_schedule(self, interaction: discord.Interaction):
+        if interaction.user.id != config.jacob:
+            await interaction.response.send_message("You are not authorized to use this command.", ephemeral=True)
+            return
+            
+        await interaction.response.defer(ephemeral=True)
+        print(f"Running MANUAL schedule task... (Triggered by {interaction.user.name})")
+
+        channel_records = []
+        try:
+            schedule_embed = await self.get_schedule_embed_async()
+
+            if not schedule_embed:
+                print("ManualSchedule: Failed to generate schedule embed. Skipping.")
+                await interaction.followup.send("Failed to generate the schedule embed. Aborting.", ephemeral=True)
+                return
+
+            try:
+                async with self.db_pool.acquire() as conn:
+                    async with conn.cursor() as cursor:
+                        await cursor.execute("SELECT daily_schedule_channel_id FROM servers WHERE daily_schedule_channel_id IS NOT NULL")
+                        channel_records = await cursor.fetchall()
+            
+            except Exception as e:
+                print(f"ManualSchedule: Database error: {e}")
+                await interaction.followup.send(f"A database error occurred: {e}", ephemeral=True)
+                return
+
+            if not channel_records:
+                print("ManualSchedule: No channels are set. Skipping.")
+                await interaction.followup.send("No schedule channels are set up in any servers.", ephemeral=True)
+                return
+
+            success_count = 0
+            fail_count = 0
+            for (channel_id,) in channel_records:
+                channel = self.bot.get_channel(channel_id)
+                if channel:
+                    try:
+                        await channel.send(embed=schedule_embed)
+                        success_count += 1
+                    except discord.Forbidden:
+                        print(f"ManualSchedule: Failed to send to {channel_id}: Missing permissions.")
+                        fail_count += 1
+                else:
+                    print(f"ManualSchedule: Could not find channel {channel_id}. It was likely deleted.")
+                    fail_count += 1
+            
+            await interaction.followup.send(f"✅ Schedule sent successfully to **{success_count}** servers.\n❌ Failed to send to **{fail_count}** servers.", ephemeral=True)
+        
+        except Exception:
+            error_channel = self.bot.get_channel(config.error_channel)
+            await error_channel.send(f"**CRITICAL Error in manual_send_schedule command:**\n```{traceback.format_exc()}```")
+            await interaction.followup.send("An unknown critical error occurred. Check the logs.", ephemeral=True)
 
 async def setup(bot):
     await bot.add_cog(DailySchedule(bot))
