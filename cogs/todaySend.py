@@ -242,7 +242,7 @@ class DailySchedule(commands.Cog):
                     if game_outcome == "OT":
                         embed.add_field(name=f"Final (OT)", value=f"{away_string} @ {home_string}\nScore: {away_score} | {home_score}", inline=False)
                     elif game_outcome == "SO":
-                        embed..add_field(name=f"Final (SO)", value=f"{away_string} @ {home_string}\nScore: {away_score} | {home_score}", inline=False)
+                        embed.add_field(name=f"Final (SO)", value=f"{away_string} @ {home_string}\nScore: {away_score} | {home_score}", inline=False)
                     else:
                         embed.add_field(name=f"Final", value=f"{away_string} @ {home_string}\nScore: {away_score} | {home_score}", inline=False)
 
