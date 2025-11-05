@@ -4,7 +4,9 @@ from discord.ext import commands, tasks
 import pytz
 import traceback
 from datetime import datetime, time, timedelta
-import requests
+import aiohttp
+import aiomysql
+import asyncio
 import config
 
 TEAM_EMOJIS = {
@@ -56,10 +58,13 @@ class DailySchedule(commands.Cog):
     def __init__(self, bot):
         self.bot = bot
         self.db_pool = bot.db_pool
+        self.http_session = aiohttp.ClientSession()
         self.send_daily_schedule.start()
 
     def cog_unload(self):
         self.send_daily_schedule.cancel()
+        if hasattr(self, 'http_session'):
+            asyncio.create_task(self.http_session.close())
 
     @tasks.loop(time=run_time)
     async def send_daily_schedule(self):
@@ -75,21 +80,16 @@ class DailySchedule(commands.Cog):
                 return
 
             try:
-                db_conn = self.db_pool.get_connection()
-                cursor = db_conn.cursor()
-                
-                cursor.execute("SELECT daily_schedule_channel_id FROM servers WHERE daily_schedule_channel_id IS NOT NULL")
-                channel_records = cursor.fetchall()
+                async with self.db_pool.acquire() as conn:
+                    async with conn.cursor() as cursor:
+                        await cursor.execute("SELECT daily_schedule_channel_id FROM servers WHERE daily_schedule_channel_id IS NOT NULL")
+                        channel_records = await cursor.fetchall()
             
             except Exception as e:
                 print(f"DailySchedule: Database error: {e}")
                 error_channel = self.bot.get_channel(config.error_channel)
                 await error_channel.send(f"**CRITICAL Error in daily_schedule task (DB query):**\n```{traceback.format_exc()}```")
                 return
-            
-            finally:
-                if cursor: cursor.close()
-                if db_conn: db_conn.close()
 
 
             if not channel_records:
@@ -139,26 +139,19 @@ class DailySchedule(commands.Cog):
         except Exception as e:
             print(f"Command logging failed: {e}")
         try:    
-            db_conn = None
-            cursor = None
             try:
-                db_conn = self.db_pool.get_connection()
-                cursor = db_conn.cursor()
-                
-                sql = "INSERT INTO servers (guild_id, daily_schedule_channel_id) VALUES (%s, %s) ON DUPLICATE KEY UPDATE daily_schedule_channel_id = %s"
-                values = (interaction.guild.id, channel.id, channel.id)
-                cursor.execute(sql, values)
-                db_conn.commit()
+                async with self.db_pool.acquire() as conn:
+                    async with conn.cursor() as cursor:
+                        sql = "INSERT INTO servers (guild_id, daily_schedule_channel_id) VALUES (%s, %s) ON DUPLICATE KEY UPDATE daily_schedule_channel_id = %s"
+                        values = (interaction.guild.id, channel.id, channel.id)
+                        await cursor.execute(sql, values)
                 
                 await interaction.response.send_message(f"✅ Daily schedule messages will now be sent to {channel.mention}.", ephemeral=True)
 
             except Exception as e:
                 print(f"Error in set_schedule_channel: {e}")
                 await interaction.response.send_message("An error occurred while setting the schedule channel. Please try again later.", ephemeral=True)
-            
-            finally:
-                if cursor: cursor.close()
-                if db_conn: db_conn.close()
+        
         except Exception:
             error_channel = self.bot.get_channel(config.error_channel)
             await error_channel.send(f"**CRITICAL Error in set_schedule_channel (outer):**\n```{traceback.format_exc()}```")
@@ -181,25 +174,17 @@ class DailySchedule(commands.Cog):
                     print(f"Command logging failed: {e}")
         except Exception as e:
             print(f"Command logging failed: {e}")
-        db_conn = None
-        cursor = None
         try:
-            db_conn = self.db_pool.get_connection()
-            cursor = db_conn.cursor()
-            
-            sql = "UPDATE servers SET daily_schedule_channel_id = NULL WHERE guild_id = %s"
-            cursor.execute(sql, (interaction.guild.id,))
-            db_conn.commit()
+            async with self.db_pool.acquire() as conn:
+                async with conn.cursor() as cursor:
+                    sql = "UPDATE servers SET daily_schedule_channel_id = NULL WHERE guild_id = %s"
+                    await cursor.execute(sql, (interaction.guild.id,))
             
             await interaction.response.send_message("❌ Daily schedule messages have been disabled for this server.", ephemeral=True)
         
         except Exception as e:
             print(f"Error in remove_schedule_channel: {e}")
             await interaction.response.send_message("An error occurred while disabling schedule messages. Please try again later.", ephemeral=True)
-        
-        finally:
-            if cursor: cursor.close()
-            if db_conn: db_conn.close()
 
     @set_schedule_channel.error
     @remove_schedule_channel.error
@@ -210,15 +195,16 @@ class DailySchedule(commands.Cog):
             await interaction.response.send_message("An unknown error occurred.", ephemeral=True)
 
 
-    async def get_schedule_embed(self):
+    async def get_schedule_embed_async(self):
         try:
             hawaii_tz = pytz.timezone('US/Hawaii')
             today_str = datetime.now(hawaii_tz).strftime('%Y-%m-%d')
             url = f"https://api-web.nhle.com/v1/schedule/{today_str}"
             
-            r = requests.get(url)
-            r.raise_for_status()
-            data = r.json()
+            # --- ASYNC REQUEST 1 ---
+            async with self.http_session.get(url) as r:
+                r.raise_for_status()
+                data = await r.json()
             
             if not data.get("gameWeek") or not data["gameWeek"][0].get("games"):
                 embed = discord.Embed(title=f"Today's Games ({today_str})", description="No games scheduled for today.", color=config.color)
@@ -234,8 +220,11 @@ class DailySchedule(commands.Cog):
                 gameState = game["gameState"]
                 home_team = game["homeTeam"]
                 away_team = game["awayTeam"]
-                home_name = home_team["placeName"]["default"]
-                away_name = away_team["placeName"]["default"]
+                
+                # Handle potential missing placeName (e.g., All-Star games)
+                home_name = home_team.get("placeName", {}).get("default", "")
+                away_name = away_team.get("placeName", {}).get("default", "")
+                
                 home_abbreviation = home_team["abbrev"]
                 away_abbreviation = away_team["abbrev"]
                 away_string, home_string = strings(away_abbreviation, home_abbreviation, home_name, away_name)
@@ -253,15 +242,18 @@ class DailySchedule(commands.Cog):
                     if game_outcome == "OT":
                         embed.add_field(name=f"Final (OT)", value=f"{away_string} @ {home_string}\nScore: {away_score} | {home_score}", inline=False)
                     elif game_outcome == "SO":
-                        embed.add_field(name=f"Final (SO)", value=f"{away_string} @ {home_string}\nScore: {away_score} | {home_score}", inline=False)
+                        embed..add_field(name=f"Final (SO)", value=f"{away_string} @ {home_string}\nScore: {away_score} | {home_score}", inline=False)
                     else:
                         embed.add_field(name=f"Final", value=f"{away_string} @ {home_string}\nScore: {away_score} | {home_score}", inline=False)
 
                 elif gameState in ("LIVE", "CRIT"):
                     game_id = game['id']
-                    url2 = f"https.api-web.nhle.com/v1/gamecenter/{game_id}/boxscore"
-                    r2 = requests.get(url2)
-                    game2 = r2.json()
+                    url2 = f"https://api-web.nhle.com/v1/gamecenter/{game_id}/boxscore"
+                    
+                    # --- ASYNC REQUEST 2 (NESTED) ---
+                    async with self.http_session.get(url2) as r2:
+                        game2 = await r2.json() # r2.raise_for_status() might be good here too
+                    
                     home_score = game2['homeTeam']['score']
                     away_score = game2['awayTeam']['score']
                     clock = game2.get('clock', {})
@@ -277,7 +269,7 @@ class DailySchedule(commands.Cog):
             return embed
 
         except Exception:
-            print(f"Error in get_schedule_embed:\n{traceback.format_exc()}")
+            print(f"Error in get_schedule_embed_async:\n{traceback.format_exc()}")
             return None
 
 async def setup(bot):
