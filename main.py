@@ -3,13 +3,12 @@ import asyncio
 from discord.ext import commands
 import os
 import config
-import aiomysql  # <-- CHANGED
+import aiomysql
 from dotenv import load_dotenv
 from datetime import datetime
 import topgg
 import traceback
 
-# --- Initial Setup ---
 load_dotenv()
 
 intents = discord.Intents.default()
@@ -18,18 +17,13 @@ intents.auto_moderation_configuration = True
 intents.reactions = True
 status = discord.Status.online
 
-# --- Database Pool Setup (MOVED TO setup_hook) ---
-
 class MyBot(commands.Bot):
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
-        self.db_pool = None  # Will be initialized in setup_hook
+        self.db_pool = None 
         self.topggpy = None
 
     async def setup_hook(self):
-        """This function runs before the bot logs in."""
-        
-        # --- 1. Create Database Pool ---
         print("Creating database connection pool...")
         try:
             self.db_pool = await aiomysql.create_pool(
@@ -38,17 +32,15 @@ class MyBot(commands.Bot):
                 user=os.getenv("db_user"),
                 password=os.getenv("db_password"),
                 db=os.getenv("db_name"),
-                autocommit=True, # Automatically commit after each query
+                autocommit=True,
                 loop=asyncio.get_event_loop()
             )
             print("✅ Successfully created database connection pool.")
         except Exception as e:
             print(f"❌ FAILED to create database connection pool: {e}")
-            await self.close() # Close the bot if DB connection fails
+            await self.close()
             return
 
-        # --- 2. Load Cogs ---
-        # Cogs are loaded here to ensure self.db_pool is available to them
         print("--- Loading Cogs ---")
         for filename in os.listdir('./cogs'):
             if filename.endswith('.py'):
@@ -62,7 +54,6 @@ class MyBot(commands.Bot):
 
 bot = MyBot(command_prefix=';;', intents=intents, help_command=None)
 
-# --- Bot Admin Commands & Events ---
 @bot.command()
 async def sync(ctx) -> None:
     if ctx.author.id == config.jacob:
@@ -140,8 +131,6 @@ async def servers(ctx):
 async def on_ready():
     print(f"Logged on as {bot.user}")
     print(f"Bot is ready and connected to {len(bot.guilds)} servers.")
-    # Initialize top.gg client and attach it to the bot instance
-    # This runs *after* setup_hook, so it's fine
     bot.topggpy = topgg.DBLClient(bot, os.getenv("topgg-token"), autopost=True, post_shard_count=True)
 
 @bot.event
@@ -207,16 +196,11 @@ async def on_guild_remove(guild):
     except Exception as e:
         print(f"Error updating stats on guild remove: {e}")
 
-# This function is no longer needed, as it's in setup_hook
-# async def load_cogs():
-#     ...
 
 async def main():
     async with bot:
-        # await load_cogs() # <-- REMOVED (now in setup_hook)
         await bot.start(os.getenv("token"))
 
-# --- NEW: Graceful Shutdown Function ---
 async def shutdown(bot_instance: MyBot):
     print("Bot is shutting down.")
     owner = bot_instance.get_user(config.jacob)
@@ -226,10 +210,9 @@ async def shutdown(bot_instance: MyBot):
         except discord.errors.Forbidden:
             print("Could not send shutdown DM. Owner may have DMs disabled.")
     
-    # Close the database pool before closing the bot
     if bot_instance.db_pool:
         bot_instance.db_pool.close()
-        await bot_instance.db_pool.wait_closed() # <-- CHANGED
+        await bot_instance.db_pool.wait_closed()
         print("Database connection pool closed.")
         
     await bot_instance.close()
@@ -238,6 +221,5 @@ if __name__ == "__main__":
     try:
         asyncio.run(main())
     except KeyboardInterrupt:
-        # When Ctrl+C is pressed, run the shutdown coroutine
         print("Shutdown signal received.")
         asyncio.run(shutdown(bot))
