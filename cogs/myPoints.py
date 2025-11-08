@@ -1,7 +1,7 @@
 import discord
 from discord.ext import commands
 from discord import app_commands
-import mysql.connector
+import aiomysql
 import os
 from dotenv import load_dotenv
 import config
@@ -38,14 +38,13 @@ class MyPoints(commands.Cog, name="MyPoints"):
     @app_commands.allowed_contexts(guilds=True, dms=True, private_channels=True)
     async def fantasy_points(self, interaction: discord.Interaction):
         await self.log_command(interaction)
-        db_conn = None
-        cursor = None
         try:
             await interaction.response.defer(ephemeral=True)
-            db_conn = self.db_pool.get_connection()
-            cursor = db_conn.cursor(dictionary=True)
-            cursor.execute("SELECT points FROM rosters WHERE user_id = %s", (interaction.user.id,))
-            result = cursor.fetchone()
+            result = None
+            async with self.db_pool.acquire() as conn:
+                async with conn.cursor(aiomysql.DictCursor) as cursor:
+                    await cursor.execute("SELECT points FROM rosters WHERE user_id = %s", (interaction.user.id,))
+                    result = await cursor.fetchone()
             
             points = result['points'] if result else 0
             await interaction.followup.send(f"You have `{points:,}` fantasy point{'s' if points != 1 else ''}!", ephemeral=True)
@@ -54,9 +53,6 @@ class MyPoints(commands.Cog, name="MyPoints"):
             error_channel = self.bot.get_channel(config.error_channel)
             await error_channel.send(f"<@920797181034778655>```{traceback.format_exc()}```")
             await interaction.followup.send("An error occurred. The issue has been reported.", ephemeral=True)
-        finally:
-            if cursor: cursor.close()
-            if db_conn: db_conn.close()
 
     # --- Trivia Points ---
     @mypoints.command(name="trivia", description="View your trivia points for this server.")
@@ -64,14 +60,13 @@ class MyPoints(commands.Cog, name="MyPoints"):
     @app_commands.allowed_contexts(guilds=True, dms=True, private_channels=True)
     async def trivia_points(self, interaction: discord.Interaction):
         await self.log_command(interaction)
-        db_conn = None
-        cursor = None
         try:
             await interaction.response.defer(ephemeral=True)
-            db_conn = self.db_pool.get_connection()
-            cursor = db_conn.cursor(dictionary=True)
-            cursor.execute("SELECT points FROM trivia_scores WHERE user_id = %s AND guild_id = %s", (interaction.user.id, interaction.guild.id))
-            result = cursor.fetchone()
+            result = None
+            async with self.db_pool.acquire() as conn:
+                async with conn.cursor(aiomysql.DictCursor) as cursor:
+                    await cursor.execute("SELECT points FROM trivia_scores WHERE user_id = %s AND guild_id = %s", (interaction.user.id, interaction.guild.id))
+                    result = await cursor.fetchone()
 
             points = result['points'] if result else 0
             await interaction.followup.send(f"You have `{points:,}` trivia point{'s' if points != 1 else ''} in this server!", ephemeral=True)
@@ -80,23 +75,19 @@ class MyPoints(commands.Cog, name="MyPoints"):
             error_channel = self.bot.get_channel(config.error_channel)
             await error_channel.send(f"<@920797181034778655>```{traceback.format_exc()}```")
             await interaction.followup.send("An error occurred. The issue has been reported.", ephemeral=True)
-        finally:
-            if cursor: cursor.close()
-            if db_conn: db_conn.close()
 
     @mypoints.command(name="gtp", description="Check your Guess The Player points for this server.")
     @app_commands.allowed_installs(guilds=True, users=True)
     @app_commands.allowed_contexts(guilds=True, dms=True, private_channels=True)
     async def gtp_points(self, interaction: discord.Interaction):
         await self.log_command(interaction)
-        db_conn = None
-        cursor = None
         try:
             await interaction.response.defer(ephemeral=True)
-            db_conn = self.db_pool.get_connection()
-            cursor = db_conn.cursor(dictionary=True)
-            cursor.execute("SELECT points FROM gtp_scores WHERE user_id = %s AND guild_id = %s", (interaction.user.id, interaction.guild.id))
-            result = cursor.fetchone()
+            result = None
+            async with self.db_pool.acquire() as conn:
+                async with conn.cursor(aiomysql.DictCursor) as cursor:
+                    await cursor.execute("SELECT points FROM gtp_scores WHERE user_id = %s AND guild_id = %s", (interaction.user.id, interaction.guild.id))
+                    result = await cursor.fetchone()
 
             points = result['points'] if result else 0
             await interaction.followup.send(f"You have `{points:,}` Guess The Player point{'s' if points != 1 else ''} in this server!", ephemeral=True)
@@ -105,9 +96,6 @@ class MyPoints(commands.Cog, name="MyPoints"):
             error_channel = self.bot.get_channel(config.error_channel)
             await error_channel.send(f"<@920797181034778655>```{traceback.format_exc()}```")
             await interaction.followup.send("An error occurred. The issue has been reported.", ephemeral=True)
-        finally:
-            if cursor: cursor.close()
-            if db_conn: db_conn.close()
 
 async def setup(bot):
     await bot.add_cog(MyPoints(bot))
