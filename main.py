@@ -136,13 +136,13 @@ async def on_ready():
 @bot.event
 async def on_guild_join(guild):
     join_leave_channel = bot.get_channel(1168939285274177627)
-    try:
+    """try:
         embed = discord.Embed(title="Joined Server", description=f"Name: {guild.name}\nMembers: {guild.member_count}\n", color=0x00ff00)
         if guild.icon:
             embed.set_thumbnail(url=guild.icon.url)
         await join_leave_channel.send(embed=embed)
     except Exception as e:
-        await join_leave_channel.send(f"Joined a server but couldn't get server information. Error: {e}")
+        await join_leave_channel.send(f"Joined a server but couldn't get server information. Error: {e}")"""
 
 
     try:
@@ -177,13 +177,13 @@ async def on_command_error(ctx, error):
 @bot.event
 async def on_guild_remove(guild):
     join_leave_channel = bot.get_channel(1168939285274177627)
-    try:
+    """try:
         embed = discord.Embed(title="Left Server", description=f"Name: {guild.name}\nMembers: {guild.member_count}\n", color=0xff0000)
         if guild.icon:
             embed.set_thumbnail(url=guild.icon.url)
         await join_leave_channel.send(embed=embed)
     except Exception as e:
-        await join_leave_channel.send(f"Left a server but couldn't get server information. Error: {e}")
+        await join_leave_channel.send(f"Left a server but couldn't get server information. Error: {e}")"""
 
 
     try:
