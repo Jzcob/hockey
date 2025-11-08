@@ -1,3 +1,4 @@
+# leaderboards.py
 import discord
 from discord.ext import commands
 from discord import app_commands
@@ -7,80 +8,9 @@ from dotenv import load_dotenv
 import config
 import traceback
 from datetime import datetime
-import math
 
+# Load environment variables from .env file
 load_dotenv()
-
-class FantasyLeaderboardView(discord.ui.View):
-    def __init__(self, leaders: list, bot: commands.Bot, timeout=180):
-        super().__init__(timeout=timeout)
-        self.leaders = leaders
-        self.bot = bot
-        self.current_page = 1
-        self.per_page = 10
-        self.total_pages = math.ceil(len(self.leaders) / self.per_page)
-        self.message = None
-        self.update_buttons()
-
-    async def create_embed(self) -> discord.Embed:
-        """Creates the embed for the current page."""
-        embed = discord.Embed(title="🏆 Fantasy League Leaderboard", color=discord.Color.gold())
-        
-        start_index = (self.current_page - 1) * self.per_page
-        end_index = self.current_page * self.per_page
-        page_leaders = self.leaders[start_index:end_index]
-        
-        description = []
-        for i, leader in enumerate(page_leaders, start=start_index):
-            rank = i + 1  # Global rank
-            try:
-                user = await self.bot.fetch_user(leader['user_id'])
-                user_name = user.display_name
-            except discord.errors.NotFound:
-                user_name = f"Unknown User ({leader['user_id']})"
-            
-            rank_emoji = "🥇" if rank == 1 else "🥈" if rank == 2 else "🥉" if rank == 3 else f"**{rank}.**"
-            description.append(f"{rank_emoji} {user_name} - **{leader['points']}** points")
-        
-        if not description:
-            embed.description = "No players on this page."
-        else:
-            embed.description = "\n".join(description)
-            
-        embed.set_footer(text=f"Page {self.current_page} of {self.total_pages}")
-        return embed
-
-    def update_buttons(self):
-        """Enables or disables buttons based on the current page."""
-        self.prev_button.disabled = self.current_page == 1
-        self.next_button.disabled = self.current_page >= self.total_pages
-
-    @discord.ui.button(label="⬅️ Previous", style=discord.ButtonStyle.blurple, custom_id="prev_page")
-    async def prev_button(self, interaction: discord.Interaction, button: discord.ui.Button):
-        await interaction.response.defer()
-        self.current_page -= 1
-        self.update_buttons()
-        embed = await self.create_embed()
-        await interaction.edit_original_response(embed=embed, view=self)
-
-    @discord.ui.button(label="Next ➡️", style=discord.ButtonStyle.blurple, custom_id="next_page")
-    async def next_button(self, interaction: discord.Interaction, button: discord.ui.Button):
-        await interaction.response.defer()
-        self.current_page += 1
-        self.update_buttons()
-        embed = await self.create_embed()
-        await interaction.edit_original_response(embed=embed, view=self)
-
-    async def on_timeout(self):
-        """Disables all buttons when the view times out."""
-        for item in self.children:
-            item.disabled = True
-        if self.message:
-            try:
-                await self.message.edit(view=self)
-            except discord.errors.NotFound:
-                pass
-
 
 class Leaderboards(commands.Cog, name="Leaderboards"):
     def __init__(self, bot: commands.Bot):
@@ -104,9 +34,11 @@ class Leaderboards(commands.Cog, name="Leaderboards"):
             except Exception as e:
                 print(f"Command logging failed for /{interaction.command.name}: {e}")
 
+    # --- Parent Command Group ---
     leaderboard = app_commands.Group(name="leaderboard", description="Commands for viewing game leaderboards and stats.")
 
-    @leaderboard.command(name="fantasy", description="Displays the fantasy league leaderboard.")
+    # --- Fantasy League Leaderboard ---
+    @leaderboard.command(name="fantasy", description="Displays the top 10 players in the fantasy league.")
     @app_commands.allowed_installs(guilds=True, users=True)
     @app_commands.allowed_contexts(guilds=True, dms=True, private_channels=True)
     async def fantasy_leaderboard(self, interaction: discord.Interaction):
@@ -116,8 +48,7 @@ class Leaderboards(commands.Cog, name="Leaderboards"):
             leaders = []
             async with self.db_pool.acquire() as conn:
                 async with conn.cursor(aiomysql.DictCursor) as cursor:
-                    # MODIFIED: Select ALL rosters, not just top 10
-                    await cursor.execute("SELECT user_id, points FROM rosters ORDER BY points DESC")
+                    await cursor.execute("SELECT user_id, points FROM rosters ORDER BY points DESC LIMIT 10")
                     leaders = await cursor.fetchall()
 
             if not leaders:
@@ -125,13 +56,21 @@ class Leaderboards(commands.Cog, name="Leaderboards"):
                     await interaction.followup.send("There are no players on the fantasy leaderboard yet!")
                 return
 
-            view = FantasyLeaderboardView(leaders=leaders, bot=self.bot)
+            embed = discord.Embed(title="🏆 Fantasy League Leaderboard", color=discord.Color.gold())
+            description = []
+            for rank, leader in enumerate(leaders, 1):
+                try:
+                    user = await self.bot.fetch_user(leader['user_id'])
+                    user_name = user.display_name
+                except discord.errors.NotFound:
+                    user_name = f"Unknown User ({leader['user_id']})"
+                
+                rank_emoji = "🥇" if rank == 1 else "🥈" if rank == 2 else "🥉" if rank == 3 else f"**{rank}.**"
+                description.append(f"{rank_emoji} {user_name} - **{leader['points']}** points")
             
-            initial_embed = await view.create_embed()
-            
+            embed.description = "\n".join(description)
             if not interaction.is_expired():
-                message = await interaction.followup.send(embed=initial_embed, view=view)
-                view.message = message
+                await interaction.followup.send(embed=embed)
 
         except Exception as e:
             if not interaction.is_expired():
@@ -139,6 +78,7 @@ class Leaderboards(commands.Cog, name="Leaderboards"):
                 await error_channel.send(f"<@920797181034778655>```{traceback.format_exc()}```")
                 await interaction.followup.send("An error occurred. The issue has been reported.", ephemeral=True)
 
+    # --- Trivia Leaderboard ---
     @leaderboard.command(name="trivia", description="View the trivia leaderboards!")
     @app_commands.allowed_installs(guilds=True, users=True)
     @app_commands.allowed_contexts(guilds=True, dms=True, private_channels=True)
@@ -195,8 +135,9 @@ class Leaderboards(commands.Cog, name="Leaderboards"):
             if not interaction.is_expired():
                 error_channel = self.bot.get_channel(config.error_channel)
                 await error_channel.send(f"<@920797181034778655>```{traceback.format_exc()}```")
-                await interaction.follow_up.send("An error occurred. The issue has been reported.", ephemeral=True) # Note: Changed to follow_up as it's likely a typo in original
+                await interaction.followup.send("An error occurred. The issue has been reported.", ephemeral=True)
 
+    # --- Guess The Player Leaderboard ---
     @leaderboard.command(name="gtp", description="View the Guess The Player leaderboard.")
     @app_commands.allowed_installs(guilds=True, users=True)
     @app_commands.allowed_contexts(guilds=True, dms=True, private_channels=True)
@@ -255,6 +196,7 @@ class Leaderboards(commands.Cog, name="Leaderboards"):
                 await error_channel.send(f"<@920797181034778655>```{traceback.format_exc()}```")
                 await interaction.followup.send("An error occurred. The issue has been reported.", ephemeral=True)
 
+    # --- Trivia Leaderboard Status ---
     @leaderboard.command(name="trivia-status", description="Toggles if you are displayed on the trivia leaderboard.")
     @app_commands.allowed_installs(guilds=True, users=True)
     @app_commands.allowed_contexts(guilds=True, dms=True, private_channels=True)
@@ -276,6 +218,7 @@ class Leaderboards(commands.Cog, name="Leaderboards"):
                         VALUES (%s, %s)
                         ON DUPLICATE KEY UPDATE allow_leaderboard = %s
                     """, (interaction.user.id, allow_bool, allow_bool))
+            # No commit needed (autocommit)
             
             if not interaction.is_expired():
                 await interaction.followup.send(f"Your trivia leaderboard visibility has been set to `{allow.name}`.", ephemeral=True)
@@ -285,6 +228,7 @@ class Leaderboards(commands.Cog, name="Leaderboards"):
                 await error_channel.send(f"<@920797181034778655>```{traceback.format_exc()}```")
                 await interaction.followup.send("An error occurred. The issue has been reported.", ephemeral=True)
 
+    # --- GTP Leaderboard Status ---
     @leaderboard.command(name="gtp-status", description="Toggles if you are displayed on the Guess The Player leaderboard.")
     @app_commands.allowed_installs(guilds=True, users=True)
     @app_commands.allowed_contexts(guilds=True, dms=True, private_channels=True)
@@ -306,6 +250,7 @@ class Leaderboards(commands.Cog, name="Leaderboards"):
                         VALUES (%s, %s)
                         ON DUPLICATE KEY UPDATE allow_leaderboard = %s
                     """, (interaction.user.id, allow_bool, allow_bool))
+            # No commit needed (autocommit)
             
             if not interaction.is_expired():
                 await interaction.followup.send(f"Your Guess The Player leaderboard visibility has been set to `{allow.name}`.", ephemeral=True)
