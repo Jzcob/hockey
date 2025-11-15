@@ -83,6 +83,7 @@ class player(commands.Cog):
             goals = stats.get("goals", "N/A")
             assists = stats.get("assists", "N/A")
             points = stats.get("points", "N/A")
+            player_id = player_data.get('id') # Get player ID
 
             position_map = {
                 "G": "Goalie", "D": "Defenseman", "C": "Center",
@@ -90,11 +91,21 @@ class player(commands.Cog):
             }
             position_full = position_map.get(position, position)
 
+            player_name_slug = full_name.lower().replace(" ", "-")
+            
+            team_slug = player_data.get("currentTeam", {}).get("teamSlug")
+
+            if team_slug and player_id:
+                player_url = f"https://www.nhl.com/{team_slug}/player/{player_name_slug}-{player_id}"
+            else:
+                player_url = f"https://www.nhl.com/player/{player_id}"
+        
+
             embed = discord.Embed(
                 title=f"{full_name}",
                 description=f"{position_full} for the {team_name} #{sweater_number}",
                 color=config.color,
-                url=f"https://www.nhl.com/player/{player_data.get('id')}"
+                url=player_url
             )
             embed.set_thumbnail(url=headshot)
             embed.add_field(name="Birth Date", value=birth_date, inline=True)
@@ -104,7 +115,7 @@ class player(commands.Cog):
             embed.add_field(name="Goals", value=goals, inline=True)
             embed.add_field(name="Assists", value=assists, inline=True)
             embed.add_field(name="Points", value=points, inline=True)
-            embed.set_footer(text=f"Player ID: {player_data.get('id')}")
+            embed.set_footer(text=f"Player ID: {player_id}")
             return embed
         except Exception as e:
             print(f"Error creating embed: {e}")
