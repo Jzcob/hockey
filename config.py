@@ -16,7 +16,7 @@ color = 0xffffff
 error_channel = 1166019404870463558
 footer = "Bot created by @jzcob"
 
-command_log_bool = False
+command_log_bool = True
 command_log = 1227078412699439104
 
 anahiem_ducks_emoji = "<:anaheim_ducks:1271323054420787251>"

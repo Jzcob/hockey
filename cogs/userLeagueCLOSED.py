@@ -91,13 +91,13 @@ class SwapView(ui.View):
         await self.check_and_execute_swap(interaction)
 
     async def check_and_execute_swap(self, interaction: discord.Interaction):
+        if not (self.active_selection and self.bench_selection):
+            return
+
         try:
-            # 'async with' handles getting and returning the connection
             async with self.db_pool.acquire() as conn:
-                # 'async with' handles creating and closing the cursor
                 async with conn.cursor(aiomysql.DictCursor) as cursor:
                     
-                    # Use await for database calls
                     await cursor.execute(f"SELECT `{self.active_selection}`, `{self.bench_selection}` FROM rosters WHERE user_id = %s", (self.user_id,))
                     team_names = await cursor.fetchone()
                     
@@ -111,7 +111,6 @@ class SwapView(ui.View):
 
                     sql = f"UPDATE rosters SET `{self.active_selection}` = %s, `{self.bench_selection}` = %s, swaps_used = swaps_used + 1 WHERE user_id = %s"
                     await cursor.execute(sql, (bench_team_name, active_team_name, self.user_id))
-                    # No db_conn.commit() needed, pool is set to autocommit
             
             if not interaction.is_expired(): await interaction.followup.send(f"✅ Swap successful! **{bench_team_name}** is now active, and **{active_team_name}** is on the bench.", ephemeral=True)
             
@@ -234,15 +233,23 @@ class userLeague(commands.Cog, name="userLeague"):
             select = ui.Select(placeholder="Choose a team to make your ace...", options=options)
 
             async def select_callback(callback_interaction: discord.Interaction):
-                await callback_interaction.response.defer()
                 chosen_slot = select.values[0]
+                
+                team_name = "your aced team" # Default
+                for option in select.options:
+                    if option.value == chosen_slot:
+                        team_name = option.label
+                        break
+
+                await callback_interaction.response.defer() # Defer here
+
                 try:
                     async with self.db_pool.acquire() as conn:
                         async with conn.cursor() as cur:
                             await cur.execute("UPDATE rosters SET aced_team_slot = %s WHERE user_id = %s", (chosen_slot, callback_interaction.user.id))
                     
-                    team_name = roster[chosen_slot]
                     await callback_interaction.edit_original_response(content=f"✅ **{team_name}** is now your aced team for the week!", view=None)
+                
                 except Exception:
                     error_channel = self.bot.get_channel(config.error_channel)
                     if error_channel: await error_channel.send(f"<@920797181034778655>```{traceback.format_exc()}```")
