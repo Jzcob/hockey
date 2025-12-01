@@ -1,10 +1,10 @@
-Effective Date: 06/08/2024.
+Effective Date: 12/01/2025.
 
 This Privacy Policy outlines how our Discord bot ("Hockey") handles and protects user information. We are committed to ensuring the privacy and security of our users and their data. Please read this policy carefully to understand how we collect, use, and disclose information.
 
 1. Information Collection:
 
-Our Discord bot only reads information from 2 of our commands `/guess-the-team` and `/guess-the-player` when the command is used it sends a debug alert to the owner to help with bug fixing. We do track, record, or retain any user data, only including discord names.
+Our Discord bot does have information collection specifically message content's to allow commands to work. We do track, record, or retain user data, only up to and including discord names and ID's and guild names and ID's.
 
 2. Information Usage:
 
@@ -16,7 +16,7 @@ We do not share any information with third parties. We do not sell, trade, or tr
 
 4. Security Measures:
 
-We prioritize the security of our users' information. The information recorded by the bot is sent to a channel in my discord server that has 2FA on as well as all moderator actions being tracked, we employ industry-standard security measures to protect against unauthorized access, disclosure, or alteration of any potential data transmitted within the bot.
+We prioritize the security of our users' information. The information recorded by the bot is sent to a channel in my discord server that only users that are developers of the bot and have Multi-Factor Authentication on as well as all moderator actions being tracked, we employ industry-standard security measures to protect against unauthorized access, disclosure, or alteration of any potential data transmitted within the bot.
 
 5. Third-Party Links:
 
