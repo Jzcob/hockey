@@ -69,46 +69,51 @@ class DailySchedule(commands.Cog):
     @tasks.loop(time=run_time)
     async def send_daily_schedule(self):
         print(f"Running daily schedule task... (5:30 AM EST)")
-        db_conn = None
-        cursor = None
         channel_records = []
+        
+        # 1. Get the Schedule Embed First
         try:
             schedule_embed = await self.get_schedule_embed_async()
-
             if not schedule_embed:
                 print("DailySchedule: Failed to generate schedule embed. Skipping.")
                 return
-
-            try:
-                async with self.db_pool.acquire() as conn:
-                    async with conn.cursor() as cursor:
-                        await cursor.execute("SELECT daily_schedule_channel_id FROM servers WHERE daily_schedule_channel_id IS NOT NULL")
-                        channel_records = await cursor.fetchall()
-            
-            except Exception as e:
-                print(f"DailySchedule: Database error: {e}")
-                error_channel = self.bot.get_channel(config.error_channel)
-                await error_channel.send(f"**CRITICAL Error in daily_schedule task (DB query):**\n```{traceback.format_exc()}```")
-                return
-
-
-            if not channel_records:
-                print("DailySchedule: No channels are set. Skipping.")
-                return
-
-            for (channel_id,) in channel_records:
-                channel = self.bot.get_channel(channel_id)
-                if channel:
-                    try:
-                        await channel.send(embed=schedule_embed)
-                    except discord.Forbidden:
-                        print(f"DailySchedule: Failed to send to {channel_id}: Missing permissions.")
-                else:
-                    print(f"DailySchedule: Could not find channel {channel_id}. It was likely deleted.")
-        
         except Exception:
+            print(f"DailySchedule: Error generating embed:\n{traceback.format_exc()}")
+            return
+
+        # 2. Database Operation with Ping/Reconnect
+        try:
+            async with self.db_pool.acquire() as conn:
+                # FIX: Ping the server to ensure connection is alive. 
+                # If it timed out overnight, this will reconnect it.
+                await conn.ping(reconnect=True)
+                
+                async with conn.cursor() as cursor:
+                    await cursor.execute("SELECT daily_schedule_channel_id FROM servers WHERE daily_schedule_channel_id IS NOT NULL")
+                    channel_records = await cursor.fetchall()
+        
+        except Exception as e:
+            print(f"DailySchedule: Database error: {e}")
             error_channel = self.bot.get_channel(config.error_channel)
-            await error_channel.send(f"**CRITICAL Error in daily_schedule task (Main):**\n```{traceback.format_exc()}```")
+            await error_channel.send(f"**CRITICAL Error in daily_schedule task (DB query):**\n```{traceback.format_exc()}```")
+            return
+
+        if not channel_records:
+            print("DailySchedule: No channels are set. Skipping.")
+            return
+
+        # 3. Send Messages
+        for (channel_id,) in channel_records:
+            channel = self.bot.get_channel(channel_id)
+            if channel:
+                try:
+                    await channel.send(embed=schedule_embed)
+                except discord.Forbidden:
+                    print(f"DailySchedule: Failed to send to {channel_id}: Missing permissions.")
+                except Exception as e:
+                    print(f"DailySchedule: Failed to send to {channel_id}: {e}")
+            else:
+                print(f"DailySchedule: Could not find channel {channel_id}. It was likely deleted.")
 
     @send_daily_schedule.before_loop
     async def before_daily_schedule(self):

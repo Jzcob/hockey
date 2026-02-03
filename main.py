@@ -33,7 +33,8 @@ class MyBot(commands.Bot):
                 password=os.getenv("db_password"),
                 db=os.getenv("db_name"),
                 autocommit=True,
-                loop=asyncio.get_event_loop()
+                loop=asyncio.get_event_loop(),
+                pool_recycle=3600
             )
             print("✅ Successfully created database connection pool.")
         except Exception as e:
