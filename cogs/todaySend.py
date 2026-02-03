@@ -131,6 +131,31 @@ class DailySchedule(commands.Cog):
     @app_commands.describe(channel="The text channel where daily schedules will be sent.")
     @app_commands.checks.has_permissions(manage_guild=True)
     async def set_schedule_channel(self, interaction: discord.Interaction, channel: discord.TextChannel):
+        # 1. Check Bot Permissions for the target channel
+        bot_perms = channel.permissions_for(interaction.guild.me)
+
+        if not bot_perms.send_messages:
+            await interaction.response.send_message(
+                f"❌ I do not have permission to **Send Messages** in {channel.mention}.\nPlease update the channel permissions to allow me to send messages there.",
+                ephemeral=True
+            )
+            return
+
+        if not bot_perms.embed_links:
+            await interaction.response.send_message(
+                f"❌ I do not have permission to **Embed Links** in {channel.mention}.\nThe schedule uses embeds, so please enable this permission for me in that channel.",
+                ephemeral=True
+            )
+            return
+
+        if not bot_perms.view_channel:
+             await interaction.response.send_message(
+                f"❌ I do not have permission to **View** {channel.mention}.",
+                ephemeral=True
+            )
+             return
+
+        # 2. Proceed with Command Logging
         try:
             if config.command_log_bool:
                 try:
@@ -143,6 +168,8 @@ class DailySchedule(commands.Cog):
                     print(f"Command logging failed: {e}")
         except Exception as e:
             print(f"Command logging failed: {e}")
+
+        # 3. Save to Database
         try:    
             try:
                 async with self.db_pool.acquire() as conn:
