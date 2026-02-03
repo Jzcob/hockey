@@ -71,7 +71,6 @@ class DailySchedule(commands.Cog):
         print(f"Running daily schedule task... (5:30 AM EST)")
         channel_records = []
         
-        # 1. Get the Schedule Embed First
         try:
             schedule_embed = await self.get_schedule_embed_async()
             if not schedule_embed:
@@ -81,11 +80,8 @@ class DailySchedule(commands.Cog):
             print(f"DailySchedule: Error generating embed:\n{traceback.format_exc()}")
             return
 
-        # 2. Database Operation with Ping/Reconnect
         try:
             async with self.db_pool.acquire() as conn:
-                # FIX: Ping the server to ensure connection is alive. 
-                # If it timed out overnight, this will reconnect it.
                 await conn.ping(reconnect=True)
                 
                 async with conn.cursor() as cursor:
@@ -102,7 +98,6 @@ class DailySchedule(commands.Cog):
             print("DailySchedule: No channels are set. Skipping.")
             return
 
-        # 3. Send Messages
         for (channel_id,) in channel_records:
             channel = self.bot.get_channel(channel_id)
             if channel:
@@ -131,7 +126,6 @@ class DailySchedule(commands.Cog):
     @app_commands.describe(channel="The text channel where daily schedules will be sent.")
     @app_commands.checks.has_permissions(manage_guild=True)
     async def set_schedule_channel(self, interaction: discord.Interaction, channel: discord.TextChannel):
-        # 1. Check Bot Permissions for the target channel
         bot_perms = channel.permissions_for(interaction.guild.me)
 
         if not bot_perms.send_messages:
@@ -149,13 +143,12 @@ class DailySchedule(commands.Cog):
             return
 
         if not bot_perms.view_channel:
-             await interaction.response.send_message(
+            await interaction.response.send_message(
                 f"❌ I do not have permission to **View** {channel.mention}.",
                 ephemeral=True
             )
-             return
+            return
 
-        # 2. Proceed with Command Logging
         try:
             if config.command_log_bool:
                 try:
@@ -169,7 +162,6 @@ class DailySchedule(commands.Cog):
         except Exception as e:
             print(f"Command logging failed: {e}")
 
-        # 3. Save to Database
         try:    
             try:
                 async with self.db_pool.acquire() as conn:
@@ -233,7 +225,6 @@ class DailySchedule(commands.Cog):
             today_str = datetime.now(hawaii_tz).strftime('%Y-%m-%d')
             url = f"https://api-web.nhle.com/v1/schedule/{today_str}"
             
-            # --- ASYNC REQUEST 1 ---
             async with self.http_session.get(url) as r:
                 r.raise_for_status()
                 data = await r.json()
