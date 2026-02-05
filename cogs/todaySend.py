@@ -105,10 +105,28 @@ class DailySchedule(commands.Cog):
                     await channel.send(embed=schedule_embed)
                 except discord.Forbidden:
                     print(f"DailySchedule: Failed to send to {channel_id}: Missing permissions.")
+                    try:
+                        await self.removeFromDB(channel_id)
+                    except Exception as e:
+                        print(f"DailySchedule: Failed to remove channel {channel_id} from DB: {e}")
                 except Exception as e:
                     print(f"DailySchedule: Failed to send to {channel_id}: {e}")
             else:
                 print(f"DailySchedule: Could not find channel {channel_id}. It was likely deleted.")
+                try:
+                    await self.removeFromDB(channel_id)
+                except Exception as e:
+                    print(f"DailySchedule: Failed to remove deleted channel {channel_id} from DB: {e}")
+
+    async def removeFromDB(self, channel_id):
+        try:
+            async with self.db_pool.acquire() as conn:
+                async with conn.cursor() as cursor:
+                    sql = "UPDATE servers SET daily_schedule_channel_id = NULL WHERE daily_schedule_channel_id = %s"
+                    await cursor.execute(sql, (channel_id,))
+        except Exception as e:
+            print(f"DailySchedule: Failed to remove channel {channel_id} from DB: {e}")
+
 
     @send_daily_schedule.before_loop
     async def before_daily_schedule(self):
