@@ -7,7 +7,7 @@ To suggest more trivia questions feel free to use `/suggest-trivia`. Keep in min
 # How to add Hockey
 ### Add the bot through the App Discovery section of any server! Just search `Hockey`!
 
-### Discord Server: https://discord.gg/W5Jx5QSZCb
+### Discord Server: https://discord.gg/WGQYdzvn8y
 
 # Milestones
 - Released: `11/01/2023`
@@ -25,3 +25,4 @@ To suggest more trivia questions feel free to use `/suggest-trivia`. Keep in min
 
 ## THANK YOU ALL FOR ADDING MY BOT!
 
+# This is an open source project, if users want to submit ideas and changes please feel free to make a pull request!

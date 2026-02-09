@@ -40,7 +40,7 @@ class Help(commands.Cog):
                 description=(
                     "Here are the commands you can use with this bot!\n\n"
                     "<> = Required\n() = Optional\n\n"
-                    "Have any questions?\nhttps://discord.gg/W5Jx5QSZCb"
+                    "Have any questions?\nhttps://discord.gg/WGQYdzvn8y"
                 ),
                 color=config.color
             )
