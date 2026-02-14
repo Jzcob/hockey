@@ -1,6 +1,6 @@
 import discord
-from discord.ext import commands
 from discord import app_commands
+from discord.ext import commands
 import config
 import traceback
 import json
@@ -14,35 +14,32 @@ class teams(commands.Cog):
     async def on_ready(self):
         print(f"LOADED: `teams.py`")
 
-    # Helper function to handle command logging consistently
     async def _log_command(self, interaction: discord.Interaction):
         if not config.command_log_bool:
             return
-        
         try:
             log_channel = self.bot.get_channel(config.command_log)
             if not log_channel:
                 return
-
-            location = "DMs"
-            if interaction.guild:
-                location = f"`{interaction.guild.name}`"
-
+            location = f"`{interaction.guild.name}`" if interaction.guild else "DMs"
             await log_channel.send(f"`/{interaction.command.name}` used by `{interaction.user.name}` in {location} at `{datetime.now()}`\n---")
         except Exception as e:
-            print(f"Command logging failed for /{interaction.command.name}: {e}")
+            print(f"Command logging failed: {e}")
 
-    @app_commands.command(name="teams", description="Get the teams in the league!")
+    @app_commands.command(name="teams", description="Get the teams and their abbreviations!")
     @app_commands.allowed_installs(guilds=True, users=True)
     @app_commands.allowed_contexts(guilds=True, dms=True, private_channels=True)
-    async def teams(self, interaction: discord.Interaction):
+    async def teams_cmd(self, interaction: discord.Interaction):
         await self._log_command(interaction)
         await interaction.response.defer(ephemeral=True)
 
         try:
-            # A dictionary to manually correct any mismatches between JSON names and config variable names.
+            # Map JSON names to your config.py variable names
             name_corrections = {
-                "Anaheim Ducks": "anahiem_ducks_emoji", # Corrects for the "anahiem" typo
+                "Anaheim Ducks": "anahiem_ducks_emoji",
+                "USA": "usa_emoji",
+                "Canada": "canada_emoji",
+                "Czechia": "czech_republic_emoji"
             }
 
             with open("teams.json", "r", encoding="utf-8") as f:
@@ -53,14 +50,16 @@ class teams(commands.Cog):
                 if name in name_corrections:
                     emoji_attr_name = name_corrections[name]
                 else:
+                    # Logic: "New York Rangers" -> "new_york_rangers_emoji"
                     emoji_attr_name = f"{name.lower().replace(' ', '_').replace('.', '')}_emoji"
                 
                 emoji = getattr(config, emoji_attr_name, "")
                 description_lines.append(f"**{abbr}** - {name} {emoji}")
 
+            # Split into two columns if the list is too long for one embed field
             embed = discord.Embed(
-                title="League Teams",
-                description="Here are all the teams in the league!\n\n" + "\n".join(description_lines),
+                title="League & Olympic Teams",
+                description="Use these abbreviations with `/game` or `/schedule`!\n\n" + "\n".join(description_lines),
                 color=discord.Color.green()
             )
             embed.set_footer(text=config.footer)
@@ -68,14 +67,12 @@ class teams(commands.Cog):
             await interaction.followup.send(embed=embed, ephemeral=True)
 
         except FileNotFoundError:
-            await interaction.followup.send("❌ `teams.json` file not found. Please contact an admin.", ephemeral=True)
+            await interaction.followup.send("❌ `teams.json` not found.", ephemeral=True)
         except Exception:
             error_channel = self.bot.get_channel(config.error_channel)
             if error_channel:
-                await error_channel.send(f"<@920797181034778655>```{traceback.format_exc()}```")
-            
-            if not interaction.is_expired():
-                await interaction.followup.send("❌ An error occurred. The issue has been reported.", ephemeral=True)
+                await error_channel.send(f"**Error in /teams:**\n```{traceback.format_exc()}```")
+            await interaction.followup.send("❌ An error occurred.", ephemeral=True)
 
 async def setup(bot):
     await bot.add_cog(teams(bot))
