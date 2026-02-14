@@ -50,10 +50,7 @@ class Help(commands.Cog):
                 embed.add_field(name="`/help <menu>`", value="Shows the help menu's!", inline=False)
                 embed.add_field(name="`/info`", value="Shows the info menu!", inline=False)
                 embed.add_field(name="`/avatar`", value="Get the avatar of the bot or a user!", inline=False)
-                if interaction.guild and interaction.guild.id == config.hockey_discord_server:
-                    embed.add_field(name="`/weather <city> (state) (country)`", value="Get the weather of a city!", inline=False)
-                    embed.add_field(name="`/f-to-c <fahrenheit>`", value="Convert Fahrenheit to Celsius!", inline=False)
-                    embed.add_field(name="`/c-to-f <celsius>`", value="Convert Celsius to Fahrenheit!", inline=False)
+                embed.add_field(name="`/suggest`", value="Suggest a new feature or improvement for the bot!", inline=False)
             
             elif menu.value == "nhl":
                 #embed.add_field(name="`/bracket`", value="Get the NHL Playoff bracket!", inline=False)
