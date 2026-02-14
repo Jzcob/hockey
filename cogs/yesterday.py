@@ -6,7 +6,6 @@ from datetime import datetime, timedelta
 import config
 import pytz
 import traceback
-import asyncio
 
 TEAM_EMOJIS = {
     "ANA": config.anahiem_ducks_emoji, "BOS": config.boston_bruins_emoji, "BUF": config.buffalo_sabres_emoji,
@@ -22,94 +21,63 @@ TEAM_EMOJIS = {
     "WSH": config.washington_capitals_emoji, "WPG": config.winnipeg_jets_emoji,
 }
 
-def strings(awayAbbreviation, homeAbbreviation, home, away):
-    away_emoji = TEAM_EMOJIS.get(awayAbbreviation, "")
-    home_emoji = TEAM_EMOJIS.get(homeAbbreviation, "")
-
-    awayString = f"{away_emoji} {away}".lstrip()
-    homeString = f"{home} {home_emoji}".rstrip()
-    
-    return awayString, homeString
+def strings(awayAbbrev, homeAbbrev, home, away):
+    a_emoji = TEAM_EMOJIS.get(awayAbbrev, "")
+    h_emoji = TEAM_EMOJIS.get(homeAbbrev, "")
+    return f"{a_emoji} {away}".lstrip(), f"{home} {h_emoji}".rstrip()
 
 class yesterday(commands.Cog):
     def __init__(self, bot):
         self.bot = bot
 
-    @commands.Cog.listener()
-    async def on_ready(self):
-        print(f"LOADED: `yesterday.py`")
-    
     @app_commands.command(name="yesterday", description="Get yesterday's schedule!")
-    @app_commands.allowed_installs(guilds=True, users=True)
-    @app_commands.allowed_contexts(guilds=True, dms=True, private_channels=True)
-    async def team(self, interaction: discord.Interaction):
-        # Logging logic
+    async def yesterday_cmd(self, interaction: discord.Interaction):
         if config.command_log_bool:
             command_log_channel = self.bot.get_channel(config.command_log)
             guild_name = interaction.guild.name if interaction.guild else "DMs"
             await command_log_channel.send(f"`/yesterday` used by `{interaction.user.name}` in `{guild_name}` at `{datetime.now()}`\n---")
 
+        await interaction.response.defer()
         try:
-            await interaction.response.defer()
-
-            # Set up time for Hawaii (following your existing pattern)
             hawaii_tz = pytz.timezone('US/Hawaii')
-            yesterday_date = (datetime.now(hawaii_tz) - timedelta(days=1)).strftime('%Y-%m-%d')
-            
-            url = f"https://api-web.nhle.com/v1/schedule/{yesterday_date}"
+            y_date = (datetime.now(hawaii_tz) - timedelta(days=1)).strftime('%Y-%m-%d')
+            url = f"https://api-web.nhle.com/v1/schedule/{y_date}"
             
             r = requests.get(url)
-            r.raise_for_status() 
             data = r.json()
 
             if not data.get("gameWeek") or not data["gameWeek"][0].get("games"):
-                embed = discord.Embed(title="Yesterday's Games", description="There were no games yesterday.", color=config.color)
-                await interaction.followup.send(embed=embed)
+                await interaction.followup.send(embed=discord.Embed(title="Yesterday's Games", description="No games yesterday.", color=config.color))
                 return
 
             games = data["gameWeek"][0]["games"]
-            embed = discord.Embed(title=f"Yesterday's Games ({yesterday_date})", description=f"Total games: {len(games)}", color=config.color)
+            embed = discord.Embed(title=f"Yesterday's Games ({y_date})", description=f"Total games: {len(games)}", color=config.color)
             embed.set_thumbnail(url="https://www-league.nhle.com/images/logos/league-dark/133-flat.svg")
             embed.set_footer(text=config.footer)
 
             for game in games:
-                home_team = game["homeTeam"]
-                away_team = game["awayTeam"]
-
-                # FOREVER FIX: Fallback logic for team names
-                home_name = home_team.get("placeName", {}).get("default") or home_team.get("commonName", {}).get("default", "TBD")
-                away_name = away_team.get("placeName", {}).get("default") or away_team.get("commonName", {}).get("default", "TBD")
+                h_t, a_t = game["homeTeam"], game["awayTeam"]
+                h_name = h_t.get("placeName", {}).get("default") or h_t.get("commonName", {}).get("default", "TBD")
+                a_name = a_t.get("placeName", {}).get("default") or a_t.get("commonName", {}).get("default", "TBD")
                 
-                home_abbreviation = home_team["abbrev"]
-                away_abbreviation = away_team["abbrev"]
-
-                home_score = home_team.get('score', 0)
-                away_score = away_team.get('score', 0)
-
-                away_string, home_string = strings(away_abbreviation, home_abbreviation, home_name, away_name)
+                a_str, h_str = strings(a_t["abbrev"], h_t["abbrev"], h_name, a_name)
                 
-                # Check for OT/SO
-                game_outcome = game.get("gameOutcome", {}).get("lastPeriodType")
-                field_name = "Final"
-                if game_outcome == "OT":
-                    field_name = "Final (OT)"
-                elif game_outcome == "SO":
-                    field_name = "Final (SO)"
+                outcome = game.get("gameOutcome", {}).get("lastPeriodType", "REG")
+                status = "Final"
+                if outcome == "OT": status = "Final (OT)"
+                elif outcome == "SO": status = "Final (SO)"
 
                 embed.add_field(
-                    name=field_name,
-                    value=f"{away_string} @ {home_string}\nScore: {away_score} | {home_score}",
+                    name=status,
+                    value=f"{a_str} @ {h_str}\nScore: {a_t.get('score',0)} | {h_t.get('score',0)}",
                     inline=False
                 )
 
             await interaction.followup.send(embed=embed)
-
-        except requests.exceptions.RequestException as e:
-            await interaction.followup.send(f"Could not retrieve data from the NHL API: {e}", ephemeral=True)
         except Exception:
             error_channel = self.bot.get_channel(config.error_channel)
             await error_channel.send(f"<@920797181034778655>```{traceback.format_exc()}```")
-            await interaction.followup.send("An error occurred. Bot developers have been notified.", ephemeral=True)
+            await interaction.followup.send("Error occurred.", ephemeral=True)
 
 async def setup(bot):
     await bot.add_cog(yesterday(bot))

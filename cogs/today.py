@@ -42,31 +42,61 @@ class today(commands.Cog):
             data = r.json()
             
             if not data["gameWeek"] or not data["gameWeek"][0]["games"]:
-                await interaction.followup.send("No games today.")
+                embed = discord.Embed(title="Today's Games", description="No games scheduled for today.", color=config.color)
+                embed.set_footer(text=config.footer)
+                await interaction.followup.send(embed=embed)
                 return
 
             games = data["gameWeek"][0]["games"]
-            embed = discord.Embed(title=f"Today's Games", color=config.color)
+            embed = discord.Embed(title=f"Today's Games", description=f"Total games today: {len(games)}", color=config.color)
             embed.set_thumbnail(url="https://www-league.nhlstatic.com/images/logos/league-dark/133-flat.svg")
+            embed.set_footer(text=config.footer)
 
             for game in games:
                 gs = game["gameState"]
                 h_t, a_t = game["homeTeam"], game["awayTeam"]
                 
-                # FIX: Fallback logic
                 h_name = h_t.get("placeName", {}).get("default") or h_t.get("commonName", {}).get("default", "TBD")
                 a_name = a_t.get("placeName", {}).get("default") or a_t.get("commonName", {}).get("default", "TBD")
                 
                 a_str, h_str = strings(a_t["abbrev"], h_t["abbrev"], h_name, a_name)
-                ts = int(datetime.strptime(game["startTimeUTC"], '%Y-%m-%dT%H:%M:%SZ').replace(tzinfo=pytz.utc).timestamp())
+                utc_start = datetime.strptime(game["startTimeUTC"], '%Y-%m-%dT%H:%M:%SZ').replace(tzinfo=pytz.utc)
+                ts = int(utc_start.timestamp())
 
                 if gs in ("FUT", "PRE"):
-                    embed.add_field(name=f"<t:{ts}:t>", value=f"{a_str} @ {h_str}\nScheduled", inline=False)
-                else:
-                    embed.add_field(name="Live/Final", value=f"{a_str} @ {h_str}\n{a_t.get('score',0)} - {h_t.get('score',0)}", inline=False)
+                    embed.add_field(name=f"<t:{ts}:t>", value=f"{a_str} @ {h_str}\nGame is scheduled!", inline=False)
+                
+                elif gs in ("FINAL", "OFF"):
+                    outcome = game.get("gameOutcome", {}).get("lastPeriodType", "REG")
+                    status = "Final"
+                    if outcome == "OT": status = "Final (OT)"
+                    elif outcome == "SO": status = "Final (SO)"
+                    embed.add_field(name=status, value=f"{a_str} @ {h_str}\nScore: {a_t.get('score',0)} | {h_t.get('score',0)}", inline=False)
+
+                elif gs in ("LIVE", "CRIT"):
+                    # For Live games, we fetch the boxscore to get the clock
+                    try:
+                        r2 = requests.get(f"https://api-web.nhle.com/v1/gamecenter/{game['id']}/boxscore")
+                        g2 = r2.json()
+                        clock = g2.get('clock', {})
+                        period = game.get('periodDescriptor', {}).get('number')
+                        period_ord = {1: "1st", 2: "2nd", 3: "3rd", 4: "OT"}.get(period, f"P{period}")
+                        
+                        if clock.get('inIntermission'):
+                            status = "Intermission"
+                        else:
+                            time_rem = clock.get('timeRemaining', '00:00')
+                            status = f"🔴 LIVE - {period_ord}"
+                            a_str = f"{a_str}\nScore: {a_t.get('score',0)} | {h_t.get('score',0)}\n`{time_rem}`"
+                        
+                        embed.add_field(name=status, value=f"{a_str} @ {h_str}" if "LIVE" not in status else a_str, inline=False)
+                    except:
+                        embed.add_field(name="🔴 LIVE", value=f"{a_str} @ {h_str}\nScore: {a_t.get('score',0)} | {h_t.get('score',0)}", inline=False)
 
             await interaction.followup.send(embed=embed)
         except Exception:
+            error_channel = self.bot.get_channel(config.error_channel)
+            await error_channel.send(f"<@920797181034778655>```{traceback.format_exc()}```")
             await interaction.followup.send("Error fetching schedule.")
 
 async def setup(bot):
