@@ -100,6 +100,9 @@ class DailySchedule(commands.Cog):
 
         for (channel_id,) in channel_records:
             channel = self.bot.get_channel(channel_id)
+            if channel_id == 0:
+                await self.removeFromDB(channel_id)
+                continue
             if channel:
                 try:
                     await channel.send(embed=schedule_embed)
