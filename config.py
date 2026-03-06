@@ -9,6 +9,7 @@ owner = 1165854743281799218
 admin = 1165854745177640990
 logs = 1168944556927103067
 ticketLog = 1193387303381516319
+premium_logs = 1479370183092207727
 
 dev_mode = False
 
@@ -58,14 +59,3 @@ bruins_servers = [hockey_discord_server, 1220512663998693467, 213656921096454145
 
 premium_users = []
 premium_guilds = []
-premium_users.append(jacob)
-premium_guilds.append(hockey_discord_server)
-from discord.ext import tasks
-from main import bot
-@tasks.loop(minutes=10)
-async def update_premium():
-    async for entitlement in bot.entitlements:
-        if entitlement.sku_id == 1:
-            premium_users.append(entitlement.user_id)
-        elif entitlement.sku_id == 2:
-            premium_guilds.append(entitlement.guild_id)
