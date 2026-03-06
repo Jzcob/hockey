@@ -15,7 +15,7 @@ intents = discord.Intents.default()
 intents.message_content = True
 intents.auto_moderation_configuration = True
 intents.reactions = True
-intents.members = True 
+intents.members = False 
 status = discord.Status.online
 
 class MyBot(commands.Bot):
