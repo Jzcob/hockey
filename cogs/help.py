@@ -21,7 +21,8 @@ class Help(commands.Cog):
         app_commands.Choice(name="general", value="general"),
         app_commands.Choice(name="nhl", value="nhl"),
         app_commands.Choice(name="games", value="games"),
-        app_commands.Choice(name="hockey-bot-league", value="hockey-bot-league")
+        app_commands.Choice(name="hockey-bot-league", value="hockey-bot-league"),
+        app_commands.Choice(name="moderation", value="moderation")
     ])
     async def help(self, interaction: discord.Interaction, menu: app_commands.Choice[str]):
         if config.command_log_bool:
@@ -51,6 +52,7 @@ class Help(commands.Cog):
                 embed.add_field(name="`/info`", value="Shows the info menu!", inline=False)
                 embed.add_field(name="`/avatar`", value="Get the avatar of the bot or a user!", inline=False)
                 embed.add_field(name="`/suggest`", value="Suggest a new feature or improvement for the bot!", inline=False)
+                
             
             elif menu.value == "nhl":
                 #embed.add_field(name="`/bracket`", value="Get the NHL Playoff bracket!", inline=False)
@@ -80,7 +82,12 @@ class Help(commands.Cog):
                 embed.add_field(name="`/ace-team`", value="Choose your weekly x3 points multiplier team.", inline=False)
                 embed.add_field(name="`/leaderboard fantasy`", value="See how you stack up against the competition!", inline=False)
                 embed.add_field(name="`/mypoints fantasy`", value="Check your current point total in the fantasy league.", inline=False)
-
+            elif menu.value == "moderation":
+                embed.add_field(name="`/warn <member> <reason>`", value="Warn a member of the server.", inline=False)
+                embed.add_field(name="`/punishments <member>`", value="View a member's history. (90-day limit for Free tier)", inline=False)
+                embed.add_field(name="`/add-note <member> <note>`", value="Add a staff-only note to a user.", inline=False)
+                embed.add_field(name="`/export-logs`", value="💎 **Referee Only:** Download your server's full history to a .txt file.", inline=False)
+                embed.set_footer(text="Upgrade to the Referee Tier for permanent data storage!")
 
             embed.set_footer(text=config.footer)
             await interaction.response.send_message(embed=embed, ephemeral=True)

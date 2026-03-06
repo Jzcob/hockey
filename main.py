@@ -114,14 +114,119 @@ async def on_entitlement_delete(entitlement: discord.Entitlement):
             await cursor.execute(sql, (entity_id,))
     await log_premium_event(bot, "❌ Subscription Expired", entity_id, bool(entitlement.guild_id), 0xff0000)
 
-# --- Standard Commands (sync, syncserver, etc.) ---
-@bot.command()
-async def sync(ctx):
-    if ctx.author.id == config.jacob:
-        fmt = await ctx.bot.tree.sync()
-        await ctx.send(f"Synced {len(fmt)} commands.")
+# --- Standard Commands ---
 
-# ... (Keep your other @bot.command and @bot.event blocks here) ...
+@bot.command()
+async def sync(ctx) -> None:
+    if ctx.author.id == config.jacob:
+        try:
+            fmt = await ctx.bot.tree.sync()
+            print(f"Synced {len(fmt)} commands.")
+            embed = discord.Embed(title="Synced", description=f"Synced {len(fmt)} commands.", color=0x00ff00)
+            await ctx.send(embed=embed)
+        except Exception as e:
+            print(e)
+    else:
+        embed = discord.Embed(title="Error", description="This is a bot admin command restricted to only the bot owner.", color=0xff0000)
+        await ctx.send(embed=embed)
+
+@bot.command()
+async def syncserver(ctx) -> None:
+    if ctx.author.id == config.jacob:
+        try:
+            fmt = await ctx.bot.tree.sync(guild=ctx.guild)
+            print(f"Synced {len(fmt)} commands.")
+            embed = discord.Embed(title="Synced", description=f"Synced {len(fmt)} commands to this server.", color=0x00ff00)
+            await ctx.send(embed=embed)
+        except Exception as e:
+            print(e)
+    else:
+        embed = discord.Embed(title="Error", description="This is a bot admin command restricted to only the bot owner.", color=0xff0000)
+        await ctx.send(embed=embed)
+
+@bot.command()
+async def triviaquestions(ctx):
+    if ctx.author.id == config.jacob:
+        await ctx.send(file=discord.File("trivia.json"))
+    else:
+        embed = discord.Embed(title="Error", description="This is a bot admin command restricted to the bot owner.", color=0xff0000)
+        await ctx.send(embed=embed)
+
+@bot.command()
+async def servers(ctx):
+    if ctx.author.id == config.jacob:
+        if ctx.channel.type == discord.ChannelType.private or ctx.channel.id in config.allowed_channels:
+            guilds = bot.guilds
+            try:
+                desc = f"Total Servers: {len(guilds)}\n"
+                members = sum(g.member_count for g in guilds)
+                for guild in guilds:
+                    desc += f"ID: {guild.id}, Members: {guild.member_count}, Name: {guild.name}\n"
+                
+                file_path = "server_info.txt"
+                with open(file_path, "w", encoding="utf-8") as file:
+                    file.write(desc)
+                await ctx.send(file=discord.File(file_path))
+                os.remove(file_path)
+                
+                vc = bot.get_channel(1173304351872253952)
+                membersVC = bot.get_channel(1186445778043031722)
+                await vc.edit(name=f"Servers: {len(bot.guilds)}")
+                await membersVC.edit(name=f"Members: {int(members):,}")
+            except Exception as e:
+                await ctx.send(embed=discord.Embed(title="Error", description=f"Something went wrong: `{e}`", color=0xff0000))
+        else:
+            await ctx.send(embed=discord.Embed(title="Error", description="Use this in specified channels or DMs.", color=0xff0000))
+    else:
+        await ctx.send(embed=discord.Embed(title="Error", description="Unauthorized: Bot owner only.", color=0xff0000))
+
+# --- Events ---
+
+@bot.event
+async def on_ready():
+    print(f"Logged on as {bot.user}")
+    print(f"Bot is ready and connected to {len(bot.guilds)} servers.")
+    bot.topggpy = topgg.DBLClient(bot, os.getenv("topgg-token"), autopost=True, post_shard_count=True)
+
+@bot.event
+async def on_guild_join(guild):
+    join_leave_channel = bot.get_channel(1168939285274177627)
+    try:
+        guilds = bot.guilds
+        members = sum(g.member_count for g in guilds)
+        vc = bot.get_channel(1173304351872253952)
+        membersVC = bot.get_channel(1186445778043031722)
+        await vc.edit(name=f"Servers: {len(guilds)}")
+        await membersVC.edit(name=f"Members: {int(members):,}")
+        if len(guilds) % 100 == 0:
+            await join_leave_channel.send(f"<@920797181034778655> Milestone: `{len(guilds)}` servers!")
+    except Exception as e:
+        print(f"Join update error: {e}")
+
+@bot.event
+async def on_guild_remove(guild):
+    try:
+        guilds = bot.guilds
+        members = sum(g.member_count for g in guilds)
+        vc = bot.get_channel(1173304351872253952)
+        membersVC = bot.get_channel(1186445778043031722)
+        await vc.edit(name=f"Servers: {len(guilds)}")
+        await membersVC.edit(name=f"Members: {int(members):,}")
+    except Exception as e:
+        print(f"Remove update error: {e}")
+
+@bot.event
+async def on_command_error(ctx, error):
+    if isinstance(error, commands.CommandOnCooldown):
+        await ctx.send(embed=discord.Embed(title="Cooldown", description=f"Try again in {round(error.retry_after, 1)}s.", color=0xffa500), ephemeral=True)
+    elif isinstance(error, commands.MissingPermissions):
+        await ctx.send(embed=discord.Embed(title="Permissions", description="Missing permissions.", color=0xff0000), ephemeral=True)
+    else:
+        error_channel = bot.get_channel(config.error_channel)
+        string = f"{ctx.author} in {ctx.guild}\nCommand: {ctx.command}\nError: {traceback.format_exc()}"
+        await error_channel.send(f"```{string}```")
+
+# --- Shutdown logic ---
 
 async def main():
     async with bot:
@@ -129,6 +234,10 @@ async def main():
 
 async def shutdown(bot_instance: MyBot):
     print("Bot is shutting down.")
+    owner = bot_instance.get_user(config.jacob)
+    if owner:
+        try: await owner.send(f"Bot shutting down. ({datetime.now()})")
+        except: pass
     if bot_instance.db_pool:
         bot_instance.db_pool.close()
         await bot_instance.db_pool.wait_closed()

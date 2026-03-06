@@ -1,33 +1,34 @@
-Terms of Service for Discord Bot
+# Terms of Service for Hockey Discord Bot
 
-Effective Date: 11/16/2023
+**Effective Date:** March 06, 2026
 
-These Terms of Service ("Agreement") govern your use of our Discord bot ("Hockey"). Please read this Agreement carefully before using the Bot. By using the Bot, you agree to be bound by the terms and conditions outlined below. If you do not agree with any part of this Agreement, you must refrain from using the Bot.
+These Terms of Service ("Agreement") govern your use of the Discord bot "Hockey" (the "Bot"). By adding the Bot to a server or using its commands, you agree to be bound by these terms.
 
-License and Usage: We grant you a non-exclusive, non-transferable, revocable license to use the Bot for your personal, non-commercial use only. You may not modify, distribute, transmit, display, perform, reproduce, publish, license, create derivative works from, transfer, or sell any information, software, products or services obtained from the Bot.
+### 1. License and Usage
+We grant you a revocable, non-exclusive license to use the Bot for personal or community management purposes. You may not attempt to reverse-engineer, scrape, or maliciously disrupt the Bot’s services.
 
-Bot Functionality: The Bot is provided "as is" and we make no warranties or guarantees regarding its functionality, availability, or performance. We reserve the right to modify, suspend, or discontinue any aspect of the Bot at any time without prior notice.
+### 2. Bot Functionality & Reliability
+The Bot is provided "as is." While we strive for 99.9% uptime, we are not responsible for downtime caused by Discord API outages or maintenance. We reserve the right to modify or discontinue features at any time.
 
-Prohibited Conduct: You agree to use the Bot in compliance with all applicable laws and regulations. You shall not engage in any of the following prohibited activities:
+### 3. Subscription & Referee Tier
+The "Referee Tier" is a digital subscription managed through Discord's native monetization system.
+* **Benefits:** Subscribing grants access all items listed under the Premium Tier of the bot.
+* **Billing:** All payments, cancellations, and refunds are handled exclusively by Discord. We do not have access to your payment information.
+* **Expiration:** Upon subscription expiration, the Bot reverts to the standard 90-day data retention policy. Data older than 90 days may be permanently deleted from our MySQL database.
 
-a. Violating any third-party rights, including intellectual property rights; b. Impersonating any person or entity, or falsely representing your affiliation with any person or entity; c. Interfering with or disrupting the Bot or servers connected to it; d. Gaining unauthorized access to any systems or networks related to the Bot; e. Transmitting or uploading any viruses, malware, or other harmful code; f. Collecting or storing personal information of other users without their consent; g. Engaging in any illegal activities or encouraging others to do so.
+### 4. Prohibited Conduct
+You agree not to use the Bot to:
+a. Circumvent Discord’s Terms of Service;
+b. Spam commands to stress-test our database;
+c. Use the Bot for any illegal activities within your jurisdiction.
 
-Intellectual Property: All intellectual property rights, including copyrights, trademarks, and trade secrets in the Bot and its content, belong to us or our licensors. You may not use or reproduce any of these intellectual property rights without our prior written consent.
+### 5. Limitation of Liability
+To the maximum extent permitted by law, the developers of Hockey shall not be liable for any lost data, server disruptions, or indirect damages arising from the use of the Bot.
 
-Limitation of Liability: To the maximum extent permitted by law, we shall not be liable for any indirect, incidental, consequential, or punitive damages arising out of or in connection with your use of the Bot. We shall not be responsible for any loss, damage, or injury resulting from any technical errors, interruptions, or unauthorized access to or use of the Bot.
+### 6. Changes to this Agreement
+We reserve the right to update or modify these Terms of Service at any time, with or without notice, before or after the changes are implemented. Any changes will be effective immediately upon being updated. It is the user's responsibility to review these terms periodically.
 
-Indemnification: You agree to indemnify and hold us harmless from any claims, damages, liabilities, costs, or expenses arising out of your use of the Bot or any violation of this Agreement.
+### 7. Termination
+We reserve the right to block specific users or servers from using the Bot if they violate these terms or engage in abusive behavior toward the developers or the service.
 
-Termination: We reserve the right to terminate or suspend your access to the Bot at any time, with or without cause, and without prior notice. Upon termination, you must cease all use of the Bot.
-
-Changes to the Agreement: We reserve the right to update or modify this Agreement at any time. Any changes will be effective upon posting the revised Agreement on our Discord bot. It is your responsibility to review this Agreement periodically.
-
-Governing Law and Jurisdiction: This Agreement shall be governed by and construed in accordance with the laws of [Jurisdiction]. Any disputes arising out of or in connection with this Agreement shall be subject to the exclusive jurisdiction of the courts of [Jurisdiction].
-
-Severability: If any provision of this Agreement is found to be invalid or unenforceable, the remaining provisions shall continue to be valid and enforceable to the fullest extent permitted by law.
-
-Entire Agreement: This Agreement constitutes the entire agreement between you and us regarding your use of the Bot and supersedes any prior agreements or understandings.
-
-If you have any questions or concerns regarding this Agreement, please contact us by discord https://www.discord.gg/H6ePukhwJZ.
-
-By using our Discord bot, you acknowledge that you have read, understood, and agreed to the terms of this Agreement.
+**Contact:** https://discord.gg/WGQYdzvn8y

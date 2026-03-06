@@ -1,37 +1,39 @@
-Effective Date: 12/01/2025.
+# Privacy Policy for Hockey Discord Bot
 
-This Privacy Policy outlines how our Discord bot ("Hockey") handles and protects user information. We are committed to ensuring the privacy and security of our users and their data. Please read this policy carefully to understand how we collect, use, and disclose information.
+**Effective Date:** March 06, 2026
 
-1. Information Collection:
+We are committed to protecting the privacy of our users. This policy explains how your data is handled within our MySQL-backed infrastructure.
 
-Our Discord bot does have information collection specifically message content's to allow commands to work. We do track, record, or retain user data, only up to and including discord names and ID's and guild names and ID's.
+### 1. Information We Collect
+To provide moderation and league features, we collect and store the following in our secure MySQL database:
+* **User Data:** Discord User IDs and usernames.
+* **Server Data:** Guild IDs and names.
+* **Moderation Logs:** Content of warns, durations of timeouts, and ban reasons.
+* **Staff Notes:** Internal text notes created by server moderators about specific users.
 
-2. Information Usage:
+### 2. How We Use Information
+Data is used solely to provide the Bot’s functionality:
+* **Punishment History:** To allow staff to view a user’s past behavior.
+* **Leaderboards:** To track points for Trivia, GTP, and Fantasy Hockey.
+* **Debugging:** Command logs are sent to a private developer channel to identify and fix code bugs.
 
-The information is used soley to know what was sent at the time of the command being ran to help out myself with idenifing bugs in the code that need to be fixed. We do not engage in data analytics, profiling, or any form of data processing.
+### 3. Data Retention & The 90-Day Policy
+* **Free Tier:** All moderation data (warns, notes, etc.) is automatically deleted from our database after **90 days** to ensure system efficiency.
+* **Referee Tier:** Servers with an active subscription are exempt from the 90-day prune; their data is stored persistently.
 
-3. Information Sharing:
+### 4. Information Sharing
+We **never** sell, trade, or share your data with third parties. Data is only accessible to the bot developers for maintenance and support purposes.
 
-We do not share any information with third parties. We do not sell, trade, or transfer any data to external entities.
+### 5. Data Security
+Our MySQL database is protected with Multi-Factor Authentication (MFA). Access is restricted to authorized developers, and all administrative actions are logged to prevent unauthorized data access.
 
-4. Security Measures:
+### 6. Changes to this Policy
+We reserve the right to modify this Privacy Policy at any time without notice, before or after the update has occurred. It is your responsibility to check this policy for changes. By continuing to use the Bot, you acknowledge and agree to the current version of this policy.
 
-We prioritize the security of our users' information. The information recorded by the bot is sent to a channel in my discord server that only users that are developers of the bot and have Multi-Factor Authentication on as well as all moderator actions being tracked, we employ industry-standard security measures to protect against unauthorized access, disclosure, or alteration of any potential data transmitted within the bot.
+### 7. Children's Privacy
+The Bot is not intended for users under the age of 13. We do not knowingly collect data from children. If we discover such data, it will be immediately deleted.
 
-5. Third-Party Links:
+### 8. Your Rights
+You may request the deletion of your data or your server's data at any time by contacting us through our support server.
 
-Our Discord bot may contain links to third-party websites or services for user convenience. However, we are not responsible for the privacy practices or content of these websites or services. Users are encouraged to review the privacy policies of any third-party sites they visit.
-
-6. Children's Privacy:
-
-Our Discord bot is not intended for use by individuals under the age of 13. We do not knowingly collect personal information from children. If we become aware that we have inadvertently collected personal information from a child, we will take immediate steps to delete it.
-
-7. Changes to the Privacy Policy:
-
-We reserve the right to update or modify this Privacy Policy at any time. Any changes will be effective upon posting the revised policy on our Discord bot. It is the user's responsibility to review this Privacy Policy periodically.
-
-8. Contact Us:
-
-If you have any questions, concerns, or requests regarding this Privacy Policy or our Discord bot's practices, please us by our Discord server: https://www.discord.gg/W5Jx5QSZCb.
-
-By using our Discord bot, you acknowledge that you have read, understood, and agreed to the terms of this Privacy Policy.
+**Support Server:** https://discord.gg/WGQYdzvn8y
