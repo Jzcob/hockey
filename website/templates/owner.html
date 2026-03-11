@@ -1,0 +1,141 @@
+{% extends "base.html" %}
+{% block title %}Owner Panel – HockeyBot{% endblock %}
+
+{% block content %}
+<section class="page-hero">
+    <h1 class="page-title">⚙ Owner Panel</h1>
+    <p class="page-subtitle">Master control for all HockeyBot servers</p>
+</section>
+
+<section class="section owner-section">
+
+    <!-- Stats Bar -->
+    <div class="stats-bar">
+        <div class="stat-card">
+            <div class="stat-card-icon">🏒</div>
+            <div>
+                <div class="stat-card-num" id="ownerServerCount">{{ stats.server_count }}</div>
+                <div class="stat-card-label">Tracked Servers</div>
+            </div>
+        </div>
+        <div class="stat-card">
+            <div class="stat-card-icon">💎</div>
+            <div>
+                <div class="stat-card-num" id="ownerPremiumCount">{{ stats.premium_count }}</div>
+                <div class="stat-card-label">Premium Servers</div>
+            </div>
+        </div>
+        <div class="stat-card">
+            <div class="stat-card-icon">📈</div>
+            <div>
+                <div class="stat-card-num" id="ownerFreeCount">{{ stats.server_count - stats.premium_count }}</div>
+                <div class="stat-card-label">Free Tier</div>
+            </div>
+        </div>
+        <button class="btn btn-ghost btn-sm" onclick="refreshStats()">🔄 Refresh</button>
+    </div>
+
+    <!-- Quick Grant -->
+    <div class="settings-card">
+        <h2 class="card-title">🎁 Grant / Revoke Premium</h2>
+        <div class="quick-grant-form">
+            <input type="text" id="grantGuildId" placeholder="Server ID" class="form-input" style="max-width:260px" />
+            <select id="grantTier" class="form-input" style="max-width:180px">
+                <option value="referee">Referee Tier</option>
+            </select>
+            <button class="btn btn-primary" onclick="grantPremium('grant')">✅ Grant</button>
+            <button class="btn btn-danger" onclick="grantPremium('revoke')">❌ Revoke</button>
+        </div>
+        <div id="grantAlert" class="save-alert" style="display:none"></div>
+    </div>
+
+    <!-- Server Table -->
+    <div class="settings-card">
+        <h2 class="card-title">📋 Server Database</h2>
+        <div class="table-wrapper">
+            <table class="data-table">
+                <thead>
+                    <tr>
+                        <th>Server ID</th>
+                        <th>Premium</th>
+                        <th>Tier</th>
+                        <th>Schedule Ch.</th>
+                        <th>Mod Log Ch.</th>
+                        <th>Actions</th>
+                    </tr>
+                </thead>
+                <tbody id="serverTableBody">
+                    {% for s in servers %}
+                    <tr data-id="{{ s.entity_id }}">
+                        <td><code>{{ s.entity_id }}</code></td>
+                        <td>
+                            {% if s.is_premium %}
+                            <span class="badge badge-premium">💎 Yes</span>
+                            {% else %}
+                            <span class="badge badge-free">Free</span>
+                            {% endif %}
+                        </td>
+                        <td>{{ s.tier or '—' }}</td>
+                        <td>{{ s.schedule_channel_id or '—' }}</td>
+                        <td>{{ s.mod_log_channel_id or '—' }}</td>
+                        <td>
+                            {% if not s.is_premium %}
+                            <button class="btn btn-xs btn-primary" onclick="quickGrant('{{ s.entity_id }}','grant')">Grant</button>
+                            {% else %}
+                            <button class="btn btn-xs btn-danger" onclick="quickGrant('{{ s.entity_id }}','revoke')">Revoke</button>
+                            {% endif %}
+                        </td>
+                    </tr>
+                    {% else %}
+                    <tr><td colspan="6" style="text-align:center;color:var(--text-muted)">No servers recorded yet.</td></tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+
+</section>
+{% endblock %}
+
+{% block scripts %}
+<script>
+async function grantPremium(action) {
+    const guildId = document.getElementById('grantGuildId').value.trim();
+    const tier = document.getElementById('grantTier').value;
+    if (!guildId) return;
+    await togglePremium(guildId, action, tier, 'grantAlert');
+}
+
+async function quickGrant(guildId, action) {
+    await togglePremium(guildId, action, 'referee', 'grantAlert');
+}
+
+async function togglePremium(guildId, action, tier, alertId) {
+    try {
+        const resp = await fetch('/owner/premium', {
+            method: 'POST',
+            headers: {'Content-Type': 'application/json'},
+            body: JSON.stringify({guild_id: guildId, action, tier})
+        });
+        const json = await resp.json();
+        const el = document.getElementById(alertId);
+        el.textContent = json.success ? `✅ Done! (${action} for ${guildId})` : `❌ ${json.error}`;
+        el.className = json.success ? 'save-alert save-alert-success' : 'save-alert save-alert-error';
+        el.style.display = 'block';
+        setTimeout(() => { el.style.display = 'none'; location.reload(); }, 2500);
+    } catch(e) {
+        alert('Request failed.');
+    }
+}
+
+async function refreshStats() {
+    try {
+        const r = await fetch('/owner/stats');
+        const d = await r.json();
+        document.getElementById('ownerServerCount').textContent = d.server_count;
+        document.getElementById('ownerPremiumCount').textContent = d.premium_count;
+        document.getElementById('ownerFreeCount').textContent = d.server_count - d.premium_count;
+    } catch(e) {}
+}
+</script>
+{% endblock %}

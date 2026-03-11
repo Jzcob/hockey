@@ -1,0 +1,13 @@
+{% extends "base.html" %}
+{% block title %}{{ code }} – HockeyBot{% endblock %}
+
+{% block content %}
+<section class="error-page">
+    <div class="error-code">{{ code }}</div>
+    <h1 class="error-title">
+        {% if code == 403 %}Access Denied{% elif code == 404 %}Page Not Found{% else %}Something went wrong{% endif %}
+    </h1>
+    <p class="error-msg">{{ message }}</p>
+    <a href="/" class="btn btn-primary">← Back to Home</a>
+</section>
+{% endblock %}

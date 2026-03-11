@@ -1,0 +1,178 @@
+{% extends "base.html" %}
+{% block title %}Commands – HockeyBot{% endblock %}
+
+{% block content %}
+<section class="page-hero">
+    <h1 class="page-title">Commands</h1>
+    <p class="page-subtitle">Everything you can do with HockeyBot</p>
+</section>
+
+<section class="section commands-section">
+    <div class="cmd-tabs" role="tablist">
+        <button class="cmd-tab active" data-target="general" role="tab">General</button>
+        <button class="cmd-tab" data-target="nhl" role="tab">NHL</button>
+        <button class="cmd-tab" data-target="games" role="tab">Games</button>
+        <button class="cmd-tab" data-target="league" role="tab">Fantasy League</button>
+        <button class="cmd-tab" data-target="moderation" role="tab">Moderation</button>
+    </div>
+
+    <!-- General -->
+    <div class="cmd-panel active" id="panel-general">
+        <div class="cmd-grid">
+            <div class="cmd-card">
+                <code>/help &lt;menu&gt;</code>
+                <p>Display the help menu for a specific category.</p>
+            </div>
+            <div class="cmd-card">
+                <code>/info</code>
+                <p>View info about the bot — version, stats, links.</p>
+            </div>
+            <div class="cmd-card">
+                <code>/avatar</code>
+                <p>Get a user's avatar (or the bot's own avatar).</p>
+            </div>
+            <div class="cmd-card">
+                <code>/suggest &lt;suggestion&gt;</code>
+                <p>Submit a feature request or improvement idea.</p>
+            </div>
+        </div>
+    </div>
+
+    <!-- NHL -->
+    <div class="cmd-panel" id="panel-nhl">
+        <div class="cmd-grid">
+            <div class="cmd-card">
+                <code>/player &lt;name&gt;</code>
+                <p>Fetch stats and info for any active NHL player.</p>
+            </div>
+            <div class="cmd-card">
+                <code>/team &lt;abbreviation&gt;</code>
+                <p>Get full team info — record, division, roster links.</p>
+            </div>
+            <div class="cmd-card">
+                <code>/teams</code>
+                <p>List all 32 NHL teams with abbreviations.</p>
+            </div>
+            <div class="cmd-card">
+                <code>/standings</code>
+                <p>Current Eastern & Western Conference standings.</p>
+            </div>
+            <div class="cmd-card">
+                <code>/schedule &lt;abbreviation&gt;</code>
+                <p>Upcoming schedule for any NHL team.</p>
+            </div>
+            <div class="cmd-card">
+                <code>/game &lt;abbreviation&gt;</code>
+                <p>Live/upcoming game info for a team.</p>
+            </div>
+            <div class="cmd-card">
+                <code>/today</code>
+                <p>All games happening today.</p>
+            </div>
+            <div class="cmd-card">
+                <code>/tomorrow</code>
+                <p>All games happening tomorrow.</p>
+            </div>
+            <div class="cmd-card">
+                <code>/yesterday</code>
+                <p>Results from yesterday's games.</p>
+            </div>
+            <div class="cmd-card">
+                <code>/set-schedule-channel &lt;channel&gt;</code>
+                <p>Auto-post daily game schedules to a channel. <span class="perm-badge">Admin</span></p>
+            </div>
+            <div class="cmd-card">
+                <code>/remove-schedule-channel</code>
+                <p>Disable the daily schedule auto-post. <span class="perm-badge">Admin</span></p>
+            </div>
+        </div>
+    </div>
+
+    <!-- Games -->
+    <div class="cmd-panel" id="panel-games">
+        <div class="cmd-grid">
+            <div class="cmd-card">
+                <code>/guess-the-player</code>
+                <p>Guess a random NHL player from clues.</p>
+            </div>
+            <div class="cmd-card">
+                <code>/trivia</code>
+                <p>Answer an NHL trivia question to earn points.</p>
+            </div>
+            <div class="cmd-card">
+                <code>/leaderboard &lt;trivia|gtp|fantasy&gt;</code>
+                <p>View top players for trivia, guess-the-player, or fantasy.</p>
+            </div>
+            <div class="cmd-card">
+                <code>/mypoints &lt;trivia|gtp|fantasy&gt;</code>
+                <p>Check your own point totals.</p>
+            </div>
+            <div class="cmd-card">
+                <code>/suggest-trivia &lt;question&gt; &lt;answer&gt;</code>
+                <p>Submit a trivia question for the bot's question bank.</p>
+            </div>
+        </div>
+    </div>
+
+    <!-- League -->
+    <div class="cmd-panel" id="panel-league">
+        <div class="cmd-grid">
+            <div class="cmd-card">
+                <code>/my-roster</code>
+                <p>View your active teams, bench, total points, and swap count.</p>
+            </div>
+            <div class="cmd-card">
+                <code>/swap-teams</code>
+                <p>Use one of your 10 seasonal swaps to change a team.</p>
+            </div>
+            <div class="cmd-card">
+                <code>/ace-team</code>
+                <p>Pick your weekly x3 points multiplier team.</p>
+            </div>
+            <div class="cmd-card">
+                <code>/leaderboard fantasy</code>
+                <p>See the full Fantasy League leaderboard.</p>
+            </div>
+            <div class="cmd-card">
+                <code>/mypoints fantasy</code>
+                <p>Check your current Fantasy League point total.</p>
+            </div>
+        </div>
+    </div>
+
+    <!-- Moderation -->
+    <div class="cmd-panel" id="panel-moderation">
+        <div class="cmd-grid">
+            <div class="cmd-card">
+                <code>/warn &lt;member&gt; &lt;reason&gt;</code>
+                <p>Warn a member and log the action. <span class="perm-badge">Mod</span></p>
+            </div>
+            <div class="cmd-card">
+                <code>/punishments &lt;member&gt;</code>
+                <p>View a member's punishment history (90-day limit on Free tier). <span class="perm-badge">Mod</span></p>
+            </div>
+            <div class="cmd-card">
+                <code>/add-note &lt;member&gt; &lt;note&gt;</code>
+                <p>Add a private staff note to a user's record. <span class="perm-badge">Mod</span></p>
+            </div>
+            <div class="cmd-card">
+                <code>/export-logs</code>
+                <p>Download your server's full moderation history. <span class="prem-badge">💎 Referee Only</span></p>
+            </div>
+        </div>
+    </div>
+</section>
+{% endblock %}
+
+{% block scripts %}
+<script>
+document.querySelectorAll('.cmd-tab').forEach(tab => {
+    tab.addEventListener('click', () => {
+        document.querySelectorAll('.cmd-tab').forEach(t => t.classList.remove('active'));
+        document.querySelectorAll('.cmd-panel').forEach(p => p.classList.remove('active'));
+        tab.classList.add('active');
+        document.getElementById('panel-' + tab.dataset.target).classList.add('active');
+    });
+});
+</script>
+{% endblock %}

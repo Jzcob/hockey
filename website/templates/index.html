@@ -1,0 +1,138 @@
+{% extends "base.html" %}
+{% block title %}Hockey Bot – The Ultimate NHL Discord Bot{% endblock %}
+
+{% block content %}
+
+<!-- Hero Section -->
+<section class="hero">
+    <div class="hero-glow"></div>
+    <div class="hero-content">
+        <div class="hero-badge">
+            <span class="badge-dot"></span>
+            Now live in 500+ servers
+        </div>
+        <h1 class="hero-title">
+            The Ultimate<br />
+            <span class="gradient-text">NHL Discord Bot</span>
+        </h1>
+        <p class="hero-subtitle">
+            Live scores, standings, player stats, trivia, fantasy leagues, and powerful
+            moderation tools — all in one puck-dropping bot.
+        </p>
+        <div class="hero-cta">
+            <a href="https://discord.com/oauth2/authorize?client_id={{ discord_client_id }}&scope=bot+applications.commands&permissions=8" class="btn btn-primary btn-lg" target="_blank">
+                🏒 Add to Discord
+            </a>
+            <a href="/commands" class="btn btn-outline btn-lg">View Commands</a>
+        </div>
+        <div class="hero-stats">
+            <div class="stat-pill">
+                <span class="stat-num" id="statServers">500+</span>
+                <span class="stat-label">Servers</span>
+            </div>
+            <div class="stat-pill">
+                <span class="stat-num">32</span>
+                <span class="stat-label">NHL Teams</span>
+            </div>
+            <div class="stat-pill">
+                <span class="stat-num">100+</span>
+                <span class="stat-label">Trivia Qs</span>
+            </div>
+        </div>
+    </div>
+    <div class="hero-art">
+        <div class="puck-3d">🏒</div>
+        <div class="orbit orbit-1"><div class="orbit-dot"></div></div>
+        <div class="orbit orbit-2"><div class="orbit-dot"></div></div>
+        <div class="orbit orbit-3"><div class="orbit-dot"></div></div>
+    </div>
+</section>
+
+<!-- Features Grid -->
+<section class="section features-section">
+    <div class="section-header">
+        <h2 class="section-title">Everything Hockey, in Discord</h2>
+        <p class="section-subtitle">Real-time data powered by the official NHL API</p>
+    </div>
+    <div class="features-grid">
+
+        <div class="feature-card">
+            <div class="feature-icon">📊</div>
+            <h3>Live Standings</h3>
+            <p>Get up-to-the-minute Eastern & Western Conference standings with a single command.</p>
+        </div>
+
+        <div class="feature-card">
+            <div class="feature-icon">🎯</div>
+            <h3>Player Stats</h3>
+            <p>Look up any NHL player's stats, position, team, and career information.</p>
+        </div>
+
+        <div class="feature-card">
+            <div class="feature-icon">📅</div>
+            <h3>Game Schedule</h3>
+            <p>View today's, tomorrow's, or any team's full schedule. Auto-post daily game schedules.</p>
+        </div>
+
+        <div class="feature-card">
+            <div class="feature-icon">🧠</div>
+            <h3>NHL Trivia</h3>
+            <p>Test your hockey knowledge with 100+ hand-crafted trivia questions. Earn points and climb the leaderboard.</p>
+        </div>
+
+        <div class="feature-card">
+            <div class="feature-icon">🏆</div>
+            <h3>Fantasy League</h3>
+            <p>Pick your 5 teams, swap strategically, and compete against others in the Hockey Bot League.</p>
+        </div>
+
+        <div class="feature-card">
+            <div class="feature-icon">🛡️</div>
+            <h3>Moderation</h3>
+            <p>Warn, track punishments, add notes, and export full moderation logs. Upgrade for permanent storage.</p>
+        </div>
+
+        <div class="feature-card">
+            <div class="feature-icon">🎮</div>
+            <h3>Guess the Player</h3>
+            <p>Fun mini-game where you guess the NHL player from hints. Compete for the top spot!</p>
+        </div>
+
+        <div class="feature-card">
+            <div class="feature-icon">⚙️</div>
+            <h3>Server Dashboard</h3>
+            <p>A full web dashboard to configure every aspect of the bot for your server — no commands needed.</p>
+        </div>
+
+    </div>
+</section>
+
+<!-- Premium Section -->
+<section class="section premium-section">
+    <div class="premium-card">
+        <div class="premium-badge">💎 Referee Tier</div>
+        <h2>Unlock the Full Rink</h2>
+        <p>Upgrade your server to the Referee Tier for permanent moderation history, exclusive analytics, and priority support.</p>
+        <ul class="premium-list">
+            <li>✅ Permanent moderation records (no 90-day limit)</li>
+            <li>✅ Full punishment export to .txt</li>
+            <li>✅ Priority feature requests</li>
+            <li>✅ Exclusive Referee badge</li>
+            <li>✅ Early access to new features</li>
+        </ul>
+        <a href="https://discord.gg/WGQYdzvn8y" class="btn btn-premium btn-lg" target="_blank">
+            Learn More in Discord
+        </a>
+    </div>
+</section>
+
+<!-- CTA Banner -->
+<section class="section cta-section">
+    <h2>Ready to drop the puck?</h2>
+    <p>Join 500+ servers already using HockeyBot.</p>
+    <a href="https://discord.com/oauth2/authorize?client_id={{ discord_client_id }}&scope=bot+applications.commands&permissions=8" class="btn btn-primary btn-xl" target="_blank">
+        Add HockeyBot Free →
+    </a>
+</section>
+
+{% endblock %}
