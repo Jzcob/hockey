@@ -1,0 +1,153 @@
+{% extends "base.html" %}
+{% block title %}{{ guild.name }} Settings – HockeyBot{% endblock %}
+
+{% block content %}
+<section class="page-hero">
+    <div class="guild-header">
+        {% if guild.icon_url %}
+        <img src="{{ guild.icon_url }}" alt="{{ guild.name }}" class="guild-header-icon" />
+        {% else %}
+        <div class="guild-header-icon placeholder">{{ guild.name[0] | upper }}</div>
+        {% endif %}
+        <div>
+            <h1 class="page-title">{{ guild.name }}</h1>
+            <p class="page-subtitle">Server Settings &amp; Permissions</p>
+        </div>
+    </div>
+    {% if premium %}
+    <span class="badge badge-premium">💎 {{ settings.tier | default('Referee') | title }} Tier</span>
+    {% else %}
+    <span class="badge badge-free">Free Tier</span>
+    {% endif %}
+</section>
+
+<section class="section settings-section">
+    <div id="saveAlert" class="save-alert" style="display:none">
+        <span id="saveMsg">✅ Settings saved!</span>
+    </div>
+
+    <div class="settings-grid">
+
+        <!-- NHL Section -->
+        <div class="settings-card">
+            <h2 class="card-title">🏒 NHL &amp; Schedule</h2>
+            <div class="form-group">
+                <label>Schedule Channel ID</label>
+                <input type="text" id="schedule_channel_id" placeholder="e.g. 1234567890123456789"
+                       value="{{ settings.get('schedule_channel_id', '') }}" class="form-input" />
+                <span class="form-hint">Channel where daily game schedules are posted.</span>
+            </div>
+        </div>
+
+        <!-- Moderation Section -->
+        <div class="settings-card">
+            <h2 class="card-title">🛡️ Moderation</h2>
+            <div class="form-group">
+                <label>Mod Log Channel ID</label>
+                <input type="text" id="mod_log_channel_id" placeholder="e.g. 1234567890123456789"
+                       value="{{ settings.get('mod_log_channel_id', '') }}" class="form-input" />
+                <span class="form-hint">Channel where moderation actions are logged.</span>
+            </div>
+            <div class="form-group">
+                <label>Mute Role ID</label>
+                <input type="text" id="mute_role_id" placeholder="e.g. 1234567890123456789"
+                       value="{{ settings.get('mute_role_id', '') }}" class="form-input" />
+                <span class="form-hint">Role assigned when a member is muted.</span>
+            </div>
+        </div>
+
+        <!-- Welcome Section -->
+        <div class="settings-card">
+            <h2 class="card-title">👋 Welcome</h2>
+            <div class="form-group">
+                <label>Welcome Channel ID</label>
+                <input type="text" id="welcome_channel_id" placeholder="e.g. 1234567890123456789"
+                       value="{{ settings.get('welcome_channel_id', '') }}" class="form-input" />
+            </div>
+            <div class="form-group">
+                <label>Welcome Message</label>
+                <textarea id="welcome_message" rows="3" class="form-input" placeholder="Welcome {user} to {server}!">{{ settings.get('welcome_message', '') }}</textarea>
+                <span class="form-hint">Use <code>{user}</code> and <code>{server}</code> as placeholders.</span>
+            </div>
+        </div>
+
+        <!-- General Bot Settings -->
+        <div class="settings-card">
+            <h2 class="card-title">⚙️ General</h2>
+            <div class="form-group">
+                <label>Command Prefix</label>
+                <input type="text" id="prefix" placeholder=";;" maxlength="5"
+                       value="{{ settings.get('prefix', ';;') }}" class="form-input" />
+                <span class="form-hint">Prefix for legacy text commands.</span>
+            </div>
+            <div class="form-group">
+                <label>Language</label>
+                <select id="language" class="form-input">
+                    <option value="en" {% if settings.get('language','en') == 'en' %}selected{% endif %}>English</option>
+                    <option value="fr" {% if settings.get('language') == 'fr' %}selected{% endif %}>Français</option>
+                </select>
+            </div>
+        </div>
+
+        <!-- Premium upsell if not premium -->
+        {% if not premium %}
+        <div class="settings-card settings-card-premium">
+            <h2 class="card-title">💎 Upgrade to Referee Tier</h2>
+            <p>Unlock permanent moderation records, full log exports, and priority support for this server.</p>
+            <a href="https://discord.gg/WGQYdzvn8y" class="btn btn-premium" target="_blank">Learn More</a>
+        </div>
+        {% endif %}
+
+    </div>
+
+    <div class="settings-actions">
+        <button class="btn btn-primary btn-lg" id="saveBtn" onclick="saveSettings('{{ guild.id }}')">
+            Save Changes
+        </button>
+        <a href="/dashboard" class="btn btn-ghost">← Back to Servers</a>
+    </div>
+</section>
+{% endblock %}
+
+{% block scripts %}
+<script>
+async function saveSettings(guildId) {
+    const btn = document.getElementById('saveBtn');
+    btn.disabled = true;
+    btn.textContent = 'Saving…';
+
+    const fields = ['schedule_channel_id','mod_log_channel_id','mute_role_id',
+                    'welcome_channel_id','welcome_message','prefix','language'];
+    const data = {};
+    fields.forEach(f => {
+        const el = document.getElementById(f);
+        if (el) data[f] = el.value;
+    });
+
+    try {
+        const resp = await fetch(`/dashboard/${guildId}/save`, {
+            method: 'POST',
+            headers: {'Content-Type': 'application/json'},
+            body: JSON.stringify(data)
+        });
+        const json = await resp.json();
+        const alert = document.getElementById('saveAlert');
+        const msg = document.getElementById('saveMsg');
+        if (json.success) {
+            msg.textContent = '✅ Settings saved!';
+            alert.className = 'save-alert save-alert-success';
+        } else {
+            msg.textContent = '❌ Error: ' + (json.error || 'Unknown error');
+            alert.className = 'save-alert save-alert-error';
+        }
+        alert.style.display = 'block';
+        setTimeout(() => { alert.style.display = 'none'; }, 4000);
+    } catch (e) {
+        alert('Failed to save settings.');
+    }
+
+    btn.disabled = false;
+    btn.textContent = 'Save Changes';
+}
+</script>
+{% endblock %}

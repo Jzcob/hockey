@@ -1,0 +1,39 @@
+{% extends "base.html" %}
+{% block title %}Dashboard – HockeyBot{% endblock %}
+
+{% block content %}
+<section class="page-hero">
+    <h1 class="page-title">Your Servers</h1>
+    <p class="page-subtitle">Select a server to manage HockeyBot settings</p>
+</section>
+
+<section class="section dashboard-section">
+    {% if guilds %}
+    <div class="guild-grid">
+        {% for guild in guilds %}
+        <a href="/dashboard/{{ guild.id }}" class="guild-card">
+            {% if guild.icon_url %}
+            <img src="{{ guild.icon_url }}" alt="{{ guild.name }}" class="guild-icon" />
+            {% else %}
+            <div class="guild-icon placeholder">{{ guild.name[0] | upper }}</div>
+            {% endif %}
+            <div class="guild-info">
+                <h3>{{ guild.name }}</h3>
+                <span class="guild-id">ID: {{ guild.id }}</span>
+            </div>
+            <div class="guild-arrow">→</div>
+        </a>
+        {% endfor %}
+    </div>
+    {% else %}
+    <div class="empty-state">
+        <div class="empty-icon">🏒</div>
+        <h3>No servers found</h3>
+        <p>You need to be an administrator of a server that has HockeyBot to manage settings.</p>
+        <a href="https://discord.com/oauth2/authorize?client_id={{ discord_client_id }}&scope=bot+applications.commands&permissions=8" class="btn btn-primary" target="_blank">
+            Add HockeyBot to a Server
+        </a>
+    </div>
+    {% endif %}
+</section>
+{% endblock %}
