@@ -5,3 +5,8 @@ TOKEN.py
 .env
 *.xml
 *.iml
+
+# Website build artifacts and dependencies
+website/node_modules/
+website/.next/
+website/.env.local
