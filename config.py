@@ -11,6 +11,8 @@ logs = 1168944556927103067
 ticketLog = 1193387303381516319
 premium_logs = 1479370183092207727
 
+released = False
+
 dev_mode = False
 
 color = 0xffffff

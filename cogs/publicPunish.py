@@ -27,6 +27,19 @@ class PunishPublic(commands.Cog):
     def cog_unload(self):
         self.prune_task.cancel()
 
+    # --- Release Check Helper ---
+
+    async def check_released(self, interaction: discord.Interaction) -> bool:
+        if getattr(config, "released", False):
+            return True
+        
+        await interaction.response.send_message(
+            "🚧 **This feature is coming soon!**\n"
+            "Join my discord server found in `/info` for more information and updates.", 
+            ephemeral=True
+        )
+        return False
+
     @tasks.loop(hours=24)
     async def prune_task(self):
         """Wipes data older than 90 days for non-premium guilds."""
@@ -60,6 +73,9 @@ class PunishPublic(commands.Cog):
     @app_commands.command(name="punishments", description="View punishment history.")
     @app_commands.checks.has_permissions(moderate_members=True)
     async def punishments(self, interaction: discord.Interaction, user: discord.Member):
+        if not await self.check_released(interaction):
+            return
+
         await interaction.response.defer()
         premium = await self.is_guild_premium(interaction.guild.id)
         
@@ -121,6 +137,9 @@ class PunishPublic(commands.Cog):
     @app_commands.command(name="warn", description="Warn a user.")
     @app_commands.checks.has_permissions(moderate_members=True)
     async def warn(self, interaction: discord.Interaction, user: discord.Member, reason: str, evidence: discord.Attachment = None):
+        if not await self.check_released(interaction):
+            return
+
         await interaction.response.defer()
         async with self.db_pool.acquire() as conn:
             async with conn.cursor() as cursor:
@@ -132,6 +151,9 @@ class PunishPublic(commands.Cog):
     @app_commands.command(name="timeout", description="Timeout a user.")
     @app_commands.checks.has_permissions(moderate_members=True)
     async def timeout(self, interaction: discord.Interaction, user: discord.Member, duration: int, reason: str, evidence: discord.Attachment = None):
+        if not await self.check_released(interaction):
+            return
+
         await interaction.response.defer()
         async with self.db_pool.acquire() as conn:
             async with conn.cursor() as cursor:
@@ -144,6 +166,9 @@ class PunishPublic(commands.Cog):
     @app_commands.command(name="kick", description="Kick a user.")
     @app_commands.checks.has_permissions(moderate_members=True)
     async def kick(self, interaction: discord.Interaction, user: discord.Member, reason: str, evidence: discord.Attachment = None):
+        if not await self.check_released(interaction):
+            return
+
         await interaction.response.defer()
         async with self.db_pool.acquire() as conn:
             async with conn.cursor() as cursor:
@@ -156,6 +181,9 @@ class PunishPublic(commands.Cog):
     @app_commands.command(name="ban", description="Ban a user.")
     @app_commands.checks.has_permissions(moderate_members=True)
     async def ban(self, interaction: discord.Interaction, user: discord.Member, reason: str, evidence: discord.Attachment = None):
+        if not await self.check_released(interaction):
+            return
+
         await interaction.response.defer()
         async with self.db_pool.acquire() as conn:
             async with conn.cursor() as cursor:
@@ -168,6 +196,9 @@ class PunishPublic(commands.Cog):
     @app_commands.command(name="unban", description="Unban a user.")
     @app_commands.checks.has_permissions(moderate_members=True)
     async def unban(self, interaction: discord.Interaction, user: discord.User):
+        if not await self.check_released(interaction):
+            return
+
         await interaction.response.defer()
         async with self.db_pool.acquire() as conn:
             async with conn.cursor() as cursor:
@@ -180,6 +211,9 @@ class PunishPublic(commands.Cog):
     @app_commands.command(name="clear-punishments", description="Clear all punishments for a user.")
     @app_commands.checks.has_permissions(moderate_members=True)
     async def clear_punishments(self, interaction: discord.Interaction, user: discord.Member):
+        if not await self.check_released(interaction):
+            return
+
         await interaction.response.defer()
         async with self.db_pool.acquire() as conn:
             async with conn.cursor() as cursor:
@@ -193,6 +227,9 @@ class PunishPublic(commands.Cog):
     @app_commands.command(name="delete-punishment", description="Delete a specific punishment by ID.")
     @app_commands.checks.has_permissions(moderate_members=True)
     async def delete_punishment(self, interaction: discord.Interaction, punishment_id: int):
+        if not await self.check_released(interaction):
+            return
+
         await interaction.response.defer()
         async with self.db_pool.acquire() as conn:
             async with conn.cursor() as cursor:
@@ -203,11 +240,12 @@ class PunishPublic(commands.Cog):
                 await conn.commit()
         await interaction.followup.send(f"✅ Punishment with ID **{punishment_id}** has been deleted.")
     
-    
-
     @app_commands.command(name="add-note", description="Add an internal staff note.")
     @app_commands.checks.has_permissions(moderate_members=True)
     async def add_note(self, interaction: discord.Interaction, user: discord.Member, note: str):
+        if not await self.check_released(interaction):
+            return
+
         await interaction.response.defer(ephemeral=True)
         premium = await self.is_guild_premium(interaction.guild.id)
         
@@ -229,11 +267,13 @@ class PunishPublic(commands.Cog):
     @app_commands.command(name="set-logs", description="Set the channel where moderation logs are sent.")
     @app_commands.checks.has_permissions(administrator=True)
     async def set_logs(self, interaction: discord.Interaction, channel: discord.TextChannel):
+        if not await self.check_released(interaction):
+            return
+
         await interaction.response.defer()
         
         async with self.db_pool.acquire() as conn:
             async with conn.cursor() as cursor:
-                # Upsert logic: Update if exists, insert if not
                 sql = """
                     INSERT INTO guild_settings (guild_id, logging_channel_id) 
                     VALUES (%s, %s) 
@@ -261,4 +301,4 @@ class PunishPublic(commands.Cog):
                 await channel.send(embed=embed)
 
 async def setup(bot):
-    await bot.add_cog(PunishPublic(bot))    
+    await bot.add_cog(PunishPublic(bot))
