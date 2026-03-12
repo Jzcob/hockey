@@ -53,7 +53,7 @@ class punish(commands.Cog):
         print(f"LOADED: `punish.py`")
 
 ### Warn ###
-    @app_commands.command(name="warn", description="Warns a user!")
+    @app_commands.command(name="warn", description="PRIVATE VERSION: Warns a user!")
     @app_commands.checks.has_role(staff)
     async def warn(self, interaction: discord.Interaction, member: discord.Member, reason: str, evidence: discord.Attachment):
         try:
@@ -102,7 +102,7 @@ class punish(commands.Cog):
             await interaction.followup.send("Error with command, Message has been sent to Bot Developers", ephemeral=True)
 
 ### Timeout ###
-    @app_commands.command(name="timeout", description="Timeouts a user!")
+    @app_commands.command(name="timeout", description="PRIVATE VERSION: Timeouts a user!")
     @app_commands.describe(duration="How long should the timeout be?")
     @app_commands.choices(duration=[
         discord.app_commands.Choice(name='6 hours', value='6h'),
@@ -189,7 +189,7 @@ class punish(commands.Cog):
             await error_channel.send(f"<@920797181034778655>```{string}```")
             await interaction.followup.send("Error with command, Message has been sent to Bot Developers", ephemeral=True)
     
-    @app_commands.command(name="ban", description="Bans a user!")
+    @app_commands.command(name="ban", description="PRIVATE VERSION: Bans a user!")
     @app_commands.checks.has_any_role(mod, admin, manager, owner)
     async def ban(self, interaction: discord.Interaction, member: discord.Member, reason: str, evidence: discord.Attachment):
         try:
@@ -237,7 +237,7 @@ class punish(commands.Cog):
 ##################################################################################################################
 ########################### REMOVE PUNISHMENT COMMANDS ###########################################################
 ##################################################################################################################            
-    @app_commands.command(name="cancel-timeout", description="Cancel a user's timeout!")
+    @app_commands.command(name="cancel-timeout", description="PRIVATE VERSION: Cancel a user's timeout!")
     @app_commands.checks.has_any_role(admin, manager, owner)
     async def cancel_timeout(self, interaction: discord.Interaction, member: discord.Member):
         if member.is_timed_out() is False:
@@ -251,7 +251,7 @@ class punish(commands.Cog):
             await error_channel.send(f"<@920797181034778655>```{string}```")
             await interaction.followup.send("Error with command, Message has been sent to Bot Developers", ephemeral=True)
     
-    @app_commands.command(name="remove-warn", description="Remove a warn from a user's punishment history!")
+    @app_commands.command(name="remove-warn", description="PRIVATE VERSION: Remove a warn from a user's punishment history!")
     @app_commands.checks.has_any_role(admin, manager, owner)
     async def remove_warn(self, interaction: discord.Interaction, member: discord.Member, warn: int):
         try:
@@ -278,7 +278,7 @@ class punish(commands.Cog):
             await error_channel.send(f"<@920797181034778655>```{string}```")
             await interaction.followup.send("Error with command, Message has been sent to Bot Developers", ephemeral=True)
     
-    @app_commands.command(name="remove-timeout", description="Remove a timeout from a user's punishment history!")
+    @app_commands.command(name="remove-timeout", description="PRIVATE VERSION: Remove a timeout from a user's punishment history!")
     @app_commands.checks.has_any_role(admin, manager, owner)
     async def remove_timeout(self, interaction: discord.Interaction, member: discord.Member, timeout: int):
         try:
@@ -305,7 +305,7 @@ class punish(commands.Cog):
             await error_channel.send(f"<@920797181034778655>```{string}```")
             await interaction.followup.send("Error with command, Message has been sent to Bot Developers", ephemeral=True)
         
-    @app_commands.command(name="remove-ban", description="Remove a ban from a user's punishment history!")
+    @app_commands.command(name="remove-ban", description="PRIVATE VERSION: Remove a ban from a user's punishment history!")
     @app_commands.checks.has_any_role(admin, manager, owner)
     async def remove_ban(self, interaction: discord.Interaction, member: discord.Member, ban: int):
         try:
@@ -335,7 +335,7 @@ class punish(commands.Cog):
 ##################################################################################################################
 ############################### PUNISHMENT COMMANDS ##############################################################
 #################################################################################################################
-    @app_commands.command(name="punishments", description="View a user's punishments!")
+    @app_commands.command(name="punishments", description="PRIVATE VERSION: View a user's punishments!")
     @app_commands.checks.has_any_role(staff)
     async def punishments(self, interaction: discord.Interaction, member: discord.Member):
         try:
@@ -362,7 +362,7 @@ class punish(commands.Cog):
             await error_channel.send(f"<@920797181034778655>```{string}```")
             await interaction.followup.send("Error with command, Message has been sent to Bot Developers", ephemeral=True)
 
-    @app_commands.command(name="fix-punishment", description="Fix a user's punishment reason!")
+    @app_commands.command(name="fix-punishment", description="PRIVATE VERSION: Fix a user's punishment reason!")
     @app_commands.checks.has_any_role(admin, manager, owner)
     @app_commands.describe(type="What is the punishment?")
     @app_commands.choices(type=[
@@ -393,7 +393,7 @@ class punish(commands.Cog):
 ###############################################################################################################
 ################################# NOTE COMMANDS #############################################################
 ###############################################################################################################
-    @app_commands.command(name="set-note", description="Set a note for a user!")
+    @app_commands.command(name="set-note", description="PRIVATE VERSION: Set a note for a user!")
     @app_commands.checks.has_any_role(mod, admin, manager, owner)
     async def set_note(self, interaction: discord.Interaction, member: discord.Member, note: str):
         try:
@@ -411,7 +411,7 @@ class punish(commands.Cog):
             await error_channel.send(f"<@920797181034778655>```{string}```")
             await interaction.followup.send("Error with command, Message has been sent to Bot Developers", ephemeral=True)
     
-    @app_commands.command(name="remove-note", description="Remove a note from a user!")
+    @app_commands.command(name="remove-note", description="PRIVATE VERSION: Remove a note from a user!")
     @app_commands.checks.has_any_role(admin, manager, owner)
     async def remove_note(self, interaction: discord.Interaction, member: discord.Member, note: int):
         try:
@@ -441,7 +441,7 @@ class punish(commands.Cog):
 ################################# TEST COMMANDS ###################################################################
 ##################################################################################################################
 
-    @app_commands.command(name="purge", description="Purge a user's messages!")
+    @app_commands.command(name="purge", description="PRIVATE VERSION: Purge a user's messages!")
     @app_commands.checks.has_any_role(mod, admin, manager, owner)
     async def purge(self, interaction: discord.Interaction, amount: int, member: discord.Member=None):
         try:
@@ -457,7 +457,7 @@ class punish(commands.Cog):
             await error_channel.send(f"<@920797181034778655>```{string}```")
             await interaction.followup.send("Error with command, Message has been sent to Bot Developers", ephemeral=True)
 
-    @app_commands.command(name="staff-help", description="Shows the help menu!")
+    @app_commands.command(name="staff-help", description="PRIVATE VERSION: Shows the help menu!")
     @app_commands.checks.has_any_role("Staff")
     @app_commands.describe(role="The role you want to see the help menu for!")
     @app_commands.choices(role=[
