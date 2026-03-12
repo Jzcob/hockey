@@ -19,7 +19,7 @@ class Leaderboards(commands.Cog, name="Leaderboards"):
         print("Leaderboards Cog: Database pool is accessible.")
 
     @commands.Cog.listener()
-    async def on_ready(self):
+    async def on_ready(self): #hello
         print(f"LOADED: `leaderboards.py`")
 
     async def log_command(self, interaction: discord.Interaction):
