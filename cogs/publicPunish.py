@@ -8,7 +8,6 @@ import config
 import traceback
 from datetime import datetime, timedelta
 
-# Custom check for Bot Owner
 def is_owner():
     async def predicate(interaction: discord.Interaction) -> bool:
         if interaction.user.id in config.bot_authors: 
@@ -22,7 +21,6 @@ class PunishPublic(commands.Cog):
         self.bot = bot
         self.db_pool = self.bot.db_pool
         self.retention_days = 90
-        # Fetches the key you just added to .env
         self.enc_key = os.getenv("db_encryption_key") 
         self.prune_task.start()
 
@@ -69,7 +67,6 @@ class PunishPublic(commands.Cog):
             async with conn.cursor(aiomysql.DictCursor) as cursor:
                 limit = 1000 if premium else 10
                 
-                # Fetching decrypted history using the key from .env
                 query = f"""
                     (SELECT 'Warn' as type, CAST(AES_DECRYPT(reason, %s) AS CHAR) as reason, staff_id, created_at 
                      FROM warns WHERE user_id = %s AND guild_id = %s ORDER BY created_at DESC LIMIT {limit})
@@ -100,7 +97,6 @@ class PunishPublic(commands.Cog):
             for item in history:
                 date_str = item['created_at'].strftime('%Y-%m-%d')
                 
-                # Double-check raw binary data from MySQL is decoded properly
                 raw_reason = item['reason']
                 if raw_reason:
                     reason = raw_reason.decode('utf-8') if isinstance(raw_reason, bytes) else str(raw_reason)
@@ -128,13 +124,86 @@ class PunishPublic(commands.Cog):
         await interaction.response.defer()
         async with self.db_pool.acquire() as conn:
             async with conn.cursor() as cursor:
-                # Encrypting before storage
                 sql = "INSERT INTO warns (guild_id, user_id, staff_id, reason, evidence_url) VALUES (%s, %s, %s, AES_ENCRYPT(%s, %s), %s)"
                 await cursor.execute(sql, (interaction.guild.id, user.id, interaction.user.id, reason, self.enc_key, evidence.url if evidence else None))
                 await conn.commit()
         await interaction.followup.send(f"✅ **{user.name}** has been warned.")
+    
+    @app_commands.command(name="timeout", description="Timeout a user.")
+    @app_commands.checks.has_permissions(moderate_members=True)
+    async def timeout(self, interaction: discord.Interaction, user: discord.Member, duration: int, reason: str, evidence: discord.Attachment = None):
+        await interaction.response.defer()
+        async with self.db_pool.acquire() as conn:
+            async with conn.cursor() as cursor:
+                sql = "INSERT INTO timeouts (guild_id, user_id, staff_id, reason, evidence_url) VALUES (%s, %s, %s, AES_ENCRYPT(%s, %s), %s)"
+                await cursor.execute(sql, (interaction.guild.id, user.id, interaction.user.id, reason, self.enc_key, evidence.url if evidence else None))
+                await conn.commit()
+        await interaction.followup.send(f"✅ **{user.name}** has been timed out for {duration} minutes.")
+        await user.timeout(timedelta(minutes=duration), reason=reason)
 
-    # ... (Other Moderation commands use same AES_ENCRYPT logic) ...
+    @app_commands.command(name="kick", description="Kick a user.")
+    @app_commands.checks.has_permissions(moderate_members=True)
+    async def kick(self, interaction: discord.Interaction, user: discord.Member, reason: str, evidence: discord.Attachment = None):
+        await interaction.response.defer()
+        async with self.db_pool.acquire() as conn:
+            async with conn.cursor() as cursor:
+                sql = "INSERT INTO kicks (guild_id, user_id, staff_id, reason, evidence_url) VALUES (%s, %s, %s, AES_ENCRYPT(%s, %s), %s)"
+                await cursor.execute(sql, (interaction.guild.id, user.id, interaction.user.id, reason, self.enc_key, evidence.url if evidence else None))
+                await conn.commit()
+        await interaction.followup.send(f"✅ **{user.name}** has been kicked.")
+        await user.kick(reason=reason)
+    
+    @app_commands.command(name="ban", description="Ban a user.")
+    @app_commands.checks.has_permissions(moderate_members=True)
+    async def ban(self, interaction: discord.Interaction, user: discord.Member, reason: str, evidence: discord.Attachment = None):
+        await interaction.response.defer()
+        async with self.db_pool.acquire() as conn:
+            async with conn.cursor() as cursor:
+                sql = "INSERT INTO bans (guild_id, user_id, staff_id, reason, evidence_url) VALUES (%s, %s, %s, AES_ENCRYPT(%s, %s), %s)"
+                await cursor.execute(sql, (interaction.guild.id, user.id, interaction.user.id, reason, self.enc_key, evidence.url if evidence else None))
+                await conn.commit()
+        await interaction.followup.send(f"✅ **{user.name}** has been banned.")
+        await user.ban(reason=reason)
+    
+    @app_commands.command(name="unban", description="Unban a user.")
+    @app_commands.checks.has_permissions(moderate_members=True)
+    async def unban(self, interaction: discord.Interaction, user: discord.User):
+        await interaction.response.defer()
+        async with self.db_pool.acquire() as conn:
+            async with conn.cursor() as cursor:
+                sql = "DELETE FROM bans WHERE guild_id = %s AND user_id = %s"
+                await cursor.execute(sql, (interaction.guild.id, user.id))
+                await conn.commit()
+        await interaction.followup.send(f"✅ **{user.name}** has been unbanned.")
+        await interaction.guild.unban(user)
+    
+    @app_commands.command(name="clear-punishments", description="Clear all punishments for a user.")
+    @app_commands.checks.has_permissions(moderate_members=True)
+    async def clear_punishments(self, interaction: discord.Interaction, user: discord.Member):
+        await interaction.response.defer()
+        async with self.db_pool.acquire() as conn:
+            async with conn.cursor() as cursor:
+                tables = ["warns", "timeouts", "kicks", "bans", "staff_notes"]
+                for table in tables:
+                    sql = f"DELETE FROM {table} WHERE guild_id = %s AND user_id = %s"
+                    await cursor.execute(sql, (interaction.guild.id, user.id))
+                await conn.commit()
+        await interaction.followup.send(f"✅ All punishments for **{user.name}** have been cleared.")
+    
+    @app_commands.command(name="delete-punishment", description="Delete a specific punishment by ID.")
+    @app_commands.checks.has_permissions(moderate_members=True)
+    async def delete_punishment(self, interaction: discord.Interaction, punishment_id: int):
+        await interaction.response.defer()
+        async with self.db_pool.acquire() as conn:
+            async with conn.cursor() as cursor:
+                tables = ["warns", "timeouts", "kicks", "bans", "staff_notes"]
+                for table in tables:
+                    sql = f"DELETE FROM {table} WHERE id = %s AND guild_id = %s"
+                    await cursor.execute(sql, (punishment_id, interaction.guild.id))
+                await conn.commit()
+        await interaction.followup.send(f"✅ Punishment with ID **{punishment_id}** has been deleted.")
+    
+    
 
     @app_commands.command(name="add-note", description="Add an internal staff note.")
     @app_commands.checks.has_permissions(moderate_members=True)
@@ -156,4 +225,4 @@ class PunishPublic(commands.Cog):
         await interaction.followup.send(f"✅ Note added for {user.name}.")
 
 async def setup(bot):
-    await bot.add_cog(PunishPublic(bot))
+    await bot.add_cog(PunishPublic(bot))    
