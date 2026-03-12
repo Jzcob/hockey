@@ -207,7 +207,7 @@ class PunishPublic(commands.Cog):
         
         await interaction.followup.send(f"✅ Logging channel has been set to {channel.mention}", ephemeral=True)
 
-    @app_commands.command(name="set-hockey-channel", description="Sets the channel for daily NHL schedules.")
+    """@app_commands.command(name="set-hockey-channel", description="Sets the channel for daily NHL schedules.")
     @app_commands.checks.has_permissions(manage_guild=True)
     async def set_hockey(self, interaction: discord.Interaction, channel: discord.TextChannel):
         await interaction.response.defer(ephemeral=True)
@@ -216,14 +216,14 @@ class PunishPublic(commands.Cog):
 
         async with self.db_pool.acquire() as conn:
             async with conn.cursor() as cursor:
-                sql = """
+                sql = # ADD 3 "
                     INSERT INTO guild_settings (guild_id, daily_schedule_channel_id) 
                     VALUES (%s, %s) 
                     ON DUPLICATE KEY UPDATE daily_schedule_channel_id = VALUES(daily_schedule_channel_id)
-                """
+                # ADD 3 "
                 await cursor.execute(sql, (interaction.guild.id, channel.id))
                 await conn.commit()
-        await interaction.followup.send(f"✅ Daily hockey schedules set to {channel.mention}", ephemeral=True)
+        await interaction.followup.send(f"✅ Daily hockey schedules set to {channel.mention}", ephemeral=True)"""
 
     # --- Helpers ---
 
