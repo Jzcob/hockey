@@ -223,6 +223,42 @@ class PunishPublic(commands.Cog):
                 await cursor.execute(sql, (interaction.guild.id, user.id, interaction.user.id, note, self.enc_key))
                 await conn.commit()
         await interaction.followup.send(f"✅ Note added for {user.name}.")
+    
+    # --- New Configuration Commands ---
+
+    @app_commands.command(name="set-logs", description="Set the channel where moderation logs are sent.")
+    @app_commands.checks.has_permissions(administrator=True)
+    async def set_logs(self, interaction: discord.Interaction, channel: discord.TextChannel):
+        await interaction.response.defer()
+        
+        async with self.db_pool.acquire() as conn:
+            async with conn.cursor() as cursor:
+                # Upsert logic: Update if exists, insert if not
+                sql = """
+                    INSERT INTO guild_settings (guild_id, logging_channel_id) 
+                    VALUES (%s, %s) 
+                    ON DUPLICATE KEY UPDATE logging_channel_id = VALUES(logging_channel_id)
+                """
+                await cursor.execute(sql, (interaction.guild.id, channel.id))
+                await conn.commit()
+        
+        await interaction.followup.send(f"✅ Logging channel has been set to {channel.mention}")
+
+    async def get_logging_channel(self, guild_id):
+        """Helper to fetch the log channel ID from the database"""
+        async with self.db_pool.acquire() as conn:
+            async with conn.cursor(aiomysql.DictCursor) as cursor:
+                await cursor.execute("SELECT logging_channel_id FROM guild_settings WHERE guild_id = %s", (guild_id,))
+                res = await cursor.fetchone()
+                return res['logging_channel_id'] if res else None
+
+    async def send_mod_log(self, guild, embed):
+        """Helper to send logs to the configured channel"""
+        channel_id = await self.get_logging_channel(guild.id)
+        if channel_id:
+            channel = guild.get_channel(channel_id)
+            if channel:
+                await channel.send(embed=embed)
 
 async def setup(bot):
     await bot.add_cog(PunishPublic(bot))    

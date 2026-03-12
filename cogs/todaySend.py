@@ -40,11 +40,7 @@ class DailySchedule(commands.Cog):
         self.http_session = aiohttp.ClientSession()
         self.send_daily_schedule.start()
 
-    def cog_unload(self):
-        self.send_daily_schedule.cancel()
-        if hasattr(self, 'http_session'):
-            asyncio.create_task(self.http_session.close())
-
+    # --- UPDATED TASK LOGIC ---
     @tasks.loop(time=run_time)
     async def send_daily_schedule(self):
         print(f"Running daily schedule task... (5:30 AM EST)")
@@ -60,7 +56,8 @@ class DailySchedule(commands.Cog):
             async with self.db_pool.acquire() as conn:
                 await conn.ping(reconnect=True)
                 async with conn.cursor() as cursor:
-                    await cursor.execute("SELECT daily_schedule_channel_id FROM servers WHERE daily_schedule_channel_id IS NOT NULL")
+                    # UPDATED: Now selecting from guild_settings
+                    await cursor.execute("SELECT daily_schedule_channel_id FROM guild_settings WHERE daily_schedule_channel_id IS NOT NULL")
                     channel_records = await cursor.fetchall()
         except Exception as e:
             print(f"DailySchedule: Database error: {e}")
@@ -120,8 +117,24 @@ class DailySchedule(commands.Cog):
     async def set_schedule_channel(self, interaction: discord.Interaction, channel: discord.TextChannel):
         async with self.db_pool.acquire() as conn:
             async with conn.cursor() as cursor:
-                await cursor.execute("INSERT INTO servers (guild_id, daily_schedule_channel_id) VALUES (%s, %s) ON DUPLICATE KEY UPDATE daily_schedule_channel_id = %s", (interaction.guild.id, channel.id, channel.id))
-        await interaction.response.send_message(f"✅ Set to {channel.mention}", ephemeral=True)
+                sql = """
+                    INSERT INTO guild_settings (guild_id, daily_schedule_channel_id) 
+                    VALUES (%s, %s) 
+                    ON DUPLICATE KEY UPDATE daily_schedule_channel_id = %s
+                """
+                await cursor.execute(sql, (interaction.guild.id, channel.id, channel.id))
+                await conn.commit()
+        await interaction.response.send_message(f"✅ Daily hockey schedule will now be sent to {channel.mention}", ephemeral=True)
+    
+    @app_commands.command(name="clear-schedule-channel", description="Clears the daily schedule channel setting.")
+    @app_commands.checks.has_permissions(manage_guild=True)
+    async def clear_schedule_channel(self, interaction: discord.Interaction):
+        async with self.db_pool.acquire() as conn:
+            async with conn.cursor() as cursor:
+                sql = "UPDATE guild_settings SET daily_schedule_channel_id = NULL WHERE guild_id = %s"
+                await cursor.execute(sql, (interaction.guild.id,))
+                await conn.commit()
+        await interaction.response.send_message("✅ Daily hockey schedule channel cleared.", ephemeral=True)
 
 async def setup(bot):
     await bot.add_cog(DailySchedule(bot))
