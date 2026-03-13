@@ -155,7 +155,6 @@ class PunishPublic(commands.Cog):
     async def timeout(self, interaction: discord.Interaction, user: discord.Member, duration: int, reason: str, evidence: discord.Attachment = None):
         await interaction.response.defer()
         if not await self.check_released(interaction): return
-        if not await self.can_moderate(interaction, user): return
 
         try:
             await user.timeout(timedelta(minutes=duration), reason=reason)
@@ -176,7 +175,6 @@ class PunishPublic(commands.Cog):
     async def kick(self, interaction: discord.Interaction, user: discord.Member, reason: str, evidence: discord.Attachment = None):
         await interaction.response.defer()
         if not await self.check_released(interaction): return
-        if not await self.can_moderate(interaction, user): return
 
         try:
             await user.kick(reason=reason)
@@ -197,7 +195,6 @@ class PunishPublic(commands.Cog):
     async def ban(self, interaction: discord.Interaction, user: discord.Member, reason: str, evidence: discord.Attachment = None):
         await interaction.response.defer()
         if not await self.check_released(interaction): return
-        if not await self.can_moderate(interaction, user): return
 
         try:
             await user.ban(reason=reason)
