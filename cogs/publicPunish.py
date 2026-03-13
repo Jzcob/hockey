@@ -145,6 +145,9 @@ class PunishPublic(commands.Cog):
                     sql = "INSERT INTO warns (guild_id, user_id, staff_id, reason, evidence_url) VALUES (%s, %s, %s, AES_ENCRYPT(%s, %s), %s)"
                     await cursor.execute(sql, (interaction.guild.id, user.id, interaction.user.id, reason, self.enc_key, evidence.url if evidence else None))
                     await conn.commit()
+            log_channel = await self.get_logging_channel(interaction.guild.id)
+            await log_channel.send(f"⚠️ **{user}** was warned by **{interaction.user}** for: {reason[:100]}")
+            await user.send(f"You have received a warning in **{interaction.guild.name}** for the following reason:\n{reason}\n\nIf you believe this was a mistake, please contact the server staff.")
             await interaction.followup.send(f"✅ **{user.name}** has been warned.")
         except Exception:
             error_channel = self.bot.get_channel(config.error_channel)
@@ -165,6 +168,10 @@ class PunishPublic(commands.Cog):
                     sql = "INSERT INTO timeouts (guild_id, user_id, staff_id, reason, evidence_url) VALUES (%s, %s, %s, AES_ENCRYPT(%s, %s), %s)"
                     await cursor.execute(sql, (interaction.guild.id, user.id, interaction.user.id, reason, self.enc_key, evidence.url if evidence else None))
                     await conn.commit()
+            
+            log_channel = await self.get_logging_channel(interaction.guild.id)
+            await log_channel.send(f"⏱️ **{user}** was timed out by **{interaction.user}** for {duration} minutes.")
+            await user.send(f"You have been timed out in **{interaction.guild.name}** for {duration} minutes for the following reason:\n{reason}\n\nIf you believe this was a mistake, please contact the server staff.")
             await interaction.followup.send(f"✅ **{user.name}** has been timed out for {duration} minutes.")
         except discord.Forbidden:
             await interaction.followup.send("❌ I lack permissions to timeout this user.")
@@ -191,12 +198,15 @@ class PunishPublic(commands.Cog):
         if not await self.check_released(interaction): return
 
         try:
+            await user.send(f"You have been kicked from **{interaction.guild.name}** for the following reason:\n{reason}\n\nIf you believe this was a mistake, please contact the server staff.")
             await user.kick(reason=reason)
             async with self.db_pool.acquire() as conn:
                 async with conn.cursor() as cursor:
                     sql = "INSERT INTO kicks (guild_id, user_id, staff_id, reason, evidence_url) VALUES (%s, %s, %s, AES_ENCRYPT(%s, %s), %s)"
                     await cursor.execute(sql, (interaction.guild.id, user.id, interaction.user.id, reason, self.enc_key, evidence.url if evidence else None))
                     await conn.commit()
+            log_channel = await self.get_logging_channel(interaction.guild.id)
+            await log_channel.send(f"👢 **{user}** was kicked by **{interaction.user}** for: {reason[:100]}")
             await interaction.followup.send(f"✅ **{user.name}** has been kicked.")
         except discord.Forbidden:
             await interaction.followup.send("❌ Permission denied. My role must be higher than the target's role.")
@@ -215,6 +225,8 @@ class PunishPublic(commands.Cog):
         if not await self.check_released(interaction): return
 
         try:
+            # Send the message before removing the user from the guild, otherwise we won't be able to DM them.
+            await user.send(f"You have been banned from **{interaction.guild.name}** for the following reason:\n{reason}\n\nIf you believe this was a mistake, please contact the server staff.")
             await user.ban(reason=reason)
             async with self.db_pool.acquire() as conn:
                 async with conn.cursor() as cursor:
@@ -222,11 +234,15 @@ class PunishPublic(commands.Cog):
                     await cursor.execute(sql, (interaction.guild.id, user.id, interaction.user.id, reason, self.enc_key, evidence.url if evidence else None))
                     await conn.commit()
             await interaction.followup.send(f"✅ **{user.name}** has been banned.")
+            log_channel = await self.get_logging_channel(interaction.guild.id)
+            await log_channel.send(f"🔨 **{user}** was banned by **{interaction.user}** for: {reason[:100]}")
         except discord.Forbidden:
             await interaction.followup.send("❌ Permission denied. Cannot ban this user.")
         except Exception:
-            await self.report_error(traceback.format_exc())
-            await interaction.followup.send("❌ Ban failed.")
+            error_channel = self.bot.get_channel(config.error_channel)
+            string = f"{traceback.format_exc()}"
+            await error_channel.send(f"<@920797181034778655>```{string}```")
+            await interaction.followup.send("❌ Ban failed, and an error report has been sent to the bot owner.")
 
     @ban.error
     async def ban_error(self, interaction: discord.Interaction, error):
@@ -283,15 +299,6 @@ class PunishPublic(commands.Cog):
                 res = await cursor.fetchone()
                 return res['log_channel_id'] if res else None
 
-    async def send_mod_log(self, guild, embed):
-        channel_id = await self.get_logging_channel(guild.id)
-        if channel_id:
-            channel = guild.get_channel(channel_id)
-            if channel:
-                try:
-                    await channel.send(embed=embed)
-                except Exception:
-                    pass
 
 async def setup(bot):
     await bot.add_cog(PunishPublic(bot))
