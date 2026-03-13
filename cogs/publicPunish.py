@@ -151,6 +151,16 @@ class PunishPublic(commands.Cog):
             string = f"{traceback.format_exc()}"
             await error_channel.send(f"<@920797181034778655>```{string}```")
             await interaction.followup.send("An error occurred while warning the user. The issue has been reported.", ephemeral=True)
+    
+    @warn.error
+    async def warn_error(self, interaction: discord.Interaction, error):
+        if isinstance(error, app_commands.MissingPermissions):
+            await interaction.response.send_message("❌ You do not have permission to use this command.", ephemeral=True)
+        else:
+            error_channel = self.bot.get_channel(config.error_channel)
+            string = f"{traceback.format_exc()}"
+            await error_channel.send(f"<@920797181034778655>```{string}```")
+            await interaction.response.send_message("An error occurred while processing the command. The issue has been reported.", ephemeral=True)
 
     @app_commands.command(name="timeout", description="Timeout a user.")
     @app_commands.checks.has_permissions(moderate_members=True)
@@ -171,6 +181,16 @@ class PunishPublic(commands.Cog):
             await interaction.followup.send("An error occurred while timing out the user. The issue has been reported.", ephemeral=True)
         await user.timeout(timedelta(minutes=duration), reason=reason)
         await interaction.followup.send(f"✅ **{user.name}** has been timed out for {duration} minutes.")
+
+    @timeout.error
+    async def timeout_error(self, interaction: discord.Interaction, error):
+        if isinstance(error, app_commands.MissingPermissions):
+            await interaction.response.send_message("❌ You do not have permission to use this command.", ephemeral=True)
+        else:
+            error_channel = self.bot.get_channel(config.error_channel)
+            string = f"{traceback.format_exc()}"
+            await error_channel.send(f"<@920797181034778655>```{string}```")
+            await interaction.response.send_message("An error occurred while processing the command. The issue has been reported.", ephemeral=True)
 
     @app_commands.command(name="kick", description="Kick a user.")
     @app_commands.checks.has_permissions(moderate_members=True)
@@ -193,6 +213,16 @@ class PunishPublic(commands.Cog):
         await user.kick(reason=reason)
         await interaction.followup.send(f"✅ **{user.name}** has been kicked.")
     
+    @kick.error
+    async def kick_error(self, interaction: discord.Interaction, error):
+        if isinstance(error, app_commands.MissingPermissions):
+            await interaction.response.send_message("❌ You do not have permission to use this command.", ephemeral=True)
+        else:
+            error_channel = self.bot.get_channel(config.error_channel)
+            string = f"{traceback.format_exc()}"
+            await error_channel.send(f"<@920797181034778655>```{string}```")
+            await interaction.response.send_message("An error occurred while processing the command. The issue has been reported.", ephemeral=True)
+
     @app_commands.command(name="ban", description="Ban a user.")
     @app_commands.checks.has_permissions(moderate_members=True)
     async def ban(self, interaction: discord.Interaction, user: discord.Member, reason: str, evidence: discord.Attachment = None):
@@ -214,6 +244,15 @@ class PunishPublic(commands.Cog):
         await user.ban(reason=reason)
         await interaction.followup.send(f"✅ **{user.name}** has been banned.")
 
+    @ban.error
+    async def ban_error(self, interaction: discord.Interaction, error):
+        if isinstance(error, app_commands.MissingPermissions):
+            await interaction.response.send_message("❌ You do not have permission to use this command.", ephemeral=True)
+        else:
+            error_channel = self.bot.get_channel(config.error_channel)
+            string = f"{traceback.format_exc()}"
+            await error_channel.send(f"<@920797181034778655>```{string}```")
+            await interaction.response.send_message("An error occurred while processing the command. The issue has been reported.", ephemeral=True)
     # --- Configuration Commands ---
 
     @app_commands.command(name="set-logs", description="Set the channel where moderation logs are sent.")
@@ -241,23 +280,15 @@ class PunishPublic(commands.Cog):
             await error_channel.send(f"<@920797181034778655>```{string}```")
             await interaction.followup.send("An error occurred while setting the logging channel. The issue has been reported.", ephemeral=True)
 
-    """@app_commands.command(name="set-hockey-channel", description="Sets the channel for daily NHL schedules.")
-    @app_commands.checks.has_permissions(manage_guild=True)
-    async def set_hockey(self, interaction: discord.Interaction, channel: discord.TextChannel):
-        await interaction.response.defer(ephemeral=True)
-        if not await self.check_released(interaction):
-            return
-
-        async with self.db_pool.acquire() as conn:
-            async with conn.cursor() as cursor:
-                sql = # ADD 3 "
-                    INSERT INTO guild_settings (guild_id, daily_schedule_channel_id) 
-                    VALUES (%s, %s) 
-                    ON DUPLICATE KEY UPDATE daily_schedule_channel_id = VALUES(daily_schedule_channel_id)
-                # ADD 3 "
-                await cursor.execute(sql, (interaction.guild.id, channel.id))
-                await conn.commit()
-        await interaction.followup.send(f"✅ Daily hockey schedules set to {channel.mention}", ephemeral=True)"""
+    @set_logs.error
+    async def set_logs_error(self, interaction: discord.Interaction, error):
+        if isinstance(error, app_commands.MissingPermissions):
+            await interaction.response.send_message("❌ You do not have permission to use this command.", ephemeral=True)
+        else:
+            error_channel = self.bot.get_channel(config.error_channel)
+            string = f"{traceback.format_exc()}"
+            await error_channel.send(f"<@920797181034778655>```{string}```")
+            await interaction.response.send_message("An error occurred while processing the command. The issue has been reported.", ephemeral=True)
 
     # --- Helpers ---
 
