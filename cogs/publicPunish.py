@@ -147,7 +147,8 @@ class PunishPublic(commands.Cog):
                     await conn.commit()
             log_channel = await self.get_logging_channel(interaction.guild.id)
             await log_channel.send(f"⚠️ **{user}** was warned by **{interaction.user}** for: {reason[:100]}")
-            await user.send(f"You have received a warning in **{interaction.guild.name}** for the following reason:\n{reason}\n\nIf you believe this was a mistake, please contact the server staff.")
+            user_embed = discord.Embed(title="You have received a warning", description=f"You have received a warning in **{interaction.guild.name}** for the following reason:\n{reason}\n\nIf you believe this was a mistake, please contact the server staff.", color=discord.Color.yellow())
+            await user.send(embed=user_embed)
             await interaction.followup.send(f"✅ **{user.name}** has been warned.")
         except Exception:
             error_channel = self.bot.get_channel(config.error_channel)
@@ -162,6 +163,7 @@ class PunishPublic(commands.Cog):
         if not await self.check_released(interaction): return
 
         try:
+            
             await user.timeout(timedelta(minutes=duration), reason=reason)
             async with self.db_pool.acquire() as conn:
                 async with conn.cursor() as cursor:
@@ -171,7 +173,8 @@ class PunishPublic(commands.Cog):
             
             log_channel = await self.get_logging_channel(interaction.guild.id)
             await log_channel.send(f"⏱️ **{user}** was timed out by **{interaction.user}** for {duration} minutes.")
-            await user.send(f"You have been timed out in **{interaction.guild.name}** for {duration} minutes for the following reason:\n{reason}\n\nIf you believe this was a mistake, please contact the server staff.")
+            user_embed = discord.Embed(title="You have been timed out", description=f"You have been timed out in **{interaction.guild.name}** for {duration} minutes for the following reason:\n{reason}\n\nIf you believe this was a mistake, please contact the server staff.", color=discord.Color.orange())
+            await user.send(embed=user_embed)
             await interaction.followup.send(f"✅ **{user.name}** has been timed out for {duration} minutes.")
         except discord.Forbidden:
             await interaction.followup.send("❌ I lack permissions to timeout this user.")
@@ -198,7 +201,8 @@ class PunishPublic(commands.Cog):
         if not await self.check_released(interaction): return
 
         try:
-            await user.send(f"You have been kicked from **{interaction.guild.name}** for the following reason:\n{reason}\n\nIf you believe this was a mistake, please contact the server staff.")
+            user_embed = discord.Embed(title="You have been kicked", description=f"You have been kicked from **{interaction.guild.name}** for the following reason:\n{reason}\n\nIf you believe this was a mistake, please contact the server staff.", color=discord.Color.red())
+            await user.send(embed=user_embed)
             await user.kick(reason=reason)
             async with self.db_pool.acquire() as conn:
                 async with conn.cursor() as cursor:
@@ -226,7 +230,8 @@ class PunishPublic(commands.Cog):
 
         try:
             # Send the message before removing the user from the guild, otherwise we won't be able to DM them.
-            await user.send(f"You have been banned from **{interaction.guild.name}** for the following reason:\n{reason}\n\nIf you believe this was a mistake, please contact the server staff.")
+            user_embed = discord.Embed(title="You have been banned", description=f"You have been banned from **{interaction.guild.name}** for the following reason:\n{reason}\n\nIf you believe this was a mistake, please contact the server staff.", color=discord.Color.red())
+            await user.send(embed=user_embed)
             await user.ban(reason=reason)
             async with self.db_pool.acquire() as conn:
                 async with conn.cursor() as cursor:
