@@ -145,7 +145,7 @@ class PunishPublic(commands.Cog):
                     sql = "INSERT INTO warns (guild_id, user_id, staff_id, reason, evidence_url) VALUES (%s, %s, %s, AES_ENCRYPT(%s, %s), %s)"
                     await cursor.execute(sql, (interaction.guild.id, user.id, interaction.user.id, reason, self.enc_key, evidence.url if evidence else None))
                     await conn.commit()
-            log_channel = await self.get_logging_channel(interaction.guild.id)
+            log_channel = self.bot.get_channel(await self.get_logging_channel(interaction.guild.id))
             await log_channel.send(f"⚠️ **{user}** was warned by **{interaction.user}** for: {reason[:100]}")
             user_embed = discord.Embed(title="You have received a warning", description=f"You have received a warning in **{interaction.guild.name}** for the following reason:\n{reason}\n\nIf you believe this was a mistake, please contact the server staff.", color=discord.Color.yellow())
             await user.send(embed=user_embed)
@@ -171,7 +171,7 @@ class PunishPublic(commands.Cog):
                     await cursor.execute(sql, (interaction.guild.id, user.id, interaction.user.id, reason, self.enc_key, evidence.url if evidence else None))
                     await conn.commit()
             
-            log_channel = await self.get_logging_channel(interaction.guild.id)
+            log_channel = self.bot.get_channel(await self.get_logging_channel(interaction.guild.id))
             await log_channel.send(f"⏱️ **{user}** was timed out by **{interaction.user}** for {duration} minutes.")
             user_embed = discord.Embed(title="You have been timed out", description=f"You have been timed out in **{interaction.guild.name}** for {duration} minutes for the following reason:\n{reason}\n\nIf you believe this was a mistake, please contact the server staff.", color=discord.Color.orange())
             await user.send(embed=user_embed)
@@ -209,7 +209,7 @@ class PunishPublic(commands.Cog):
                     sql = "INSERT INTO kicks (guild_id, user_id, staff_id, reason, evidence_url) VALUES (%s, %s, %s, AES_ENCRYPT(%s, %s), %s)"
                     await cursor.execute(sql, (interaction.guild.id, user.id, interaction.user.id, reason, self.enc_key, evidence.url if evidence else None))
                     await conn.commit()
-            log_channel = await self.get_logging_channel(interaction.guild.id)
+            log_channel = self.bot.get_channel(await self.get_logging_channel(interaction.guild.id))
             await log_channel.send(f"👢 **{user}** was kicked by **{interaction.user}** for: {reason[:100]}")
             await interaction.followup.send(f"✅ **{user.name}** has been kicked.")
         except discord.Forbidden:
@@ -239,7 +239,7 @@ class PunishPublic(commands.Cog):
                     await cursor.execute(sql, (interaction.guild.id, user.id, interaction.user.id, reason, self.enc_key, evidence.url if evidence else None))
                     await conn.commit()
             await interaction.followup.send(f"✅ **{user.name}** has been banned.")
-            log_channel = await self.get_logging_channel(interaction.guild.id)
+            log_channel = self.bot.get_channel(await self.get_logging_channel(interaction.guild.id))
             await log_channel.send(f"🔨 **{user}** was banned by **{interaction.user}** for: {reason[:100]}")
         except discord.Forbidden:
             await interaction.followup.send("❌ Permission denied. Cannot ban this user.")
