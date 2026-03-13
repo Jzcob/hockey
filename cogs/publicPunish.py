@@ -5,6 +5,7 @@ import aiomysql
 import os
 import config
 import traceback
+import re
 from datetime import datetime, timedelta
 
 def is_owner():
@@ -25,6 +26,24 @@ class PunishPublic(commands.Cog):
 
     def cog_unload(self):
         self.prune_task.cancel()
+
+    def parse_duration(self, duration_str: str):
+        """Parses a duration string like 1h, 1d, 1w into a timedelta object."""
+        match = re.match(r"^(\d+)([smhdw])$", duration_str.lower())
+        if not match:
+            return None
+        
+        amount, unit = match.groups()
+        amount = int(amount)
+        
+        units = {
+            's': timedelta(seconds=amount),
+            'm': timedelta(minutes=amount),
+            'h': timedelta(hours=amount),
+            'd': timedelta(days=amount),
+            'w': timedelta(weeks=amount)
+        }
+        return units.get(unit)
 
     # --- Helpers ---
 
@@ -155,25 +174,41 @@ class PunishPublic(commands.Cog):
 
     @app_commands.command(name="timeout", description="Timeout a user.")
     @app_commands.checks.has_permissions(moderate_members=True)
-    async def timeout(self, interaction: discord.Interaction, user: discord.Member, duration: int, reason: str, evidence: discord.Attachment = None):
+    async def timeout(self, interaction: discord.Interaction, user: discord.Member, duration: str, reason: str, evidence: discord.Attachment = None):
         await interaction.response.defer()
         if not await self.check_released(interaction): return
 
+        # Uses the parse_duration helper to handle 1m, 1h, 1d, 1w
+        delta = self.parse_duration(duration)
+        if not delta:
+            return await interaction.followup.send("❌ Invalid duration format. Use e.g., `15m`, `1h`, `1d`, `1w`.", ephemeral=True)
+        
+        # Discord maximum timeout is 28 days
+        if delta > timedelta(days=28):
+            return await interaction.followup.send("❌ Timeout duration cannot exceed 28 days.", ephemeral=True)
+
         try:
-            await user.timeout(timedelta(minutes=duration), reason=reason)
+            await user.timeout(delta, reason=reason)
+            
             async with self.db_pool.acquire() as conn:
                 async with conn.cursor() as cursor:
                     sql = "INSERT INTO timeouts (guild_id, user_id, staff_id, reason, evidence_url) VALUES (%s, %s, %s, AES_ENCRYPT(%s, %s), %s)"
-                    await cursor.execute(sql, (interaction.guild.id, user.id, interaction.user.id, reason, self.enc_key, evidence.url if evidence else None))
+                    # We store the duration string in the reason field so you can see it in logs later
+                    await cursor.execute(sql, (interaction.guild.id, user.id, interaction.user.id, f"[{duration}] {reason}", self.enc_key, evidence.url if evidence else None))
                     await conn.commit()
             
-            await self.log_action(interaction.guild, f"⏱️ **{user}** timed out by **{interaction.user}** ({duration}m): {reason[:100]}")
-            await self.send_dm_safe(user, discord.Embed(title=f"Timeout: {interaction.guild.name}", description=f"Duration: {duration}m\nReason: {reason}", color=discord.Color.orange()))
-            await interaction.followup.send(f"✅ **{user.name}** timed out for {duration}m.")
-        except discord.Forbidden: await interaction.followup.send("❌ Permission Denied.")
-        except:
+            await self.log_action(interaction.guild, f"⏱️ **{user}** timed out by **{interaction.user}** ({duration}): {reason[:100]}")
+            
+            dm_embed = discord.Embed(title=f"Timed out in {interaction.guild.name}", description=f"Duration: {duration}\nReason: {reason}", color=discord.Color.orange())
+            await self.send_dm_safe(user, dm_embed)
+            
+            await interaction.followup.send(f"✅ **{user.name}** timed out for {duration}.")
+            
+        except discord.Forbidden: 
+            await interaction.followup.send("❌ Permission Denied. I cannot timeout this user.")
+        except Exception:
             await self.report_error(traceback.format_exc())
-            await interaction.followup.send("❌ Error.")
+            await interaction.followup.send("❌ An error occurred during the timeout process.")
 
     @app_commands.command(name="kick", description="Kick a user.")
     @app_commands.checks.has_permissions(kick_members=True)
