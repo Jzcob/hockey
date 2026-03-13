@@ -78,52 +78,58 @@ class PunishPublic(commands.Cog):
             return
 
         premium = await self.is_guild_premium(interaction.guild.id)
-        
-        async with self.db_pool.acquire() as conn:
-            async with conn.cursor(aiomysql.DictCursor) as cursor:
-                limit = 1000 if premium else 10
-                
-                query = f"""
-                    (SELECT 'Warn' as type, CAST(AES_DECRYPT(reason, %s) AS CHAR) as reason, staff_id, created_at 
-                     FROM warns WHERE user_id = %s AND guild_id = %s ORDER BY created_at DESC LIMIT {limit})
-                    UNION ALL
-                    (SELECT 'Timeout' as type, CAST(AES_DECRYPT(reason, %s) AS CHAR) as reason, staff_id, created_at 
-                     FROM timeouts WHERE user_id = %s AND guild_id = %s ORDER BY created_at DESC LIMIT {limit})
-                    UNION ALL
-                    (SELECT 'Kick' as type, CAST(AES_DECRYPT(reason, %s) AS CHAR) as reason, staff_id, created_at 
-                     FROM kicks WHERE user_id = %s AND guild_id = %s ORDER BY created_at DESC LIMIT {limit})
-                    UNION ALL
-                    (SELECT 'Ban' as type, CAST(AES_DECRYPT(reason, %s) AS CHAR) as reason, staff_id, created_at 
-                     FROM bans WHERE user_id = %s AND guild_id = %s ORDER BY created_at DESC LIMIT {limit})
-                    ORDER BY created_at DESC
-                """
-                await cursor.execute(query, (
-                    self.enc_key, user.id, interaction.guild.id, 
-                    self.enc_key, user.id, interaction.guild.id,
-                    self.enc_key, user.id, interaction.guild.id,
-                    self.enc_key, user.id, interaction.guild.id
-                ))
-                history = await cursor.fetchall()
+        try:
+            async with self.db_pool.acquire() as conn:
+                async with conn.cursor(aiomysql.DictCursor) as cursor:
+                    limit = 1000 if premium else 10
+                    
+                    query = f"""
+                        (SELECT 'Warn' as type, CAST(AES_DECRYPT(reason, %s) AS CHAR) as reason, staff_id, created_at 
+                        FROM warns WHERE user_id = %s AND guild_id = %s ORDER BY created_at DESC LIMIT {limit})
+                        UNION ALL
+                        (SELECT 'Timeout' as type, CAST(AES_DECRYPT(reason, %s) AS CHAR) as reason, staff_id, created_at 
+                        FROM timeouts WHERE user_id = %s AND guild_id = %s ORDER BY created_at DESC LIMIT {limit})
+                        UNION ALL
+                        (SELECT 'Kick' as type, CAST(AES_DECRYPT(reason, %s) AS CHAR) as reason, staff_id, created_at 
+                        FROM kicks WHERE user_id = %s AND guild_id = %s ORDER BY created_at DESC LIMIT {limit})
+                        UNION ALL
+                        (SELECT 'Ban' as type, CAST(AES_DECRYPT(reason, %s) AS CHAR) as reason, staff_id, created_at 
+                        FROM bans WHERE user_id = %s AND guild_id = %s ORDER BY created_at DESC LIMIT {limit})
+                        ORDER BY created_at DESC
+                    """
+                    await cursor.execute(query, (
+                        self.enc_key, user.id, interaction.guild.id, 
+                        self.enc_key, user.id, interaction.guild.id,
+                        self.enc_key, user.id, interaction.guild.id,
+                        self.enc_key, user.id, interaction.guild.id
+                    ))
+                    history = await cursor.fetchall()
 
-        embed = discord.Embed(title=f"Punishments for {user.name}", color=discord.Color.orange())
-        
-        if not history:
-            embed.description = "This user has a clean record."
-        else:
-            for item in history:
-                date_str = item['created_at'].strftime('%Y-%m-%d')
-                raw_reason = item['reason']
-                reason = raw_reason.decode('utf-8') if isinstance(raw_reason, bytes) else str(raw_reason or "No reason provided.")
+            embed = discord.Embed(title=f"Punishments for {user.name}", color=discord.Color.orange())
+            
+            if not history:
+                embed.description = "This user has a clean record."
+            else:
+                for item in history:
+                    date_str = item['created_at'].strftime('%Y-%m-%d')
+                    raw_reason = item['reason']
+                    reason = raw_reason.decode('utf-8') if isinstance(raw_reason, bytes) else str(raw_reason or "No reason provided.")
 
-                embed.add_field(
-                    name=f"{item['type']} on {date_str}", 
-                    value=f"**Reason:** {reason[:100]}\n**Staff:** <@{item['staff_id']}>", 
-                    inline=False
-                )
+                    embed.add_field(
+                        name=f"{item['type']} on {date_str}", 
+                        value=f"**Reason:** {reason[:100]}\n**Staff:** <@{item['staff_id']}>", 
+                        inline=False
+                    )
 
-        footer = "💎 Referee Tier: Persistent storage enabled." if premium else f"⏳ Free Tier: Records limited to 10 and deleted after {self.retention_days} days."
-        embed.set_footer(text=footer)
-        await interaction.followup.send(embed=embed)
+            footer = "💎 Referee Tier: Persistent storage enabled." if premium else f"⏳ Free Tier: Records limited to 10 and deleted after {self.retention_days} days."
+            embed.set_footer(text=footer)
+            await interaction.followup.send(embed=embed)
+        except:
+            error_channel = self.bot.get_channel(config.error_channel)
+            string = f"{traceback.format_exc()}"
+            await error_channel.send(f"<@920797181034778655>```{string}```")
+            await interaction.followup.send("An error occurred while fetching punishment history. The issue has been reported.", ephemeral=True)
+
 
     # --- Moderation Commands ---
 
@@ -133,26 +139,36 @@ class PunishPublic(commands.Cog):
         await interaction.response.defer()
         if not await self.check_released(interaction):
             return
+        try:
+            async with self.db_pool.acquire() as conn:
+                async with conn.cursor() as cursor:
+                    sql = "INSERT INTO warns (guild_id, user_id, staff_id, reason, evidence_url) VALUES (%s, %s, %s, AES_ENCRYPT(%s, %s), %s)"
+                    await cursor.execute(sql, (interaction.guild.id, user.id, interaction.user.id, reason, self.enc_key, evidence.url if evidence else None))
+                    await conn.commit()
+            await interaction.followup.send(f"✅ **{user.name}** has been warned.")
+        except:
+            error_channel = self.bot.get_channel(config.error_channel)
+            string = f"{traceback.format_exc()}"
+            await error_channel.send(f"<@920797181034778655>```{string}```")
+            await interaction.followup.send("An error occurred while warning the user. The issue has been reported.", ephemeral=True)
 
-        async with self.db_pool.acquire() as conn:
-            async with conn.cursor() as cursor:
-                sql = "INSERT INTO warns (guild_id, user_id, staff_id, reason, evidence_url) VALUES (%s, %s, %s, AES_ENCRYPT(%s, %s), %s)"
-                await cursor.execute(sql, (interaction.guild.id, user.id, interaction.user.id, reason, self.enc_key, evidence.url if evidence else None))
-                await conn.commit()
-        await interaction.followup.send(f"✅ **{user.name}** has been warned.")
-    
     @app_commands.command(name="timeout", description="Timeout a user.")
     @app_commands.checks.has_permissions(moderate_members=True)
     async def timeout(self, interaction: discord.Interaction, user: discord.Member, duration: int, reason: str, evidence: discord.Attachment = None):
         await interaction.response.defer()
         if not await self.check_released(interaction):
             return
-
-        async with self.db_pool.acquire() as conn:
-            async with conn.cursor() as cursor:
-                sql = "INSERT INTO timeouts (guild_id, user_id, staff_id, reason, evidence_url) VALUES (%s, %s, %s, AES_ENCRYPT(%s, %s), %s)"
-                await cursor.execute(sql, (interaction.guild.id, user.id, interaction.user.id, reason, self.enc_key, evidence.url if evidence else None))
-                await conn.commit()
+        try:
+            async with self.db_pool.acquire() as conn:
+                async with conn.cursor() as cursor:
+                    sql = "INSERT INTO timeouts (guild_id, user_id, staff_id, reason, evidence_url) VALUES (%s, %s, %s, AES_ENCRYPT(%s, %s), %s)"
+                    await cursor.execute(sql, (interaction.guild.id, user.id, interaction.user.id, reason, self.enc_key, evidence.url if evidence else None))
+                    await conn.commit()
+        except:
+            error_channel = self.bot.get_channel(config.error_channel)
+            string = f"{traceback.format_exc()}"
+            await error_channel.send(f"<@920797181034778655>```{string}```")
+            await interaction.followup.send("An error occurred while timing out the user. The issue has been reported.", ephemeral=True)
         await user.timeout(timedelta(minutes=duration), reason=reason)
         await interaction.followup.send(f"✅ **{user.name}** has been timed out for {duration} minutes.")
 
@@ -163,11 +179,17 @@ class PunishPublic(commands.Cog):
         if not await self.check_released(interaction):
             return
 
-        async with self.db_pool.acquire() as conn:
-            async with conn.cursor() as cursor:
-                sql = "INSERT INTO kicks (guild_id, user_id, staff_id, reason, evidence_url) VALUES (%s, %s, %s, AES_ENCRYPT(%s, %s), %s)"
-                await cursor.execute(sql, (interaction.guild.id, user.id, interaction.user.id, reason, self.enc_key, evidence.url if evidence else None))
-                await conn.commit()
+        try:
+            async with self.db_pool.acquire() as conn:
+                async with conn.cursor() as cursor:
+                    sql = "INSERT INTO kicks (guild_id, user_id, staff_id, reason, evidence_url) VALUES (%s, %s, %s, AES_ENCRYPT(%s, %s), %s)"
+                    await cursor.execute(sql, (interaction.guild.id, user.id, interaction.user.id, reason, self.enc_key, evidence.url if evidence else None))
+                    await conn.commit()
+        except:
+            error_channel = self.bot.get_channel(config.error_channel)
+            string = f"{traceback.format_exc()}"
+            await error_channel.send(f"<@920797181034778655>```{string}```")
+            await interaction.followup.send("An error occurred while kicking the user. The issue has been reported.", ephemeral=True)
         await user.kick(reason=reason)
         await interaction.followup.send(f"✅ **{user.name}** has been kicked.")
     
@@ -178,11 +200,17 @@ class PunishPublic(commands.Cog):
         if not await self.check_released(interaction):
             return
 
-        async with self.db_pool.acquire() as conn:
-            async with conn.cursor() as cursor:
-                sql = "INSERT INTO bans (guild_id, user_id, staff_id, reason, evidence_url) VALUES (%s, %s, %s, AES_ENCRYPT(%s, %s), %s)"
-                await cursor.execute(sql, (interaction.guild.id, user.id, interaction.user.id, reason, self.enc_key, evidence.url if evidence else None))
-                await conn.commit()
+        try:
+            async with self.db_pool.acquire() as conn:
+                async with conn.cursor() as cursor:
+                    sql = "INSERT INTO bans (guild_id, user_id, staff_id, reason, evidence_url) VALUES (%s, %s, %s, AES_ENCRYPT(%s, %s), %s)"
+                    await cursor.execute(sql, (interaction.guild.id, user.id, interaction.user.id, reason, self.enc_key, evidence.url if evidence else None))
+                    await conn.commit()
+        except:
+            error_channel = self.bot.get_channel(config.error_channel)
+            string = f"{traceback.format_exc()}"
+            await error_channel.send(f"<@920797181034778655>```{string}```")
+            await interaction.followup.send("An error occurred while banning the user. The issue has been reported.", ephemeral=True)
         await user.ban(reason=reason)
         await interaction.followup.send(f"✅ **{user.name}** has been banned.")
 
@@ -194,18 +222,24 @@ class PunishPublic(commands.Cog):
         await interaction.response.defer(ephemeral=True)
         if not await self.check_released(interaction):
             return
-
-        async with self.db_pool.acquire() as conn:
-            async with conn.cursor() as cursor:
-                sql = """
-                    INSERT INTO guild_settings (guild_id, log_channel_id) 
-                    VALUES (%s, %s) 
-                    ON DUPLICATE KEY UPDATE log_channel_id = VALUES(log_channel_id)
-                """
-                await cursor.execute(sql, (interaction.guild.id, channel.id))
-                await conn.commit()
         
-        await interaction.followup.send(f"✅ Logging channel has been set to {channel.mention}", ephemeral=True)
+        try:
+            async with self.db_pool.acquire() as conn:
+                async with conn.cursor() as cursor:
+                    sql = """
+                        INSERT INTO guild_settings (guild_id, log_channel_id) 
+                        VALUES (%s, %s) 
+                        ON DUPLICATE KEY UPDATE log_channel_id = VALUES(log_channel_id)
+                    """
+                    await cursor.execute(sql, (interaction.guild.id, channel.id))
+                    await conn.commit()
+            
+            await interaction.followup.send(f"✅ Logging channel has been set to {channel.mention}", ephemeral=True)
+        except:
+            error_channel = self.bot.get_channel(config.error_channel)
+            string = f"{traceback.format_exc()}"
+            await error_channel.send(f"<@920797181034778655>```{string}```")
+            await interaction.followup.send("An error occurred while setting the logging channel. The issue has been reported.", ephemeral=True)
 
     """@app_commands.command(name="set-hockey-channel", description="Sets the channel for daily NHL schedules.")
     @app_commands.checks.has_permissions(manage_guild=True)
