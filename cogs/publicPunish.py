@@ -147,7 +147,9 @@ class PunishPublic(commands.Cog):
                     await conn.commit()
             await interaction.followup.send(f"✅ **{user.name}** has been warned.")
         except Exception:
-            await self.report_error(traceback.format_exc())
+            error_channel = self.bot.get_channel(config.error_channel)
+            string = f"{traceback.format_exc()}"
+            await error_channel.send(f"<@920797181034778655>```{string}```")
             await interaction.followup.send("❌ Error logging warning. Check database columns.", ephemeral=True)
 
     @app_commands.command(name="timeout", description="Timeout a user.")
@@ -167,8 +169,20 @@ class PunishPublic(commands.Cog):
         except discord.Forbidden:
             await interaction.followup.send("❌ I lack permissions to timeout this user.")
         except Exception:
-            await self.report_error(traceback.format_exc())
+            error_channel = self.bot.get_channel(config.error_channel)
+            string = f"{traceback.format_exc()}"
+            await error_channel.send(f"<@920797181034778655>```{string}```")
             await interaction.followup.send("❌ An error occurred during timeout.")
+    
+    @timeout.error
+    async def timeout_error(self, interaction: discord.Interaction, error):
+        if isinstance(error, app_commands.MissingPermissions):
+            await interaction.response.send_message("❌ You do not have permission to use this command.", ephemeral=True)
+        else:
+            error_channel = self.bot.get_channel(config.error_channel)
+            string = f"{traceback.format_exc()}"
+            await error_channel.send(f"<@920797181034778655>```{string}```")
+            await interaction.response.send_message("An error occurred while processing the command. The issue has been reported.", ephemeral=True)
 
     @app_commands.command(name="kick", description="Kick a user.")
     @app_commands.checks.has_permissions(kick_members=True)
@@ -187,8 +201,12 @@ class PunishPublic(commands.Cog):
         except discord.Forbidden:
             await interaction.followup.send("❌ Permission denied. My role must be higher than the target's role.")
         except Exception:
-            await self.report_error(traceback.format_exc())
+            error_channel = self.bot.get_channel(config.error_channel)
+            string = f"{traceback.format_exc()}"
+            await error_channel.send(f"<@920797181034778655>```{string}```")
             await interaction.followup.send("❌ Kick failed. Check bot permissions and database.")
+    
+
 
     @app_commands.command(name="ban", description="Ban a user.")
     @app_commands.checks.has_permissions(ban_members=True)
