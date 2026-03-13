@@ -146,10 +146,15 @@ class PunishPublic(commands.Cog):
                     await cursor.execute(sql, (interaction.guild.id, user.id, interaction.user.id, reason, self.enc_key, evidence.url if evidence else None))
                     await conn.commit()
             log_channel = self.bot.get_channel(await self.get_logging_channel(interaction.guild.id))
-            await log_channel.send(f"⚠️ **{user}** was warned by **{interaction.user}** for: {reason[:100]}")
             user_embed = discord.Embed(title="You have received a warning", description=f"You have received a warning in **{interaction.guild.name}** for the following reason:\n{reason}\n\nIf you believe this was a mistake, please contact the server staff.", color=discord.Color.yellow())
-            await user.send(embed=user_embed)
-            await interaction.followup.send(f"✅ **{user.name}** has been warned.")
+            try:
+                await log_channel.send(f"⚠️ **{user}** was warned by **{interaction.user}** for: {reason[:100]}")
+                await user.send(embed=user_embed)
+                await interaction.followup.send(f"✅ **{user.name}** has been warned.")
+            except:
+                await user.send(embed=user_embed)
+                await interaction.followup.send(f"✅ **{user.name}** has been warned., but I couldn't send a message to the log channel. Please set up a log channel with `/set-logs`.", ephemeral=True)
+
         except Exception:
             error_channel = self.bot.get_channel(config.error_channel)
             string = f"{traceback.format_exc()}"
@@ -172,10 +177,14 @@ class PunishPublic(commands.Cog):
                     await conn.commit()
             
             log_channel = self.bot.get_channel(await self.get_logging_channel(interaction.guild.id))
-            await log_channel.send(f"⏱️ **{user}** was timed out by **{interaction.user}** for {duration} minutes.")
             user_embed = discord.Embed(title="You have been timed out", description=f"You have been timed out in **{interaction.guild.name}** for {duration} minutes for the following reason:\n{reason}\n\nIf you believe this was a mistake, please contact the server staff.", color=discord.Color.orange())
-            await user.send(embed=user_embed)
-            await interaction.followup.send(f"✅ **{user.name}** has been timed out for {duration} minutes.")
+            try:
+                await log_channel.send(f"⏱️ **{user}** was timed out by **{interaction.user}** for {duration} minutes.")
+                await user.send(embed=user_embed)
+                await interaction.followup.send(f"✅ **{user.name}** has been timed out for {duration} minutes.")
+            except:
+
+                await interaction.followup.send(f"✅ **{user.name}** has been timed out for {duration} minutes., but I couldn't send a message to the log channel. Please set up a log channel with `/set-logs`.", ephemeral=True)
         except discord.Forbidden:
             await interaction.followup.send("❌ I lack permissions to timeout this user.")
         except Exception:
@@ -210,7 +219,14 @@ class PunishPublic(commands.Cog):
                     await cursor.execute(sql, (interaction.guild.id, user.id, interaction.user.id, reason, self.enc_key, evidence.url if evidence else None))
                     await conn.commit()
             log_channel = self.bot.get_channel(await self.get_logging_channel(interaction.guild.id))
-            await log_channel.send(f"👢 **{user}** was kicked by **{interaction.user}** for: {reason[:100]}")
+            user_embed = discord.Embed(title="You have been kicked", description=f"You have been kicked from **{interaction.guild.name}** for the following reason:\n{reason}\n\nIf you believe this was a mistake, please contact the server staff.", color=discord.Color.red())
+            try:
+                await log_channel.send(f"👢 **{user}** was kicked by **{interaction.user}** for: {reason[:100]}")
+                await user.send(embed=user_embed)
+                interaction.followup.send(f"✅ **{user.name}** has been kicked.")
+            except:
+                await user.send(embed=user_embed)
+                await interaction.followup.send(f"✅ **{user.name}** has been kicked., but I couldn't send a message to the log channel. Please set up a log channel with `/set-logs`.", ephemeral=True)
             await interaction.followup.send(f"✅ **{user.name}** has been kicked.")
         except discord.Forbidden:
             await interaction.followup.send("❌ Permission denied. My role must be higher than the target's role.")
@@ -240,7 +256,14 @@ class PunishPublic(commands.Cog):
                     await conn.commit()
             await interaction.followup.send(f"✅ **{user.name}** has been banned.")
             log_channel = self.bot.get_channel(await self.get_logging_channel(interaction.guild.id))
-            await log_channel.send(f"🔨 **{user}** was banned by **{interaction.user}** for: {reason[:100]}")
+            user_embed = discord.Embed(title="You have been banned", description=f"You have been banned from **{interaction.guild.name}** for the following reason:\n{reason}\n\nIf you believe this was a mistake, please contact the server staff.", color=discord.Color.red())
+            try:
+                await log_channel.send(f"🔨 **{user}** was banned by **{interaction.user}** for: {reason[:100]}")
+                await user.send(embed=user_embed)
+                await interaction.followup.send(f"✅ **{user.name}** has been banned.")
+            except:
+                    await user.send(embed=user_embed)
+                    await interaction.followup.send(f"✅ **{user.name}** has been banned., but I couldn't send a message to the log channel. Please set up a log channel with `/set-logs`.", ephemeral=True)
         except discord.Forbidden:
             await interaction.followup.send("❌ Permission denied. Cannot ban this user.")
         except Exception:
