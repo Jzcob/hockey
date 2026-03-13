@@ -137,8 +137,8 @@ class PunishPublic(commands.Cog):
     @app_commands.checks.has_permissions(moderate_members=True)
     async def warn(self, interaction: discord.Interaction, user: discord.Member, reason: str, evidence: discord.Attachment = None):
         await interaction.response.defer()
-        if not await self.check_released(interaction):
-            return
+        if not await self.check_released(interaction): return
+        
         try:
             async with self.db_pool.acquire() as conn:
                 async with conn.cursor() as cursor:
@@ -146,103 +146,72 @@ class PunishPublic(commands.Cog):
                     await cursor.execute(sql, (interaction.guild.id, user.id, interaction.user.id, reason, self.enc_key, evidence.url if evidence else None))
                     await conn.commit()
             await interaction.followup.send(f"✅ **{user.name}** has been warned.")
-        except:
-            error_channel = self.bot.get_channel(config.error_channel)
-            string = f"{traceback.format_exc()}"
-            await error_channel.send(f"<@920797181034778655>```{string}```")
-            await interaction.followup.send("An error occurred while warning the user. The issue has been reported.", ephemeral=True)
-    
-    @warn.error
-    async def warn_error(self, interaction: discord.Interaction, error):
-        if isinstance(error, app_commands.MissingPermissions):
-            await interaction.response.send_message("❌ You do not have permission to use this command.", ephemeral=True)
-        else:
-            error_channel = self.bot.get_channel(config.error_channel)
-            string = f"{traceback.format_exc()}"
-            await error_channel.send(f"<@920797181034778655>```{string}```")
-            await interaction.response.send_message("An error occurred while processing the command. The issue has been reported.", ephemeral=True)
+        except Exception:
+            await self.report_error(traceback.format_exc())
+            await interaction.followup.send("❌ Error logging warning. Check database columns.", ephemeral=True)
 
     @app_commands.command(name="timeout", description="Timeout a user.")
     @app_commands.checks.has_permissions(moderate_members=True)
     async def timeout(self, interaction: discord.Interaction, user: discord.Member, duration: int, reason: str, evidence: discord.Attachment = None):
         await interaction.response.defer()
-        if not await self.check_released(interaction):
-            return
+        if not await self.check_released(interaction): return
+        if not await self.can_moderate(interaction, user): return
+
         try:
+            await user.timeout(timedelta(minutes=duration), reason=reason)
             async with self.db_pool.acquire() as conn:
                 async with conn.cursor() as cursor:
                     sql = "INSERT INTO timeouts (guild_id, user_id, staff_id, reason, evidence_url) VALUES (%s, %s, %s, AES_ENCRYPT(%s, %s), %s)"
                     await cursor.execute(sql, (interaction.guild.id, user.id, interaction.user.id, reason, self.enc_key, evidence.url if evidence else None))
                     await conn.commit()
-        except:
-            error_channel = self.bot.get_channel(config.error_channel)
-            string = f"{traceback.format_exc()}"
-            await error_channel.send(f"<@920797181034778655>```{string}```")
-            await interaction.followup.send("An error occurred while timing out the user. The issue has been reported.", ephemeral=True)
-        await user.timeout(timedelta(minutes=duration), reason=reason)
-        await interaction.followup.send(f"✅ **{user.name}** has been timed out for {duration} minutes.")
-
-    @timeout.error
-    async def timeout_error(self, interaction: discord.Interaction, error):
-        if isinstance(error, app_commands.MissingPermissions):
-            await interaction.response.send_message("❌ You do not have permission to use this command.", ephemeral=True)
-        else:
-            error_channel = self.bot.get_channel(config.error_channel)
-            string = f"{traceback.format_exc()}"
-            await error_channel.send(f"<@920797181034778655>```{string}```")
-            await interaction.response.send_message("An error occurred while processing the command. The issue has been reported.", ephemeral=True)
+            await interaction.followup.send(f"✅ **{user.name}** has been timed out for {duration} minutes.")
+        except discord.Forbidden:
+            await interaction.followup.send("❌ I lack permissions to timeout this user.")
+        except Exception:
+            await self.report_error(traceback.format_exc())
+            await interaction.followup.send("❌ An error occurred during timeout.")
 
     @app_commands.command(name="kick", description="Kick a user.")
-    @app_commands.checks.has_permissions(moderate_members=True)
+    @app_commands.checks.has_permissions(kick_members=True)
     async def kick(self, interaction: discord.Interaction, user: discord.Member, reason: str, evidence: discord.Attachment = None):
         await interaction.response.defer()
-        if not await self.check_released(interaction):
-            return
+        if not await self.check_released(interaction): return
+        if not await self.can_moderate(interaction, user): return
 
         try:
+            await user.kick(reason=reason)
             async with self.db_pool.acquire() as conn:
                 async with conn.cursor() as cursor:
                     sql = "INSERT INTO kicks (guild_id, user_id, staff_id, reason, evidence_url) VALUES (%s, %s, %s, AES_ENCRYPT(%s, %s), %s)"
                     await cursor.execute(sql, (interaction.guild.id, user.id, interaction.user.id, reason, self.enc_key, evidence.url if evidence else None))
                     await conn.commit()
-        except:
-            error_channel = self.bot.get_channel(config.error_channel)
-            string = f"{traceback.format_exc()}"
-            await error_channel.send(f"<@920797181034778655>```{string}```")
-            await interaction.followup.send("An error occurred while kicking the user. The issue has been reported.", ephemeral=True)
-        await user.kick(reason=reason)
-        await interaction.followup.send(f"✅ **{user.name}** has been kicked.")
-    
-    @kick.error
-    async def kick_error(self, interaction: discord.Interaction, error):
-        if isinstance(error, app_commands.MissingPermissions):
-            await interaction.response.send_message("❌ You do not have permission to use this command.", ephemeral=True)
-        else:
-            error_channel = self.bot.get_channel(config.error_channel)
-            string = f"{traceback.format_exc()}"
-            await error_channel.send(f"<@920797181034778655>```{string}```")
-            await interaction.response.send_message("An error occurred while processing the command. The issue has been reported.", ephemeral=True)
+            await interaction.followup.send(f"✅ **{user.name}** has been kicked.")
+        except discord.Forbidden:
+            await interaction.followup.send("❌ Permission denied. My role must be higher than the target's role.")
+        except Exception:
+            await self.report_error(traceback.format_exc())
+            await interaction.followup.send("❌ Kick failed. Check bot permissions and database.")
 
     @app_commands.command(name="ban", description="Ban a user.")
-    @app_commands.checks.has_permissions(moderate_members=True)
+    @app_commands.checks.has_permissions(ban_members=True)
     async def ban(self, interaction: discord.Interaction, user: discord.Member, reason: str, evidence: discord.Attachment = None):
         await interaction.response.defer()
-        if not await self.check_released(interaction):
-            return
+        if not await self.check_released(interaction): return
+        if not await self.can_moderate(interaction, user): return
 
         try:
+            await user.ban(reason=reason)
             async with self.db_pool.acquire() as conn:
                 async with conn.cursor() as cursor:
                     sql = "INSERT INTO bans (guild_id, user_id, staff_id, reason, evidence_url) VALUES (%s, %s, %s, AES_ENCRYPT(%s, %s), %s)"
                     await cursor.execute(sql, (interaction.guild.id, user.id, interaction.user.id, reason, self.enc_key, evidence.url if evidence else None))
                     await conn.commit()
-        except:
-            error_channel = self.bot.get_channel(config.error_channel)
-            string = f"{traceback.format_exc()}"
-            await error_channel.send(f"<@920797181034778655>```{string}```")
-            await interaction.followup.send("An error occurred while banning the user. The issue has been reported.", ephemeral=True)
-        await user.ban(reason=reason)
-        await interaction.followup.send(f"✅ **{user.name}** has been banned.")
+            await interaction.followup.send(f"✅ **{user.name}** has been banned.")
+        except discord.Forbidden:
+            await interaction.followup.send("❌ Permission denied. Cannot ban this user.")
+        except Exception:
+            await self.report_error(traceback.format_exc())
+            await interaction.followup.send("❌ Ban failed.")
 
     @ban.error
     async def ban_error(self, interaction: discord.Interaction, error):
