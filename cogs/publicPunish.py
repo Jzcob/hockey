@@ -124,6 +124,7 @@ class PunishPublic(commands.Cog):
             async with self.db_pool.acquire() as conn:
                 async with conn.cursor(aiomysql.DictCursor) as cursor:
                     limit = 1000 if premium else 10
+                    
                     if not premium:
                         query = f"""
                             (SELECT 'Warn' as type, CAST(AES_DECRYPT(reason, %s) AS CHAR) as reason, staff_id, created_at FROM warns WHERE user_id = %s AND guild_id = %s ORDER BY created_at DESC LIMIT {limit})
@@ -145,10 +146,19 @@ class PunishPublic(commands.Cog):
                             UNION ALL
                             (SELECT 'Ban' as type, CAST(AES_DECRYPT(reason, %s) AS CHAR) as reason, staff_id, created_at FROM bans WHERE user_id = %s AND guild_id = %s ORDER BY created_at DESC LIMIT {limit})
                             UNION ALL
-                            (SELECT 'Note' as type, note as reason, staff_id, created_at FROM staff_notes WHERE user_id = %s AND guild_id = %s ORDER BY created_at DESC LIMIT {limit})
+                            (SELECT 'Note' as type, note_content as reason, staff_id, created_at FROM staff_notes WHERE user_id = %s AND guild_id = %s ORDER BY created_at DESC LIMIT {limit})
                             ORDER BY created_at DESC
                         """
-                    await cursor.execute(query, (self.enc_key, user.id, interaction.guild.id) * 4)
+
+                    params = []
+                    for _ in range(4):
+                        params.extend([self.enc_key, user.id, interaction.guild.id])
+
+                    if premium:
+                        params.extend([user.id, interaction.guild.id])
+
+                    await cursor.execute(query, tuple(params))
+                    
                     history = await cursor.fetchall()
 
             embed = discord.Embed(title=f"Punishments for {user.name}", color=discord.Color.orange())
@@ -295,7 +305,7 @@ class PunishPublic(commands.Cog):
         try:
             async with self.db_pool.acquire() as conn:
                 async with conn.cursor() as cursor:
-                    sql = "INSERT INTO staff_notes (guild_id, user_id, staff_id, note) VALUES (%s, %s, %s, %s)"
+                    sql = "INSERT INTO staff_notes (guild_id, user_id, staff_id, note_content) VALUES (%s, %s, %s, %s)"
                     await cursor.execute(sql, (interaction.guild.id, user.id, interaction.user.id, note))
                     await conn.commit()
             await interaction.followup.send(f"✅ Note added for {user.name}.")
@@ -313,7 +323,7 @@ class PunishPublic(commands.Cog):
         try:
             async with self.db_pool.acquire() as conn:
                 async with conn.cursor() as cursor:
-                    sql = "DELETE FROM staff_notes WHERE guild_id = %s AND user_id = %s AND id = %s"
+                    sql = "DELETE FROM staff_notes WHERE guild_id = %s AND user_id = %s AND note_id = %s"
                     await cursor.execute(sql, (interaction.guild.id, user.id, note_id))
                     await conn.commit()
             await interaction.followup.send(f"✅ Note ID {note_id} removed for {user.name}.")
@@ -331,7 +341,7 @@ class PunishPublic(commands.Cog):
         try:
             async with self.db_pool.acquire() as conn:
                 async with conn.cursor(aiomysql.DictCursor) as cursor:
-                    sql = "SELECT id, note, staff_id, created_at FROM staff_notes WHERE guild_id = %s AND user_id = %s ORDER BY created_at DESC"
+                    sql = "SELECT note_id, note_content, staff_id, created_at FROM staff_notes WHERE guild_id = %s AND user_id = %s ORDER BY created_at DESC"
                     await cursor.execute(sql, (interaction.guild.id, user.id))
                     notes = await cursor.fetchall()
             
@@ -341,7 +351,7 @@ class PunishPublic(commands.Cog):
             else:
                 for note in notes:
                     date = note['created_at'].strftime('%Y-%m-%d')
-                    embed.add_field(name=f"ID: {note['id']} | {date}", value=f"{note['note']}\n**Staff:** <@{note['staff_id']}>", inline=False)
+                    embed.add_field(name=f"ID: {note['note_id']} | {date}", value=f"{note['note_content']}\n**Staff:** <@{note['staff_id']}>", inline=False)
             
             await interaction.followup.send(embed=embed)
         except:
