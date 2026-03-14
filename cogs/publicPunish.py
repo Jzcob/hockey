@@ -125,40 +125,33 @@ class PunishPublic(commands.Cog):
                 async with conn.cursor(aiomysql.DictCursor) as cursor:
                     limit = 1000 if premium else 10
                     
-                    if not premium:
-                        query = f"""
-                            (SELECT 'Warn' as type, CAST(AES_DECRYPT(reason, %s) AS CHAR) as reason, staff_id, created_at FROM warns WHERE user_id = %s AND guild_id = %s ORDER BY created_at DESC LIMIT {limit})
-                            UNION ALL
-                            (SELECT 'Timeout' as type, CAST(AES_DECRYPT(reason, %s) AS CHAR) as reason, staff_id, created_at FROM timeouts WHERE user_id = %s AND guild_id = %s ORDER BY created_at DESC LIMIT {limit})
-                            UNION ALL
-                            (SELECT 'Kick' as type, CAST(AES_DECRYPT(reason, %s) AS CHAR) as reason, staff_id, created_at FROM kicks WHERE user_id = %s AND guild_id = %s ORDER BY created_at DESC LIMIT {limit})
-                            UNION ALL
-                            (SELECT 'Ban' as type, CAST(AES_DECRYPT(reason, %s) AS CHAR) as reason, staff_id, created_at FROM bans WHERE user_id = %s AND guild_id = %s ORDER BY created_at DESC LIMIT {limit})
-                            ORDER BY created_at DESC
-                        """
-                    else:
-                        query = f"""
-                            (SELECT 'Warn' as type, CAST(AES_DECRYPT(reason, %s) AS CHAR) as reason, staff_id, created_at FROM warns WHERE user_id = %s AND guild_id = %s)
-                            UNION ALL
-                            (SELECT 'Timeout' as type, CAST(AES_DECRYPT(reason, %s) AS CHAR) as reason, staff_id, created_at FROM timeouts WHERE user_id = %s AND guild_id = %s ORDER BY created_at DESC LIMIT {limit})
-                            UNION ALL
-                            (SELECT 'Kick' as type, CAST(AES_DECRYPT(reason, %s) AS CHAR) as reason, staff_id, created_at FROM kicks WHERE user_id = %s AND guild_id = %s ORDER BY created_at DESC LIMIT {limit})
-                            UNION ALL
-                            (SELECT 'Ban' as type, CAST(AES_DECRYPT(reason, %s) AS CHAR) as reason, staff_id, created_at FROM bans WHERE user_id = %s AND guild_id = %s ORDER BY created_at DESC LIMIT {limit})
-                            UNION ALL
-                            (SELECT 'Note' as type, note_content as reason, staff_id, created_at FROM staff_notes WHERE user_id = %s AND guild_id = %s ORDER BY created_at DESC LIMIT {limit})
-                            ORDER BY created_at DESC
-                        """
-
-                    params = []
-                    for _ in range(4):
-                        params.extend([self.enc_key, user.id, interaction.guild.id])
+                    base_query = """
+                        (SELECT 'Warn' as type, CAST(AES_DECRYPT(reason, %s) AS CHAR) as reason, staff_id, created_at FROM warns WHERE user_id = %s AND guild_id = %s ORDER BY created_at DESC LIMIT {limit})
+                        UNION ALL
+                        (SELECT 'Timeout' as type, CAST(AES_DECRYPT(reason, %s) AS CHAR) as reason, staff_id, created_at FROM timeouts WHERE user_id = %s AND guild_id = %s ORDER BY created_at DESC LIMIT {limit})
+                        UNION ALL
+                        (SELECT 'Kick' as type, CAST(AES_DECRYPT(reason, %s) AS CHAR) as reason, staff_id, created_at FROM kicks WHERE user_id = %s AND guild_id = %s ORDER BY created_at DESC LIMIT {limit})
+                        UNION ALL
+                        (SELECT 'Ban' as type, CAST(AES_DECRYPT(reason, %s) AS CHAR) as reason, staff_id, created_at FROM bans WHERE user_id = %s AND guild_id = %s ORDER BY created_at DESC LIMIT {limit})
+                    """
 
                     if premium:
-                        params.extend([user.id, interaction.guild.id])
+                        query = base_query + f"""
+                            UNION ALL
+                            (SELECT CONCAT('Note #', server_note_id) as type, CAST(AES_DECRYPT(note_content, %s) AS CHAR) as reason, staff_id, created_at FROM staff_notes WHERE user_id = %s AND guild_id = %s ORDER BY created_at DESC LIMIT {limit})
+                        """
+                    else:
+                        query = base_query
+                    
+                    query += " ORDER BY created_at DESC"
+                    query = query.format(limit=limit)
+
+                    params = []
+                    loop_count = 5 if premium else 4
+                    for _ in range(loop_count):
+                        params.extend([self.enc_key, user.id, interaction.guild.id])
 
                     await cursor.execute(query, tuple(params))
-                    
                     history = await cursor.fetchall()
 
             embed = discord.Embed(title=f"Punishments for {user.name}", color=discord.Color.orange())
@@ -167,7 +160,7 @@ class PunishPublic(commands.Cog):
             else:
                 for item in history:
                     date = item['created_at'].strftime('%Y-%m-%d')
-                    reason = item['reason'].decode() if isinstance(item['reason'], bytes) else str(item['reason'] or "No reason.")
+                    reason = item['reason'] or "No reason provided."
                     embed.add_field(name=f"{item['type']} | {date}", value=f"**Reason:** {reason[:100]}\n**Staff:** <@{item['staff_id']}>", inline=False)
             
             embed.set_footer(text="💎 Premium" if premium else f"⏳ Free Tier (Last {self.retention_days} days)")
@@ -178,15 +171,15 @@ class PunishPublic(commands.Cog):
 
     @app_commands.command(name="warn", description="Warn a user.")
     @app_commands.checks.has_permissions(moderate_members=True)
-    async def warn(self, interaction: discord.Interaction, user: discord.Member, reason: str, evidence: discord.Attachment = None):
+    async def warn(self, interaction: discord.Interaction, user: discord.Member, reason: str):
         await interaction.response.defer()
         if not await self.check_released(interaction): return
         
         try:
             async with self.db_pool.acquire() as conn:
                 async with conn.cursor() as cursor:
-                    sql = "INSERT INTO warns (guild_id, user_id, staff_id, reason, evidence_url) VALUES (%s, %s, %s, AES_ENCRYPT(%s, %s), %s)"
-                    await cursor.execute(sql, (interaction.guild.id, user.id, interaction.user.id, reason, self.enc_key, evidence.url if evidence else None))
+                    sql = "INSERT INTO warns (guild_id, user_id, staff_id, reason) VALUES (%s, %s, %s, AES_ENCRYPT(%s, %s))"
+                    await cursor.execute(sql, (interaction.guild.id, user.id, interaction.user.id, reason, self.enc_key))
                     await conn.commit()
 
             await self.log_action(interaction.guild, f"⚠️ **{user}** was warned by **{interaction.user}**: {reason[:100]}")
@@ -198,45 +191,31 @@ class PunishPublic(commands.Cog):
 
     @app_commands.command(name="timeout", description="Timeout a user.")
     @app_commands.checks.has_permissions(moderate_members=True)
-    async def timeout(self, interaction: discord.Interaction, user: discord.Member, duration: str, reason: str, evidence: discord.Attachment = None):
+    async def timeout(self, interaction: discord.Interaction, user: discord.Member, duration: str, reason: str):
         await interaction.response.defer()
         if not await self.check_released(interaction): return
 
-        # Uses the parse_duration helper to handle 1m, 1h, 1d, 1w
         delta = self.parse_duration(duration)
-        if not delta:
-            return await interaction.followup.send("❌ Invalid duration format. Use e.g., `15m`, `1h`, `1d`, `1w`.", ephemeral=True)
-        
-        # Discord maximum timeout is 28 days
-        if delta > timedelta(days=28):
-            return await interaction.followup.send("❌ Timeout duration cannot exceed 28 days.", ephemeral=True)
+        if not delta or delta > timedelta(days=28):
+            return await interaction.followup.send("❌ Invalid duration (Max 28 days).", ephemeral=True)
 
         try:
             await user.timeout(delta, reason=reason)
-            
             async with self.db_pool.acquire() as conn:
                 async with conn.cursor() as cursor:
-                    sql = "INSERT INTO timeouts (guild_id, user_id, staff_id, reason, evidence_url) VALUES (%s, %s, %s, AES_ENCRYPT(%s, %s), %s)"
-                    # We store the duration string in the reason field so you can see it in logs later
-                    await cursor.execute(sql, (interaction.guild.id, user.id, interaction.user.id, f"[{duration}] {reason}", self.enc_key, evidence.url if evidence else None))
+                    sql = "INSERT INTO timeouts (guild_id, user_id, staff_id, reason) VALUES (%s, %s, %s, AES_ENCRYPT(%s, %s))"
+                    await cursor.execute(sql, (interaction.guild.id, user.id, interaction.user.id, f"[{duration}] {reason}", self.enc_key))
                     await conn.commit()
             
             await self.log_action(interaction.guild, f"⏱️ **{user}** timed out by **{interaction.user}** ({duration}): {reason[:100]}")
-            
-            dm_embed = discord.Embed(title=f"Timed out in {interaction.guild.name}", description=f"Duration: {duration}\nReason: {reason}", color=discord.Color.orange())
-            await self.send_dm_safe(user, dm_embed)
-            
             await interaction.followup.send(f"✅ **{user.name}** timed out for {duration}.")
-            
-        except discord.Forbidden: 
-            await interaction.followup.send("❌ Permission Denied. I cannot timeout this user.")
-        except Exception:
+        except:
             await self.report_error(traceback.format_exc())
-            await interaction.followup.send("❌ An error occurred during the timeout process.")
+            await interaction.followup.send("❌ Error during timeout.")
 
     @app_commands.command(name="kick", description="Kick a user.")
     @app_commands.checks.has_permissions(kick_members=True)
-    async def kick(self, interaction: discord.Interaction, user: discord.Member, reason: str, evidence: discord.Attachment = None):
+    async def kick(self, interaction: discord.Interaction, user: discord.Member, reason: str):
         await interaction.response.defer()
         if not await self.check_released(interaction): return
 
@@ -245,20 +224,17 @@ class PunishPublic(commands.Cog):
             await user.kick(reason=reason)
             async with self.db_pool.acquire() as conn:
                 async with conn.cursor() as cursor:
-                    sql = "INSERT INTO kicks (guild_id, user_id, staff_id, reason, evidence_url) VALUES (%s, %s, %s, AES_ENCRYPT(%s, %s), %s)"
-                    await cursor.execute(sql, (interaction.guild.id, user.id, interaction.user.id, reason, self.enc_key, evidence.url if evidence else None))
+                    sql = "INSERT INTO kicks (guild_id, user_id, staff_id, reason) VALUES (%s, %s, %s, AES_ENCRYPT(%s, %s))"
+                    await cursor.execute(sql, (interaction.guild.id, user.id, interaction.user.id, reason, self.enc_key))
                     await conn.commit()
-
-            await self.log_action(interaction.guild, f"👢 **{user}** kicked by **{interaction.user}**: {reason[:100]}")
             await interaction.followup.send(f"✅ **{user.name}** kicked.")
-        except discord.Forbidden: await interaction.followup.send("❌ Permission Denied.")
         except:
             await self.report_error(traceback.format_exc())
-            await interaction.followup.send("❌ Error.")
+            await interaction.followup.send("❌ Error kicking user.")
 
     @app_commands.command(name="ban", description="Ban a user.")
     @app_commands.checks.has_permissions(ban_members=True)
-    async def ban(self, interaction: discord.Interaction, user: discord.Member, reason: str, evidence: discord.Attachment = None):
+    async def ban(self, interaction: discord.Interaction, user: discord.Member, reason: str):
         await interaction.response.defer()
         if not await self.check_released(interaction): return
 
@@ -267,16 +243,60 @@ class PunishPublic(commands.Cog):
             await user.ban(reason=reason)
             async with self.db_pool.acquire() as conn:
                 async with conn.cursor() as cursor:
-                    sql = "INSERT INTO bans (guild_id, user_id, staff_id, reason, evidence_url) VALUES (%s, %s, %s, AES_ENCRYPT(%s, %s), %s)"
-                    await cursor.execute(sql, (interaction.guild.id, user.id, interaction.user.id, reason, self.enc_key, evidence.url if evidence else None))
+                    sql = "INSERT INTO bans (guild_id, user_id, staff_id, reason) VALUES (%s, %s, %s, AES_ENCRYPT(%s, %s))"
+                    await cursor.execute(sql, (interaction.guild.id, user.id, interaction.user.id, reason, self.enc_key))
                     await conn.commit()
-
-            await self.log_action(interaction.guild, f"🔨 **{user}** banned by **{interaction.user}**: {reason[:100]}")
             await interaction.followup.send(f"✅ **{user.name}** banned.")
-        except discord.Forbidden: await interaction.followup.send("❌ Permission Denied.")
         except:
             await self.report_error(traceback.format_exc())
-            await interaction.followup.send("❌ Error.")
+            await interaction.followup.send("❌ Error banning user.")
+
+    @app_commands.command(name="add-note", description="Add a staff note to a user.")
+    @app_commands.checks.has_permissions(moderate_members=True)
+    async def add_note(self, interaction: discord.Interaction, user: discord.Member, note: str):
+        await interaction.response.defer()
+        if not await self.check_released(interaction): return
+        if not await self.is_guild_premium(interaction.guild.id):
+            return await interaction.followup.send("❌ Premium only.", ephemeral=True)
+        try:
+            async with self.db_pool.acquire() as conn:
+                async with conn.cursor() as cursor:
+                    sql = """
+                        INSERT INTO staff_notes (guild_id, user_id, staff_id, note_content, server_note_id) 
+                        VALUES (%s, %s, %s, AES_ENCRYPT(%s, %s), (SELECT COALESCE(MAX(server_note_id), 0) + 1 FROM staff_notes AS temp WHERE guild_id = %s))
+                    """
+                    await cursor.execute(sql, (interaction.guild.id, user.id, interaction.user.id, note, self.enc_key, interaction.guild.id))
+                    await conn.commit()
+            await interaction.followup.send(f"✅ Note added for {user.name}.")
+        except:
+            await self.report_error(traceback.format_exc())
+            await interaction.followup.send("❌ Error adding note.")
+
+    @app_commands.command(name="view-notes", description="View staff notes for a user.")
+    @app_commands.checks.has_permissions(moderate_members=True)
+    async def view_notes(self, interaction: discord.Interaction, user: discord.Member):
+        await interaction.response.defer()
+        if not await self.check_released(interaction): return
+        if not await self.is_guild_premium(interaction.guild.id):
+            return await interaction.followup.send("❌ Premium only.", ephemeral=True)
+        try:
+            async with self.db_pool.acquire() as conn:
+                async with conn.cursor(aiomysql.DictCursor) as cursor:
+                    sql = "SELECT server_note_id, CAST(AES_DECRYPT(note_content, %s) AS CHAR) as note_content, staff_id, created_at FROM staff_notes WHERE guild_id = %s AND user_id = %s ORDER BY created_at DESC"
+                    await cursor.execute(sql, (self.enc_key, interaction.guild.id, user.id))
+                    notes = await cursor.fetchall()
+            
+            embed = discord.Embed(title=f"Staff Notes for {user.name}", color=discord.Color.blue())
+            if not notes:
+                embed.description = "No staff notes found."
+            else:
+                for note in notes:
+                    date = note['created_at'].strftime('%Y-%m-%d')
+                    embed.add_field(name=f"ID: {note['server_note_id']} | {date}", value=f"{note['note_content']}\n**Staff:** <@{note['staff_id']}>", inline=False)
+            await interaction.followup.send(embed=embed)
+        except:
+            await self.report_error(traceback.format_exc())
+            await interaction.followup.send("❌ Error fetching notes.")
 
     @app_commands.command(name="set-logs", description="Set log channel.")
     @app_commands.checks.has_permissions(administrator=True)
@@ -291,69 +311,6 @@ class PunishPublic(commands.Cog):
                     await cursor.execute(sql, (interaction.guild.id, channel.id))
                     await conn.commit()
             await interaction.followup.send(f"✅ Log channel set to {channel.mention}", ephemeral=True)
-        except:
-            await self.report_error(traceback.format_exc())
-            await interaction.followup.send("There was an error while using the command, an alert has been sent to the bot developer.", ephemeral=True)
-    
-    @app_commands.command(name="add-note", description="Add a staff note to a user.")
-    @app_commands.checks.has_permissions(moderate_members=True)
-    async def add_note(self, interaction: discord.Interaction, user: discord.Member, note: str):
-        await interaction.response.defer()
-        if not await self.check_released(interaction): return
-        if not await self.is_guild_premium(interaction.guild.id):
-            return await interaction.followup.send("❌ This feature is for premium servers only.", ephemeral=True)
-        try:
-            async with self.db_pool.acquire() as conn:
-                async with conn.cursor() as cursor:
-                    sql = "INSERT INTO staff_notes (guild_id, user_id, staff_id, note_content) VALUES (%s, %s, %s, %s)"
-                    await cursor.execute(sql, (interaction.guild.id, user.id, interaction.user.id, note))
-                    await conn.commit()
-            await interaction.followup.send(f"✅ Note added for {user.name}.")
-        except:
-            await self.report_error(traceback.format_exc())
-            await interaction.followup.send("There was an error while using the command, an alert has been sent to the bot developer.", ephemeral=True)
-    
-    @app_commands.command(name="remove-note", description="Remove a staff note from a user by ID.")
-    @app_commands.checks.has_permissions(moderate_members=True)
-    async def remove_note(self, interaction: discord.Interaction, user: discord.Member, note_id: int):
-        await interaction.response.defer()
-        if not await self.check_released(interaction): return
-        if not await self.is_guild_premium(interaction.guild.id):
-            return await interaction.followup.send("❌ This feature is for premium servers only.", ephemeral=True)
-        try:
-            async with self.db_pool.acquire() as conn:
-                async with conn.cursor() as cursor:
-                    sql = "DELETE FROM staff_notes WHERE guild_id = %s AND user_id = %s AND note_id = %s"
-                    await cursor.execute(sql, (interaction.guild.id, user.id, note_id))
-                    await conn.commit()
-            await interaction.followup.send(f"✅ Note ID {note_id} removed for {user.name}.")
-        except:
-            await self.report_error(traceback.format_exc())
-            await interaction.followup.send("There was an error while using the command, an alert has been sent to the bot developer.", ephemeral=True)
-    
-    @app_commands.command(name="view-notes", description="View staff notes for a user.")
-    @app_commands.checks.has_permissions(moderate_members=True)
-    async def view_notes(self, interaction: discord.Interaction, user: discord.Member):
-        await interaction.response.defer()
-        if not await self.check_released(interaction): return
-        if not await self.is_guild_premium(interaction.guild.id):
-            return await interaction.followup.send("❌ This feature is for premium servers only.", ephemeral=True)
-        try:
-            async with self.db_pool.acquire() as conn:
-                async with conn.cursor(aiomysql.DictCursor) as cursor:
-                    sql = "SELECT note_id, note_content, staff_id, created_at FROM staff_notes WHERE guild_id = %s AND user_id = %s ORDER BY created_at DESC"
-                    await cursor.execute(sql, (interaction.guild.id, user.id))
-                    notes = await cursor.fetchall()
-            
-            embed = discord.Embed(title=f"Staff Notes for {user.name}", color=discord.Color.blue())
-            if not notes:
-                embed.description = "No staff notes found for this user."
-            else:
-                for note in notes:
-                    date = note['created_at'].strftime('%Y-%m-%d')
-                    embed.add_field(name=f"ID: {note['note_id']} | {date}", value=f"{note['note_content']}\n**Staff:** <@{note['staff_id']}>", inline=False)
-            
-            await interaction.followup.send(embed=embed)
         except:
             await self.report_error(traceback.format_exc())
             await interaction.followup.send("There was an error while using the command, an alert has been sent to the bot developer.", ephemeral=True)
