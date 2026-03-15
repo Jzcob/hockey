@@ -334,25 +334,6 @@ class PunishPublic(commands.Cog):
             await self.report_error(traceback.format_exc())
             await interaction.followup.send("There was an error while using the command, an alert has been sent to the bot developer.", ephemeral=True)
     
-    @app_commands.command(name="clear-history", description="Clear punishment history for a user.")
-    @app_commands.checks.has_permissions(administrator=True)
-    async def clear_history(self, interaction: discord.Interaction, user: discord.Member):
-        await interaction.response.defer()
-        if not await self.check_released(interaction): return
-        try:
-            async with self.db_pool.acquire() as conn:
-                async with conn.cursor() as cursor:
-                    tables = ["warns", "timeouts", "kicks", "bans", "staff_notes"]
-                    for table in tables:
-                        sql = f"DELETE FROM {table} WHERE guild_id = %s AND user_id = %s"
-                        await cursor.execute(sql, (interaction.guild.id, user.id))
-                    await conn.commit()
-            await self.log_action(interaction.guild, f"🧹 Punishment history cleared for **{user}** by **{interaction.user}**.")
-            await interaction.followup.send(f"✅ Punishment history cleared for {user.name}.")
-        except:
-            await self.report_error(traceback.format_exc())
-            await interaction.followup.send("There was an error while using the command, an alert has been sent to the bot developer.", ephemeral=True)
-    
     @app_commands.command(name="export-history", description="Export punishment history for a user as CSV.")
     @app_commands.checks.has_permissions(administrator=True)
     async def export_history(self, interaction: discord.Interaction, user: discord.Member = None):
@@ -362,42 +343,65 @@ class PunishPublic(commands.Cog):
             return await interaction.followup.send("❌ This feature is for premium servers only.", ephemeral=True)
 
         try:
-            # If no user is specified, export for entire guild
             user_id = user.id if user else None
+            
             async with self.db_pool.acquire() as conn:
                 async with conn.cursor(aiomysql.DictCursor) as cursor:
                     if user_id:
                         query = f"""
                             (SELECT 'Warn' as type, CAST(AES_DECRYPT(reason, %s) AS CHAR) as reason, staff_id, created_at FROM warns WHERE user_id = %s AND guild_id = %s)
                             UNION ALL
-                            (SELECT 'Timeout' as type, CAST(AES_DECRYPT(reason, %s) AS CHAR) as reason, staff_id, created_at FROM timeouts WHERE user_id = %s AND guild_id = %s ORDER BY created_at DESC LIMIT 1000)
+                            (SELECT 'Timeout' as type, CAST(AES_DECRYPT(reason, %s) AS CHAR) as reason, staff_id, created_at FROM timeouts WHERE user_id = %s AND guild_id = %s)
                             UNION ALL
-                            (SELECT 'Kick' as type, CAST(AES_DECRYPT(reason, %s) AS CHAR) as reason, staff_id, created_at FROM kicks WHERE user_id = %s AND guild_id = %s ORDER BY created_at DESC LIMIT 1000)
+                            (SELECT 'Kick' as type, CAST(AES_DECRYPT(reason, %s) AS CHAR) as reason, staff_id, created_at FROM kicks WHERE user_id = %s AND guild_id = %s)
                             UNION ALL
-                            (SELECT 'Ban' as type, CAST(AES_DECRYPT(reason, %s) AS CHAR) as reason, staff_id, created_at FROM bans WHERE user_id = %s AND guild_id = %s ORDER BY created_at DESC LIMIT 1000)
+                            (SELECT 'Ban' as type, CAST(AES_DECRYPT(reason, %s) AS CHAR) as reason, staff_id, created_at FROM bans WHERE user_id = %s AND guild_id = %s)
                             UNION ALL
-                            (SELECT 'Note' as type, note as reason, staff_id, created_at FROM staff_notes WHERE user_id = %s AND guild_id = %s ORDER BY created_at DESC LIMIT 1000)
+                            (SELECT 'Note' as type, CAST(AES_DECRYPT(note_content, %s) AS CHAR) as reason, staff_id, created_at FROM staff_notes WHERE user_id = %s AND guild_id = %s)
                             ORDER BY created_at DESC
-                            """
+                        """
+                        params = (self.enc_key, user_id, interaction.guild.id) * 5
                     else:
-                        pass
-            await cursor.execute(query, (self.enc_key, user_id, interaction.guild.id) * 4)
-            history = await cursor.fetchall()
-            # Convert to CSV format and send to user as file attachment
+                        # Logic for the entire server
+                        query = f"""
+                            (SELECT 'Warn' as type, CAST(AES_DECRYPT(reason, %s) AS CHAR) as reason, staff_id, created_at FROM warns WHERE guild_id = %s)
+                            UNION ALL
+                            (SELECT 'Timeout' as type, CAST(AES_DECRYPT(reason, %s) AS CHAR) as reason, staff_id, created_at FROM timeouts WHERE guild_id = %s)
+                            UNION ALL
+                            (SELECT 'Kick' as type, CAST(AES_DECRYPT(reason, %s) AS CHAR) as reason, staff_id, created_at FROM kicks WHERE guild_id = %s)
+                            UNION ALL
+                            (SELECT 'Ban' as type, CAST(AES_DECRYPT(reason, %s) AS CHAR) as reason, staff_id, created_at FROM bans WHERE guild_id = %s)
+                            UNION ALL
+                            (SELECT 'Note' as type, CAST(AES_DECRYPT(note_content, %s) AS CHAR) as reason, staff_id, created_at FROM staff_notes WHERE guild_id = %s)
+                            ORDER BY created_at DESC
+                        """
+                        params = (self.enc_key, interaction.guild.id) * 5
+
+                    await cursor.execute(query, params)
+                    history = await cursor.fetchall()
+
             if not history:
                 return await interaction.followup.send("No punishment history found to export.", ephemeral=True)
+
+            import io
             csv_data = "Type,Reason,Staff ID,Date\n"
             for item in history:
-                reason = item['reason'].decode() if isinstance(item['reason'], bytes) else str(item['reason'] or "No reason.")
-                csv_data += f"{item['type']},{reason.replace(',', ';')},{item['staff_id']},{item['created_at'].strftime('%Y-%m-%d %H:%M:%S')}\n"
-            file = discord.File(fp=csv_data.encode(), filename=f"{user.name}_punishment_history.csv" if user else f"{interaction.guild.name}_punishment_history.csv")
-            await interaction.followup.send(content="📁 Here is the exported punishment history:", file=file, ephemeral=True)
-        except:
+                reason = item['reason'] or "No reason."
+                clean_reason = str(reason).replace('\n', ' ').replace(',', ';')
+                csv_data += f"{item['type']},{clean_reason},{item['staff_id']},{item['created_at'].strftime('%Y-%m-%d %H:%M:%S')}\n"
+
+            file_data = io.BytesIO(csv_data.encode('utf-8'))
+            filename = f"{user.name if user else interaction.guild.name}_history.csv"
+            
+            await interaction.followup.send(
+                content=f"📁 Exported history for **{user.name if user else 'the whole server'}**:", 
+                file=discord.File(fp=file_data, filename=filename),
+                ephemeral=True
+            )
+
+        except Exception:
             await self.report_error(traceback.format_exc())
-            await interaction.followup.send("There was an error while using the command, an alert has been sent to the bot developer.", ephemeral=True)
-
-    
-
+            await interaction.followup.send("❌ An error occurred during export. The dev has been notified.", ephemeral=True)
 
 async def setup(bot):
     await bot.add_cog(PunishPublic(bot))
