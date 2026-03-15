@@ -83,10 +83,19 @@ class Help(commands.Cog):
                 embed.add_field(name="`/leaderboard fantasy`", value="See how you stack up against the competition!", inline=False)
                 embed.add_field(name="`/mypoints fantasy`", value="Check your current point total in the fantasy league.", inline=False)
             elif menu.value == "moderation":
-                embed.add_field(name="`/warn <member> <reason>`", value="Warn a member of the server.", inline=False)
+                embed.description = ("Here are the moderation commands you can use with this bot!\n\n"
+                    "<> = Required\n() = Optional\n\n"
+                    "Have any questions?\nhttps://discord.gg/WGQYdzvn8y"
+                )
+                embed.add_field(name="`/warn <member> <reason>`", value="Warn a member of the server. *Requires `Manage Messages` permission*", inline=False)
+                embed.add_field(name="`/timeout <member> <duration> <reason>`", value="Timeout a member of the server. *Requires `Timeout Members` permission*", inline=False)
+                embed.add_field(name="`/kick <member> <reason>`", value="Kick a member from the server. *Requires `Kick Members` permission*", inline=False)
+                embed.add_field(name="`/ban <member> <reason>`", value="Ban a member from the server. *Requires `Ban Members` permission*", inline=False)
                 embed.add_field(name="`/punishments <member>`", value="View a member's history. (90-day limit for Free tier)", inline=False)
-                embed.add_field(name="`/add-note <member> <note>`", value="Add a staff-only note to a user.", inline=False)
-                embed.add_field(name="`/export-logs`", value="💎 **Referee Only:** Download your server's full history to a .txt file.", inline=False)
+                embed.add_field(name="`/add-note <member> <note>`", value="💎 **Referee Only:** Add a staff-only note to a user.", inline=False)
+                embed.add_field(name="`/remove-note <member> <note_id>`", value="💎 **Referee Only:** Remove a staff-only note from a user.", inline=False)
+                embed.add_field(name="`/view-notes <member>`", value="💎 **Referee Only:** View staff-only notes on a user.", inline=False)
+                embed.add_field(name="`/export-history`", value="💎 **Referee Only:** Download your server's full history to a CSV file.", inline=False)
                 embed.set_footer(text="Upgrade to the Referee Tier for permanent data storage!")
 
             embed.set_footer(text=config.footer)
