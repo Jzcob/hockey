@@ -123,7 +123,7 @@ class PunishPublic(commands.Cog):
             premium = await self.is_guild_premium(interaction.guild.id)
             async with self.db_pool.acquire() as conn:
                 async with conn.cursor(aiomysql.DictCursor) as cursor:
-                    limit = 1000 if premium else 10
+                    limit = 100000 if premium else 10
                     
                     base_query = """
                         (SELECT 'Warn' as type, CAST(AES_DECRYPT(reason, %s) AS CHAR) as reason, staff_id, created_at FROM warns WHERE user_id = %s AND guild_id = %s ORDER BY created_at DESC LIMIT {limit})
@@ -271,6 +271,25 @@ class PunishPublic(commands.Cog):
         except:
             await self.report_error(traceback.format_exc())
             await interaction.followup.send("❌ Error adding note.")
+    
+    @app_commands.command(name="remove-note", description="Delete a staff note by its ID.")
+    @app_commands.checks.has_permissions(moderate_members=True)
+    async def delete_note(self, interaction: discord.Interaction, note_id: int):
+        await interaction.response.defer()
+        if not await self.check_released(interaction): return
+        if not await self.is_guild_premium(interaction.guild.id):
+            return await interaction.followup.send("❌ Premium only.", ephemeral=True)
+        try:
+            async with self.db_pool.acquire() as conn:
+                async with conn.cursor() as cursor:
+                    sql = "DELETE FROM staff_notes WHERE guild_id = %s AND server_note_id = %s"
+                    await cursor.execute(sql, (interaction.guild.id, note_id))
+                    await conn.commit()
+            await interaction.followup.send(f"✅ Note deleted.")
+        except:
+            await self.report_error(traceback.format_exc())
+            await interaction.followup.send("❌ Error deleting note.")
+
 
     @app_commands.command(name="view-notes", description="View staff notes for a user.")
     @app_commands.checks.has_permissions(moderate_members=True)
