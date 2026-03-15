@@ -13,21 +13,16 @@ from thefuzz import fuzz
 import json
 
 # --- Global Constants ---
-SIMILARITY_THRESHOLD = 85 # You can adjust this value (0-100)
+SIMILARITY_THRESHOLD = 85 
 
 class GTP(commands.Cog):
     def __init__(self, bot):
         self.bot = bot
-        self.db_pool = bot.db_pool  # Get the async pool
-        self.http_session = aiohttp.ClientSession() # Create the async session
+        self.db_pool = bot.db_pool  
+        self.http_session = aiohttp.ClientSession() 
         self.used = {}
-        if self.db_pool:
-            print("GTP Cog: Database pool is accessible.")
-        else:
-            print("❌ GTP Cog: Database pool is NOT accessible.")
 
     async def cog_unload(self):
-        """Called when the cog is unloaded."""
         await self.http_session.close()
 
     async def migrate_gtp_async(self, cursor, user_id, actual_guild_id):
@@ -63,20 +58,31 @@ class GTP(commands.Cog):
         try:
             with open("teams.json", "r") as f:
                 teams = json.load(f)
-            team = random.choice(list(teams.keys()))
-            team_name = teams[team]
-            url = f"https://api-web.nhle.com/v1/roster/{team}/current"
-
-            async with self.http_session.get(url) as response:
-                response.raise_for_status()
-                x = await response.json()
+            
+            max_retries = 5
+            x = None
+            while max_retries > 0:
+                team = random.choice(list(teams.keys()))
+                team_name = teams[team]
+                url = f"https://api-web.nhle.com/v1/roster/{team}/current"
+                
+                async with self.http_session.get(url) as response:
+                    if response.status == 200:
+                        x = await response.json()
+                        break
+                    else:
+                        max_retries -= 1
+                        continue
+            
+            if not x:
+                return await interaction.followup.send("Could not fetch a roster from the NHL API right now. Please try again later.")
 
             positions = ["forwards", "defensemen", "goalies"]
             position = random.choice(positions)
             roster = x.get(position, [])
+            
             if not roster:
-                await interaction.followup.send(f"No players found for `{team_name}` ({position})")
-                return
+                return await interaction.followup.send(f"No players found for `{team_name}` ({position}). Try again!")
 
             player = random.choice(roster)
             first_name = player.get("firstName", {}).get("default", "Unknown")
@@ -88,7 +94,6 @@ class GTP(commands.Cog):
 
             await interaction.followup.send(f"Guess the player from the `{team_name}`! You have 15 seconds! {hint}")
 
-            # This check now only verifies the author and channel
             def check(m):
                 return m.channel == interaction.channel and m.author == interaction.user
 
@@ -98,7 +103,6 @@ class GTP(commands.Cog):
                 correct_answer = full_name.lower()
                 correct = False
 
-                # --- Fuzzy Matching Logic ---
                 if user_answer == correct_answer:
                     correct = True
                 else:
@@ -110,21 +114,26 @@ class GTP(commands.Cog):
                         )
                         def confirm_check(m):
                             return m.author == interaction.user and m.channel == interaction.channel and m.content.lower() in ['yes', 'no']
+                        
                         try:
                             confirm_response = await self.bot.wait_for('message', check=confirm_check, timeout=15.0)
                             if confirm_response.content.lower() == 'yes':
                                 correct = True
-                            await confirm_msg.delete()
-                            await confirm_response.delete()
+                            
+                            try:
+                                await confirm_msg.delete()
+                                await confirm_response.delete()
+                            except (discord.Forbidden, discord.HTTPException):
+                                pass
+
                         except asyncio.TimeoutError:
-                            await confirm_msg.edit(content="Confirmation timed out.", delete_after=5)
+                            await interaction.edit_original_response(content="Confirmation timed out.")
 
                 if correct:
                     try:
                         async with self.db_pool.acquire() as conn:
                             async with conn.cursor() as cursor:
                                 if interaction.guild:
-                                    # Call the new async migrate function
                                     await self.migrate_gtp_async(cursor, msg.author.id, interaction.guild.id)
                                 
                                 await cursor.execute("""
@@ -135,12 +144,9 @@ class GTP(commands.Cog):
                                     INSERT INTO gtp_scores (user_id, guild_id, points) VALUES (%s, %s, 1)
                                     ON DUPLICATE KEY UPDATE points = points + 1
                                 """, (msg.author.id, interaction.guild.id))
-                                # No commit needed (autocommit)
                     except Exception as db_error:
                         print(f"GTP DB Error: {db_error}")
-                        traceback.print_exc()
-                        await interaction.followup.send("A database error occurred while saving your score.", ephemeral=True)
-                        return # Stop execution if DB fails
+                        return await interaction.followup.send("A database error occurred.", ephemeral=True)
 
                     await interaction.followup.send(f"Correct! 🎉 The player was `{full_name}`. Well done, {msg.author.mention}!")
                 else:
@@ -151,7 +157,10 @@ class GTP(commands.Cog):
 
         except Exception as e:
             traceback.print_exc()
-            await interaction.followup.send("An error occurred while processing your request.", ephemeral=True)
+            if not interaction.response.is_done():
+                await interaction.response.send_message("An error occurred.", ephemeral=True)
+            else:
+                await interaction.followup.send("An error occurred.", ephemeral=True)
 
 async def setup(bot):
     await bot.add_cog(GTP(bot))
