@@ -6,28 +6,32 @@ import asyncio
 import config
 import traceback
 from datetime import datetime
+from thefuzz import fuzz
+
+# --- Global Constants ---
+SIMILARITY_THRESHOLD = 85 
 
 class GuessTheTeam(commands.Cog):
     def __init__(self, bot):
         self.bot = bot
-    
+        self.db_pool = self.bot.db_pool
+
     @commands.Cog.listener()
     async def on_ready(self):
         print("LOADED: `guessTheTeam.py`")
-    
-    @app_commands.command(name="guess-the-team", description="Guess the team!")
-    async def guessTheTeam(self, interaction: discord.Interaction):
+
+    async def log_command(self, interaction: discord.Interaction):
         if config.command_log_bool:
             try:
                 command_log_channel = self.bot.get_channel(config.command_log)
-                if interaction.guild:
-                    guild_name = interaction.guild.name or "Unknown Server"
+                guild_name = interaction.guild.name if interaction.guild else "DMs"
+                if command_log_channel:
                     await command_log_channel.send(f"`/guess-the-team` used by `{interaction.user.name}` in `{guild_name}` at `{datetime.now()}`\n---")
-                else:
-                    await command_log_channel.send(f"`/guess-the-team` used by `{interaction.user.name}` in DMs at `{datetime.now()}`\n---")
-            except Exception as log_error:
-                print(f"Command logging failed: {log_error}")
+            except: pass
 
+    @app_commands.command(name="guess-the-team", description="Race to unscramble the NHL team name!")
+    async def guessTheTeam(self, interaction: discord.Interaction):
+        await self.log_command(interaction)
         await interaction.response.defer()
 
         try:
@@ -37,7 +41,7 @@ class GuessTheTeam(commands.Cog):
                 "Columbus Blue Jackets", "Dallas Stars", "Detroit Red Wings",
                 "Edmonton Oilers", "Florida Panthers", "Los Angeles Kings",
                 "Minnesota Wild", "Montréal Canadiens", "Nashville Predators",
-                "New Jersey Devils", "New York Islanders", "New York Rangers",
+                "New Jersey Devils", "New York Islanders", "New Rangers",
                 "Ottawa Senators", "Philadelphia Flyers", "Pittsburgh Penguins",
                 "Seattle Kraken", "San Jose Sharks", "St. Louis Blues",
                 "Tampa Bay Lightning", "Toronto Maple Leafs", "Utah Hockey Club",
@@ -45,40 +49,71 @@ class GuessTheTeam(commands.Cog):
                 "Winnipeg Jets"
             ]
 
-            allTeams = random.sample(teams, 3)
-            correct_team = random.choice(allTeams)
-            scrambled_team = ''.join(random.sample(correct_team, len(correct_team)))
+            correct_team = random.choice(teams)
+            
+            scrambled_list = list(correct_team.replace(" ", "").upper())
+            random.shuffle(scrambled_list)
+            scrambled_team = ' '.join(scrambled_list)
 
-            # Create and send the embed
             embed = discord.Embed(
-                title="Guess The Team",
-                description=f"Guess the team! You have 30 seconds.\n\n`{scrambled_team}`",
+                title="🏁 Guess The Team RACE!",
+                description=f"Unscramble the NHL team name! You have 30 seconds.\n\n# `{scrambled_team}`",
                 color=config.color
             )
+            embed.set_footer(text="Anyone in the channel can guess!")
             await interaction.followup.send(embed=embed)
 
-            def check(message):
-                return message.channel == interaction.channel and message.content.lower() == correct_team.lower()
+            start_time = datetime.now()
 
-            try:
-                msg = await self.bot.wait_for('message', timeout=30.0, check=check)
-                await interaction.followup.send(f"Correct! {msg.author.mention} guessed the team!")
-            except asyncio.TimeoutError:
-                await interaction.followup.send(f"Time's up! The correct answer was **{correct_team}**.")
+            def check(message):
+                return message.channel == interaction.channel and not message.author.bot
+
+            while True:
+                elapsed = (datetime.now() - start_time).total_seconds()
+                remaining = 30.0 - elapsed
+
+                if remaining <= 0:
+                    await interaction.followup.send(f"⏱️ Time's up! No one guessed it. The correct answer was **{correct_team}**.")
+                    break
+
+                try:
+                    msg = await self.bot.wait_for('message', timeout=remaining, check=check)
+                    user_ans = msg.content.strip().lower()
+                    
+                    if user_ans == correct_team.lower() or fuzz.ratio(user_ans, correct_team.lower()) >= SIMILARITY_THRESHOLD:
+                        
+                        # --- Point System (Optional: Mirroring your GTP points) ---
+                        try:
+                            async with self.db_pool.acquire() as conn:
+                                async with conn.cursor() as cursor:
+                                    g_id = interaction.guild.id if interaction.guild else 0
+                                    await cursor.execute("""
+                                        INSERT INTO gtt_scores (user_id, guild_id, points) VALUES (%s, %s, 1)
+                                        ON DUPLICATE KEY UPDATE points = points + 1
+                                    """, (msg.author.id, g_id))
+                        except Exception as db_err:
+                            print(f"GTT Point Error: {db_err}")
+
+                        await msg.reply(f"🏆 **{msg.author.display_name}** got it! The team was **{correct_team}**!")
+                        break
+                    else:
+                        try: await msg.add_reaction("❌")
+                        except: pass
+
+                except asyncio.TimeoutError:
+                    await interaction.followup.send(f"⏱️ Time's up! The correct answer was **{correct_team}**.")
+                    break
+
         except Exception as e:
             error_channel = self.bot.get_channel(config.error_channel)
-            error_message = f"An error occurred in `/guess-the-team`:\n```{traceback.format_exc()}```"
             if error_channel:
-                await error_channel.send(error_message)
-            await interaction.followup.send(
-                "An error occurred while processing your request. The issue has been reported to the bot developers.",
-                ephemeral=True
-            )
-    
+                await error_channel.send(f"<@920797181034778655> Error in `/guess-the-team`:\n```{traceback.format_exc()}```")
+            await interaction.followup.send("An error occurred. The issue has been reported.", ephemeral=True)
+
     @guessTheTeam.error
-    async def guessTheTeam_error(self, interaction: discord.Interaction , error):
-        await interaction.response.send_message(f"Command on cooldown! Try again in {error.retry_after:.2f} seconds.", ephemeral=True)
-        
+    async def guessTheTeam_error(self, interaction: discord.Interaction, error):
+        if isinstance(error, app_commands.CommandOnCooldown):
+            await interaction.response.send_message(f"⌛ Command on cooldown! Try again in {error.retry_after:.2f} seconds.", ephemeral=True)
 
 async def setup(bot):
     await bot.add_cog(GuessTheTeam(bot))
