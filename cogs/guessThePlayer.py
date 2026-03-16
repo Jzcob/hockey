@@ -23,6 +23,7 @@ class GTP(commands.Cog):
         self.used = {}
 
     async def cog_unload(self):
+        """Called when the cog is unloaded."""
         await self.http_session.close()
 
     async def migrate_gtp_async(self, cursor, user_id, actual_guild_id):
@@ -46,121 +47,133 @@ class GTP(commands.Cog):
                     WHERE user_id = %s AND guild_id = 0
                 """, (actual_guild_id, user_id))
 
-    @app_commands.command(name="guess-the-player", description="Guess the player!")
-    async def guess_the_player(self, interaction: discord.Interaction):
-        if config.command_log_bool:
-            command_log_channel = self.bot.get_channel(config.command_log)
-            guild_name = "DMs" if interaction.guild is None else f"`{interaction.guild.name}`"
-            await command_log_channel.send(f"`/guess-the-player` used by `{interaction.user.name}` in {guild_name} at `{datetime.now()}`\n---")
-        
-        await interaction.response.defer()
-
+    async def get_random_player(self):
+        """Helper to fetch a random team and player from the NHL API."""
         try:
             with open("teams.json", "r") as f:
                 teams = json.load(f)
             
             max_retries = 5
             x = None
+            team_name = ""
             while max_retries > 0:
-                team = random.choice(list(teams.keys()))
-                team_name = teams[team]
-                url = f"https://api-web.nhle.com/v1/roster/{team}/current"
+                team_abbr = random.choice(list(teams.keys()))
+                team_name = teams[team_abbr]
+                url = f"https://api-web.nhle.com/v1/roster/{team_abbr}/current"
                 
                 async with self.http_session.get(url) as response:
                     if response.status == 200:
                         x = await response.json()
                         break
-                    else:
-                        max_retries -= 1
-                        continue
+                    max_retries -= 1
             
-            if not x:
-                return await interaction.followup.send("Could not fetch a roster from the NHL API right now. Please try again later.")
+            if not x: return None
 
             positions = ["forwards", "defensemen", "goalies"]
             position = random.choice(positions)
             roster = x.get(position, [])
+            if not roster: return None
+
+            player_data = random.choice(roster)
+            return {
+                "team_name": team_name,
+                "first": player_data.get("firstName", {}).get("default", "Unknown"),
+                "last": player_data.get("lastName", {}).get("default", "Unknown"),
+                "pos_code": player_data.get("positionCode", "Unknown")
+            }
+        except:
+            return None
+
+    @app_commands.command(name="guess-the-player", description="Solo mode: Guess the player yourself!")
+    async def guess_the_player(self, interaction: discord.Interaction):
+        await interaction.response.defer()
+        
+        data = await self.get_random_player()
+        if not data:
+            return await interaction.followup.send("Could not fetch a player. Please try again.")
+
+        full_name = f"{data['first']} {data['last']}"
+        pos_full = {"G": "Goalie", "D": "Defenseman", "C": "Center", "L": "Left Wing", "R": "Right Wing"}.get(data['pos_code'], "Unknown")
+        hint = f"(Hint: Their name starts with `{data['first'][0]}` and they play `{pos_full}`)"
+
+        await interaction.followup.send(f"Guess the player from the `{data['team_name']}`! You have 15 seconds! {hint}")
+
+        def check(m):
+            return m.channel == interaction.channel and m.author == interaction.user
+
+        try:
+            msg = await self.bot.wait_for("message", check=check, timeout=15.0)
+            user_answer = msg.content.strip().lower()
+            correct_answer = full_name.lower()
+
+            if user_answer == correct_answer or fuzz.partial_ratio(user_answer, correct_answer) >= SIMILARITY_THRESHOLD:
+                async with self.db_pool.acquire() as conn:
+                    async with conn.cursor() as cursor:
+                        if interaction.guild:
+                            await self.migrate_gtp_async(cursor, interaction.user.id, interaction.guild.id)
+                        await cursor.execute("INSERT INTO gtp_users (user_id, allow_leaderboard) VALUES (%s, 1) ON DUPLICATE KEY UPDATE user_id = user_id", (interaction.user.id,))
+                        await cursor.execute("INSERT INTO gtp_scores (user_id, guild_id, points) VALUES (%s, %s, 1) ON DUPLICATE KEY UPDATE points = points + 1", (interaction.user.id, interaction.guild.id if interaction.guild else 0))
+                
+                await interaction.followup.send(f"Correct! 🎉 The player was `{full_name}`. Well done, {interaction.user.mention}!")
+            else:
+                await interaction.followup.send(f"Sorry, that's not right. The player was `{full_name}`.")
+        except asyncio.TimeoutError:
+            await interaction.followup.send(f"Time's up! The correct answer was `{full_name}`.")
+
+    @app_commands.command(name="gtp-race", description="Head-to-Head: First person in the channel to guess wins!")
+    async def gtp_race(self, interaction: discord.Interaction):
+        await interaction.response.defer()
+
+        data = await self.get_random_player()
+        if not data:
+            return await interaction.followup.send("Could not fetch a player. Try again later.")
+
+        full_name = f"{data['first']} {data['last']}"
+        pos_full = {"G": "Goalie", "D": "Defenseman", "C": "Center", "L": "Left Wing", "R": "Right Wing"}.get(data['pos_code'], "Unknown")
+        
+        embed = discord.Embed(title="🏁 GuessThePlayer RACE START!", color=discord.Color.blue())
+        embed.description = f"First person to guess the player from the **{data['team_name']}** wins!\n\n**Hint:** Starts with `{data['first'][0]}` | Position: `{pos_full}`"
+        embed.set_footer(text="You have 20 seconds!")
+        
+        await interaction.followup.send(embed=embed)
+
+        start_time = datetime.now()
+        
+        def race_check(m):
+            return m.channel == interaction.channel and not m.author.bot
+
+        while True:
+            elapsed = (datetime.now() - start_time).total_seconds()
+            remaining = 20.0 - elapsed
             
-            if not roster:
-                return await interaction.followup.send(f"No players found for `{team_name}` ({position}). Try again!")
-
-            player = random.choice(roster)
-            first_name = player.get("firstName", {}).get("default", "Unknown")
-            last_name = player.get("lastName", {}).get("default", "Unknown")
-            full_name = f"{first_name} {last_name}"
-            position_code = player.get("positionCode", "Unknown")
-            position_full = {"G": "Goalie", "D": "Defenseman", "C": "Center", "L": "Left Wing", "R": "Right Wing"}.get(position_code, "Unknown")
-            hint = f"(Hint: Their name starts with `{first_name[0]}` and they play `{position_full}`)"
-
-            await interaction.followup.send(f"Guess the player from the `{team_name}`! You have 15 seconds! {hint}")
-
-            def check(m):
-                return m.channel == interaction.channel and m.author == interaction.user
+            if remaining <= 0:
+                await interaction.followup.send(f"⏱️ Time is up! No one guessed it. The player was `{full_name}`.")
+                break
 
             try:
-                msg = await self.bot.wait_for("message", check=check, timeout=15.0)
-                user_answer = msg.content.strip().lower()
-                correct_answer = full_name.lower()
-                correct = False
-
-                if user_answer == correct_answer:
-                    correct = True
-                else:
-                    similarity_score = fuzz.partial_ratio(user_answer, correct_answer)
-                    if similarity_score >= SIMILARITY_THRESHOLD:
-                        confirm_msg = await interaction.followup.send(
-                            f"Your answer is very close. Did you mean `{full_name}`? (yes/no)",
-                            wait=True
-                        )
-                        def confirm_check(m):
-                            return m.author == interaction.user and m.channel == interaction.channel and m.content.lower() in ['yes', 'no']
-                        
-                        try:
-                            confirm_response = await self.bot.wait_for('message', check=confirm_check, timeout=15.0)
-                            if confirm_response.content.lower() == 'yes':
-                                correct = True
-                            
-                            try:
-                                await confirm_msg.delete()
-                                await confirm_response.delete()
-                            except (discord.Forbidden, discord.HTTPException):
-                                pass
-
-                        except asyncio.TimeoutError:
-                            await interaction.edit_original_response(content="Confirmation timed out.")
-
-                if correct:
+                msg = await self.bot.wait_for("message", check=race_check, timeout=remaining)
+                user_ans = msg.content.strip().lower()
+                
+                if user_ans == full_name.lower() or fuzz.partial_ratio(user_ans, full_name.lower()) >= SIMILARITY_THRESHOLD:
                     try:
                         async with self.db_pool.acquire() as conn:
                             async with conn.cursor() as cursor:
-                                if interaction.guild:
-                                    await self.migrate_gtp_async(cursor, msg.author.id, interaction.guild.id)
-                                
-                                await cursor.execute("""
-                                    INSERT INTO gtp_users (user_id, allow_leaderboard) VALUES (%s, 1)
-                                    ON DUPLICATE KEY UPDATE user_id = user_id
-                                """, (msg.author.id,))
-                                await cursor.execute("""
-                                    INSERT INTO gtp_scores (user_id, guild_id, points) VALUES (%s, %s, 1)
-                                    ON DUPLICATE KEY UPDATE points = points + 1
-                                """, (msg.author.id, interaction.guild.id))
-                    except Exception as db_error:
-                        print(f"GTP DB Error: {db_error}")
-                        return await interaction.followup.send("A database error occurred.", ephemeral=True)
+                                g_id = interaction.guild.id if interaction.guild else 0
+                                await self.migrate_gtp_async(cursor, msg.author.id, g_id)
+                                await cursor.execute("INSERT INTO gtp_users (user_id, allow_leaderboard) VALUES (%s, 1) ON DUPLICATE KEY UPDATE user_id = user_id", (msg.author.id,))
+                                await cursor.execute("INSERT INTO gtp_scores (user_id, guild_id, points) VALUES (%s, %s, 1) ON DUPLICATE KEY UPDATE points = points + 1", (msg.author.id, g_id))
+                    except Exception as e:
+                        print(f"Race DB Error: {e}")
 
-                    await interaction.followup.send(f"Correct! 🎉 The player was `{full_name}`. Well done, {msg.author.mention}!")
+                    await msg.reply(f"🏆 **{msg.author.display_name}** got it first! The player was `{full_name}`!")
+                    break
                 else:
-                    await interaction.followup.send(f"Sorry, that's not right. The player was `{full_name}`.")
-
+                    try: await msg.add_reaction("❌")
+                    except: pass
+                    
             except asyncio.TimeoutError:
-                await interaction.followup.send(f"Time's up! The correct answer was `{full_name}`.")
-
-        except Exception as e:
-            traceback.print_exc()
-            if not interaction.response.is_done():
-                await interaction.response.send_message("An error occurred.", ephemeral=True)
-            else:
-                await interaction.followup.send("An error occurred.", ephemeral=True)
+                await interaction.followup.send(f"⏱️ Time is up! No one guessed it. The player was `{full_name}`.")
+                break
 
 async def setup(bot):
-    await bot.add_cog(GTP(bot))
+    await bot.add_cog(GTP(bot), guilds=[discord.Object(id=config.hockey_discord_server)])
