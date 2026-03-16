@@ -90,6 +90,7 @@ class Leaderboards(commands.Cog, name="Leaderboards"):
             myresult = []
             async with self.db_pool.acquire() as conn:
                 async with conn.cursor(aiomysql.DictCursor) as cursor:
+                    guild_id = interaction.guild.id if interaction.guild else 0
                     if global_view:
                         await cursor.execute("""
                             SELECT ts.user_id, SUM(ts.points) AS total_points
@@ -108,7 +109,7 @@ class Leaderboards(commands.Cog, name="Leaderboards"):
                             WHERE ts.guild_id = %s AND tu.allow_leaderboard = 1
                             ORDER BY ts.points DESC
                             LIMIT 10
-                        """, (interaction.guild.id,))
+                        """, (guild_id,))
                     
                     myresult = await cursor.fetchall()
             
