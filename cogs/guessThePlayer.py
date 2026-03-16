@@ -96,7 +96,8 @@ class GTP(commands.Cog):
         pos_full = {"G": "Goalie", "D": "Defenseman", "C": "Center", "L": "Left Wing", "R": "Right Wing"}.get(data['pos_code'], "Unknown")
         hint = f"(Hint: Their name starts with `{data['first'][0]}` and they play `{pos_full}`)"
 
-        await interaction.followup.send(f"Guess the player from the `{data['team_name']}`! You have 15 seconds! {hint}")
+        embed = discord.Embed(title="🎯 Guess The Player!", description=f"Guess the NHL player from the `{data['team_name']}`! You have 15 seconds! {hint}", color=discord.Color.green())
+        await interaction.followup.send(embed=embed)
 
         def check(m):
             return m.channel == interaction.channel and m.author == interaction.user
