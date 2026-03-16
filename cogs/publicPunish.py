@@ -160,8 +160,20 @@ class PunishPublic(commands.Cog):
             else:
                 for item in history:
                     date = item['created_at'].strftime('%Y-%m-%d')
-                    reason = item['reason'] or "No reason provided."
-                    embed.add_field(name=f"{item['type']} | {date}", value=f"**Reason:** {reason[:100]}\n**Staff:** <@{item['staff_id']}>", inline=False)
+                    
+                    reason_raw = item['reason']
+                    if isinstance(reason_raw, bytes):
+                        reason = reason_raw.decode('utf-8', errors='ignore')
+                    else:
+                        reason = str(reason_raw) if reason_raw else "No reason provided."
+
+                    display_reason = (reason[:97] + '...') if len(reason) > 100 else reason
+                    
+                    embed.add_field(
+                        name=f"{item['type']} | {date}", 
+                        value=f"**Reason:** {display_reason}\n**Staff:** <@{item['staff_id']}>", 
+                        inline=False
+                    )
             
             embed.set_footer(text="💎 Premium" if premium else f"⏳ Free Tier (Last {self.retention_days} days)")
             await interaction.followup.send(embed=embed)
@@ -279,13 +291,18 @@ class PunishPublic(commands.Cog):
         if not await self.check_released(interaction): return
         if not await self.is_guild_premium(interaction.guild.id):
             return await interaction.followup.send("❌ Premium only.", ephemeral=True)
+        
         try:
             async with self.db_pool.acquire() as conn:
                 async with conn.cursor() as cursor:
+                    await cursor.execute("SELECT 1 FROM staff_notes WHERE guild_id = %s AND server_note_id = %s", (interaction.guild.id, note_id))
+                    if not await cursor.fetchone():
+                        return await interaction.followup.send(f"❓ Note ID `{note_id}` not found.")
+
                     sql = "DELETE FROM staff_notes WHERE guild_id = %s AND server_note_id = %s"
                     await cursor.execute(sql, (interaction.guild.id, note_id))
                     await conn.commit()
-            await interaction.followup.send(f"✅ Note deleted.")
+            await interaction.followup.send(f"✅ Note `{note_id}` has been deleted.")
         except:
             await self.report_error(traceback.format_exc())
             await interaction.followup.send("❌ Error deleting note.")
@@ -386,8 +403,13 @@ class PunishPublic(commands.Cog):
             import io
             csv_data = "Type,Reason,Staff ID,Date\n"
             for item in history:
-                reason = item['reason'] or "No reason."
-                clean_reason = str(reason).replace('\n', ' ').replace(',', ';')
+                raw_reason = item['reason']
+                if isinstance(raw_reason, bytes):
+                    reason = raw_reason.decode('utf-8')
+                else:
+                    reason = str(raw_reason) if raw_reason else "No reason provided."
+                    
+                clean_reason = reason.replace('\n', ' ').replace(',', ';')
                 csv_data += f"{item['type']},{clean_reason},{item['staff_id']},{item['created_at'].strftime('%Y-%m-%d %H:%M:%S')}\n"
 
             file_data = io.BytesIO(csv_data.encode('utf-8'))
