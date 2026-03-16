@@ -1,6 +1,7 @@
 # Privacy Policy for Hockey Discord Bot
 
-**Effective Date:** March 06, 2026
+**Effective Date:** March 06, 2026  
+**Last Updated:** March 15, 2026
 
 We are committed to protecting the privacy of our users. This policy explains how your data is handled within our MySQL-backed infrastructure.
 
@@ -15,20 +16,21 @@ To provide moderation and league features, we collect and store the following in
 Data is used solely to provide the Bot’s functionality:
 * **Punishment History:** To allow staff to view a user’s past behavior.
 * **Leaderboards:** To track points for Trivia, GTP, and Fantasy Hockey.
-* **Debugging:** Command logs are sent to a private developer channel to identify and fix code bugs.
+* **Data Portability:** To allow Server Administrators to export their server's moderation history via CSV.
+* **Debugging:** Command logs are sent to a private developer channel to identify and fix code bugs and to track activity.
 
 ### 3. Data Retention & The 90-Day Policy
-* **Free Tier:** All moderation data (warns, notes, etc.) is automatically deleted from our database after **90 days** to ensure system efficiency.
-* **Referee Tier:** Servers with an active subscription are exempt from the 90-day prune; their data is stored persistently.
+* **Standard Tier:** All moderation data (warns, timeouts, kicks, and bans) is automatically deleted from our database after **90 days** to ensure system efficiency.
+* **Premium Tier:** Servers with an active subscription are exempt from the 90-day prune; their data is stored persistently for the duration of the subscription.
 
 ### 4. Information Sharing
 We **never** sell, trade, or share your data with third parties. Data is only accessible to the bot developers for maintenance and support purposes.
 
-### 5. Data Security
-Our MySQL database is protected with Multi-Factor Authentication (MFA). Access is restricted to authorized developers, and all administrative actions are logged to prevent unauthorized data access.
+### 5. Data Security & Encryption
+Our MySQL database is protected with Multi-Factor Authentication (MFA). Furthermore, sensitive content—specifically the **reasons** for moderation actions and the content of **Staff Notes**—is **encrypted at rest** using AES encryption. This ensures that even in the event of unauthorized database access, the specific text of your moderation history remains unreadable.
 
 ### 6. Changes to this Policy
-We reserve the right to modify this Privacy Policy at any time without notice, before or after the update has occurred. It is your responsibility to check this policy for changes. By continuing to use the Bot, you acknowledge and agree to the current version of this policy.
+We reserve the right to modify this Privacy Policy at any time. While we may update these terms without direct notice, we strive to announce significant changes via our support server. By continuing to use the Bot, you acknowledge and agree to the current version of this policy.
 
 ### 7. Children's Privacy
 The Bot is not intended for users under the age of 13. We do not knowingly collect data from children. If we discover such data, it will be immediately deleted.
