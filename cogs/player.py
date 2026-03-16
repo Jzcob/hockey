@@ -75,7 +75,6 @@ class player(commands.Cog):
                 "An error occurred while fetching player data. The issue has been reported.",
                 ephemeral=True
             )
-            )
 
     def _create_player_embed(self, player_data, full_name, team_name):
         try:
