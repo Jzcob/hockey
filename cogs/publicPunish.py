@@ -126,19 +126,19 @@ class PunishPublic(commands.Cog):
                     limit = 100000 if premium else 10
                     
                     base_query = """
-                        (SELECT 'Warn' as type, CAST(AES_DECRYPT(reason, %s) AS CHAR) as reason, staff_id, created_at FROM warns WHERE user_id = %s AND guild_id = %s ORDER BY created_at DESC LIMIT {limit})
+                        (SELECT 'Warn' as type, AES_DECRYPT(reason, %s) as reason, staff_id, created_at FROM warns WHERE user_id = %s AND guild_id = %s ORDER BY created_at DESC LIMIT {limit})
                         UNION ALL
-                        (SELECT 'Timeout' as type, CAST(AES_DECRYPT(reason, %s) AS CHAR) as reason, staff_id, created_at FROM timeouts WHERE user_id = %s AND guild_id = %s ORDER BY created_at DESC LIMIT {limit})
+                        (SELECT 'Timeout' as type, AES_DECRYPT(reason, %s) as reason, staff_id, created_at FROM timeouts WHERE user_id = %s AND guild_id = %s ORDER BY created_at DESC LIMIT {limit})
                         UNION ALL
-                        (SELECT 'Kick' as type, CAST(AES_DECRYPT(reason, %s) AS CHAR) as reason, staff_id, created_at FROM kicks WHERE user_id = %s AND guild_id = %s ORDER BY created_at DESC LIMIT {limit})
+                        (SELECT 'Kick' as type, AES_DECRYPT(reason, %s) as reason, staff_id, created_at FROM kicks WHERE user_id = %s AND guild_id = %s ORDER BY created_at DESC LIMIT {limit})
                         UNION ALL
-                        (SELECT 'Ban' as type, CAST(AES_DECRYPT(reason, %s) AS CHAR) as reason, staff_id, created_at FROM bans WHERE user_id = %s AND guild_id = %s ORDER BY created_at DESC LIMIT {limit})
+                        (SELECT 'Ban' as type, AES_DECRYPT(reason, %s) as reason, staff_id, created_at FROM bans WHERE user_id = %s AND guild_id = %s ORDER BY created_at DESC LIMIT {limit})
                     """
 
                     if premium:
                         query = base_query + f"""
                             UNION ALL
-                            (SELECT CONCAT('Note #', server_note_id) as type, CAST(AES_DECRYPT(note_content, %s) AS CHAR) as reason, staff_id, created_at FROM staff_notes WHERE user_id = %s AND guild_id = %s ORDER BY created_at DESC LIMIT {limit})
+                            (SELECT CONCAT('Note #', server_note_id) as type, AES_DECRYPT(note_content, %s) as reason, staff_id, created_at FROM staff_notes WHERE user_id = %s AND guild_id = %s ORDER BY created_at DESC LIMIT {limit})
                         """
                     else:
                         query = base_query
@@ -161,11 +161,13 @@ class PunishPublic(commands.Cog):
                 for item in history:
                     date = item['created_at'].strftime('%Y-%m-%d')
                     
-                    reason_raw = item['reason']
-                    if isinstance(reason_raw, bytes):
-                        reason = reason_raw.decode('utf-8', errors='ignore')
+                    raw_reason = item['reason']
+                    if raw_reason is None:
+                        reason = "No reason provided."
+                    elif isinstance(raw_reason, bytes):
+                        reason = raw_reason.decode('utf-8', errors='ignore')
                     else:
-                        reason = str(reason_raw) if reason_raw else "No reason provided."
+                        reason = str(raw_reason)
 
                     display_reason = (reason[:97] + '...') if len(reason) > 100 else reason
                     
@@ -366,37 +368,37 @@ class PunishPublic(commands.Cog):
                 async with conn.cursor(aiomysql.DictCursor) as cursor:
                     if user_id:
                         query = f"""
-                            (SELECT 'Warn' as type, CAST(AES_DECRYPT(reason, %s) AS CHAR) as reason, staff_id, created_at FROM warns WHERE user_id = %s AND guild_id = %s)
+                            (SELECT 'Warn' as type, AES_DECRYPT(reason, %s) as reason, staff_id, created_at FROM warns WHERE user_id = %s AND guild_id = %s)
                             UNION ALL
-                            (SELECT 'Timeout' as type, CAST(AES_DECRYPT(reason, %s) AS CHAR) as reason, staff_id, created_at FROM timeouts WHERE user_id = %s AND guild_id = %s)
+                            (SELECT 'Timeout' as type, AES_DECRYPT(reason, %s) as reason, staff_id, created_at FROM timeouts WHERE user_id = %s AND guild_id = %s)
                             UNION ALL
-                            (SELECT 'Kick' as type, CAST(AES_DECRYPT(reason, %s) AS CHAR) as reason, staff_id, created_at FROM kicks WHERE user_id = %s AND guild_id = %s)
+                            (SELECT 'Kick' as type, AES_DECRYPT(reason, %s) as reason, staff_id, created_at FROM kicks WHERE user_id = %s AND guild_id = %s)
                             UNION ALL
-                            (SELECT 'Ban' as type, CAST(AES_DECRYPT(reason, %s) AS CHAR) as reason, staff_id, created_at FROM bans WHERE user_id = %s AND guild_id = %s)
+                            (SELECT 'Ban' as type, AES_DECRYPT(reason, %s) as reason, staff_id, created_at FROM bans WHERE user_id = %s AND guild_id = %s)
                             UNION ALL
-                            (SELECT 'Note' as type, CAST(AES_DECRYPT(note_content, %s) AS CHAR) as reason, staff_id, created_at FROM staff_notes WHERE user_id = %s AND guild_id = %s)
+                            (SELECT 'Note' as type, AES_DECRYPT(note_content, %s) as reason, staff_id, created_at FROM staff_notes WHERE user_id = %s AND guild_id = %s)
                             ORDER BY created_at DESC
                         """
                         params = (self.enc_key, user_id, interaction.guild.id) * 5
                     else:
-                        # Logic for the entire server
                         query = f"""
-                            (SELECT 'Warn' as type, CAST(AES_DECRYPT(reason, %s) AS CHAR) as reason, staff_id, created_at FROM warns WHERE guild_id = %s)
+                            (SELECT 'Warn' as type, AES_DECRYPT(reason, %s) as reason, staff_id, created_at FROM warns WHERE guild_id = %s)
                             UNION ALL
-                            (SELECT 'Timeout' as type, CAST(AES_DECRYPT(reason, %s) AS CHAR) as reason, staff_id, created_at FROM timeouts WHERE guild_id = %s)
+                            (SELECT 'Timeout' as type, AES_DECRYPT(reason, %s) as reason, staff_id, created_at FROM timeouts WHERE guild_id = %s)
                             UNION ALL
-                            (SELECT 'Kick' as type, CAST(AES_DECRYPT(reason, %s) AS CHAR) as reason, staff_id, created_at FROM kicks WHERE guild_id = %s)
+                            (SELECT 'Kick' as type, AES_DECRYPT(reason, %s) as reason, staff_id, created_at FROM kicks WHERE guild_id = %s)
                             UNION ALL
-                            (SELECT 'Ban' as type, CAST(AES_DECRYPT(reason, %s) AS CHAR) as reason, staff_id, created_at FROM bans WHERE guild_id = %s)
+                            (SELECT 'Ban' as type, AES_DECRYPT(reason, %s) as reason, staff_id, created_at FROM bans WHERE guild_id = %s)
                             UNION ALL
-                            (SELECT 'Note' as type, CAST(AES_DECRYPT(note_content, %s) AS CHAR) as reason, staff_id, created_at FROM staff_notes WHERE guild_id = %s)
+                            (SELECT 'Note' as type, AES_DECRYPT(note_content, %s) as reason, staff_id, created_at FROM staff_notes WHERE guild_id = %s)
                             ORDER BY created_at DESC
                         """
                         params = (self.enc_key, interaction.guild.id) * 5
 
                     await cursor.execute(query, params)
                     history = await cursor.fetchall()
-
+            
+            # --- Processing Loop ---
             if not history:
                 return await interaction.followup.send("No punishment history found to export.", ephemeral=True)
 
@@ -404,11 +406,13 @@ class PunishPublic(commands.Cog):
             csv_data = "Type,Reason,Staff ID,Date\n"
             for item in history:
                 raw_reason = item['reason']
-                if isinstance(raw_reason, bytes):
-                    reason = raw_reason.decode('utf-8')
+                if raw_reason is None:
+                    reason = "No reason provided."
+                elif isinstance(raw_reason, bytes):
+                    reason = raw_reason.decode('utf-8', errors='ignore')
                 else:
-                    reason = str(raw_reason) if raw_reason else "No reason provided."
-                    
+                    reason = str(raw_reason)
+
                 clean_reason = reason.replace('\n', ' ').replace(',', ';')
                 csv_data += f"{item['type']},{clean_reason},{item['staff_id']},{item['created_at'].strftime('%Y-%m-%d %H:%M:%S')}\n"
 
