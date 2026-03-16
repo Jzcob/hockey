@@ -194,6 +194,7 @@ class PunishPublic(commands.Cog):
                 async with conn.cursor() as cursor:
                     sql = "INSERT INTO warns (guild_id, user_id, staff_id, reason) VALUES (%s, %s, %s, AES_ENCRYPT(%s, %s))"
                     await cursor.execute(sql, (interaction.guild.id, user.id, interaction.user.id, reason, self.enc_key))
+                    print(f"Logged warn: guild={interaction.guild.id}, user={user.id}, staff={interaction.user.id}, reason={reason}")
                     await conn.commit()
 
             await self.log_action(interaction.guild, f"⚠️ **{user}** was warned by **{interaction.user}**: {reason[:100]}")
