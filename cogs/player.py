@@ -35,7 +35,7 @@ class player(commands.Cog):
             with open("teams.json", "r") as f:
                 teams = json.load(f)
 
-            session = self.bot.http_session 
+            session = await self.get_session() 
 
             for team_abbr, team_name in teams.items():
                 url = f"https://api-web.nhle.com/v1/roster/{team_abbr}/current"
@@ -69,10 +69,12 @@ class player(commands.Cog):
 
         except Exception as e:
             error_channel = self.bot.get_channel(config.error_channel)
-            await error_channel.send(f"<@920797181034778655>```{traceback.format_exc()}```")
+            if error_channel:
+                await error_channel.send(f"<@920797181034778655> Error in /player: ```{traceback.format_exc()}```")
             await interaction.followup.send(
                 "An error occurred while fetching player data. The issue has been reported.",
                 ephemeral=True
+            )
             )
 
     def _create_player_embed(self, player_data, full_name, team_name):
