@@ -2,7 +2,8 @@ import discord
 from discord import app_commands
 from discord.ext import commands
 from datetime import datetime
-import requests
+import aiohttp
+import asyncio
 import config
 import traceback
 import json
@@ -10,7 +11,21 @@ import json
 class player(commands.Cog):
     def __init__(self, bot): 
         self.bot = bot
-    
+        self._session = None
+
+    async def get_session(self):
+        """Helper to get the bot's shared session or create a local one if missing."""
+        if hasattr(self.bot, 'http_session') and self.bot.http_session:
+            return self.bot.http_session
+        if self._session is None or self._session.closed:
+            self._session = aiohttp.ClientSession()
+        return self._session
+
+    def cog_unload(self):
+        """Clean up the local session if one was created."""
+        if self._session and not self._session.closed:
+            asyncio.create_task(self._session.close())
+
     @commands.Cog.listener()
     async def on_ready(self):
         print(f"LOADED: `player.py`")
@@ -18,7 +33,8 @@ class player(commands.Cog):
     @app_commands.command(name="player", description="Gets the information of a player!")
     @app_commands.allowed_installs(guilds=True, users=True)
     @app_commands.allowed_contexts(guilds=True, dms=True, private_channels=True)
-    async def player(self, interaction: discord.Interaction, name: str):
+    async def player_cmd(self, interaction: discord.Interaction, name: str):
+        # Defer immediately to prevent interaction timeout
         await interaction.response.defer()
 
         if config.command_log_bool:
@@ -48,8 +64,8 @@ class player(commands.Cog):
                 for position_group in ["forwards", "defensemen", "goalies"]:
                     players = roster_data.get(position_group, [])
                     for p_data in players:
-                        f_name = p_data["firstName"]["default"]
-                        l_name = p_data["lastName"]["default"]
+                        f_name = p_data.get("firstName", {}).get("default", "Unknown")
+                        l_name = p_data.get("lastName", {}).get("default", "Unknown")
                         full_name = f"{f_name} {l_name}"
 
                         if full_name.lower() == name.lower():
@@ -84,12 +100,13 @@ class player(commands.Cog):
             birth_city = player_data.get("birthCity", {}).get("default", "Unknown")
             birth_country = player_data.get("birthCountry", "Unknown")
             sweater_number = player_data.get("sweaterNumber", "N/A")
-            stats = player_data.get("featuredStats", {}).get("regularSeason", {}).get("career", {})
-            games_played = stats.get("gamesPlayed", "N/A")
-            goals = stats.get("goals", "N/A")
-            assists = stats.get("assists", "N/A")
-            points = stats.get("points", "N/A")
-            player_id = player_data.get('id') # Get player ID
+            
+            stats_root = player_data.get("featuredStats", {}).get("regularSeason", {}).get("career", {})
+            games_played = stats_root.get("gamesPlayed", "N/A")
+            goals = stats_root.get("goals", "N/A")
+            assists = stats_root.get("assists", "N/A")
+            points = stats_root.get("points", "N/A")
+            player_id = player_data.get('id')
 
             position_map = {
                 "G": "Goalie", "D": "Defenseman", "C": "Center",
@@ -98,14 +115,12 @@ class player(commands.Cog):
             position_full = position_map.get(position, position)
 
             player_name_slug = full_name.lower().replace(" ", "-")
-            
             team_slug = player_data.get("currentTeam", {}).get("teamSlug")
 
             if team_slug and player_id:
                 player_url = f"https://www.nhl.com/{team_slug}/player/{player_name_slug}-{player_id}"
             else:
                 player_url = f"https://www.nhl.com/player/{player_id}"
-        
 
             embed = discord.Embed(
                 title=f"{full_name}",
