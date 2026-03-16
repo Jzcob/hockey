@@ -177,4 +177,4 @@ class GTP(commands.Cog):
                 break
 
 async def setup(bot):
-    await bot.add_cog(GTP(bot), guilds=[discord.Object(id=config.hockey_discord_server)])
+    await bot.add_cog(GTP(bot))
