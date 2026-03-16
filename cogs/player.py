@@ -19,44 +19,49 @@ class player(commands.Cog):
     @app_commands.allowed_installs(guilds=True, users=True)
     @app_commands.allowed_contexts(guilds=True, dms=True, private_channels=True)
     async def player(self, interaction: discord.Interaction, name: str):
+        await interaction.response.defer()
+
         if config.command_log_bool:
             try:
                 command_log_channel = self.bot.get_channel(config.command_log)
                 guild_name = interaction.guild.name if interaction.guild else "DMs"
-                await command_log_channel.send(
-                    f"`/player` used by `{interaction.user.name}` in `{guild_name}` for player `{name}` at `{datetime.now()}`\n---"
-                )
-            except Exception as e:
-                print(f"Command logging failed: {e}")
+                if command_log_channel:
+                    await command_log_channel.send(
+                        f"`/player` used by `{interaction.user.name}` in `{guild_name}` for player `{name}` at `{datetime.now()}`\n---"
+                    )
+            except: pass
 
         try:
-            await interaction.response.defer()
             with open("teams.json", "r") as f:
                 teams = json.load(f)
 
+            session = self.bot.http_session 
+
             for team_abbr, team_name in teams.items():
                 url = f"https://api-web.nhle.com/v1/roster/{team_abbr}/current"
-                response = requests.get(url)
-                if response.status_code != 200:
-                    continue
-                roster_data = response.json()
+                
+                async with session.get(url) as resp:
+                    if resp.status != 200:
+                        continue
+                    roster_data = await resp.json()
 
                 for position_group in ["forwards", "defensemen", "goalies"]:
                     players = roster_data.get(position_group, [])
-                    for player in players:
-                        first_name = player["firstName"]["default"]
-                        last_name = player["lastName"]["default"]
-                        full_name = f"{first_name} {last_name}"
+                    for p_data in players:
+                        f_name = p_data["firstName"]["default"]
+                        l_name = p_data["lastName"]["default"]
+                        full_name = f"{f_name} {l_name}"
 
                         if full_name.lower() == name.lower():
-                            player_id = player["id"]
-                            player_data_url = f"https://api-web.nhle.com/v1/player/{player_id}/landing"
-                            player_response = requests.get(player_data_url)
-                            if player_response.status_code != 200:
-                                continue
-                            player_data = player_response.json()
+                            p_id = p_data["id"]
+                            p_url = f"https://api-web.nhle.com/v1/player/{p_id}/landing"
+                            
+                            async with session.get(p_url) as p_resp:
+                                if p_resp.status != 200:
+                                    continue
+                                player_info = await p_resp.json()
 
-                            embed = self._create_player_embed(player_data, full_name, team_name)
+                            embed = self._create_player_embed(player_info, full_name, team_name)
                             await interaction.followup.send(embed=embed)
                             return
 
