@@ -1,6 +1,6 @@
 import discord
 from discord.ext import commands, tasks
-from discord import app_commands
+from discord import Forbidden, app_commands
 import aiomysql
 import os
 import config
@@ -224,7 +224,9 @@ class PunishPublic(commands.Cog):
             
             await self.log_action(interaction.guild, f"⏱️ **{user}** timed out by **{interaction.user}** ({duration}): {reason[:100]}")
             await interaction.followup.send(f"✅ **{user.name}** timed out for {duration}.")
-        except:
+        except Forbidden:
+            await interaction.followup.send("❌ **Permission Error:** My role is likely below that user or one of us is missing 'Moderate Members' permissions.")
+        except Exception as e:
             await self.report_error(traceback.format_exc())
             await interaction.followup.send("❌ Error during timeout.")
 
@@ -243,7 +245,9 @@ class PunishPublic(commands.Cog):
                     await cursor.execute(sql, (interaction.guild.id, user.id, interaction.user.id, reason, self.enc_key))
                     await conn.commit()
             await interaction.followup.send(f"✅ **{user.name}** kicked.")
-        except:
+        except Forbidden:
+            await interaction.followup.send("❌ **Permission Error:** My role is likely below that user or one of us is missing 'Kick Members' permissions.")
+        except Exception as e:
             await self.report_error(traceback.format_exc())
             await interaction.followup.send("❌ Error kicking user.")
 
@@ -270,7 +274,7 @@ class PunishPublic(commands.Cog):
             await user.ban(reason=reason)
             await interaction.followup.send(f"✅ **{user.name}** has been banned and logged.")
         except discord.Forbidden:
-            await interaction.followup.send("❌ **Permission Error:** My role is likely below that user or I am missing 'Ban Members' permissions.")
+            await interaction.followup.send("❌ **Permission Error:** My role is likely below that user or one of us is missing 'Ban Members' permissions.")
         except Exception as e:
             await self.report_error(traceback.format_exc())
             await interaction.followup.send(f"❌ An error occurred while banning: {e}")
