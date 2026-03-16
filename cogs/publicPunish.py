@@ -253,18 +253,27 @@ class PunishPublic(commands.Cog):
         await interaction.response.defer()
         if not await self.check_released(interaction): return
 
+        # 1. LOG TO DATABASE FIRST (So it shows in history even if the user left)
         try:
-            await self.send_dm_safe(user, discord.Embed(title=f"Banned: {interaction.guild.name}", description=reason, color=discord.Color.red()))
-            await user.ban(reason=reason)
             async with self.db_pool.acquire() as conn:
                 async with conn.cursor() as cursor:
                     sql = "INSERT INTO bans (guild_id, user_id, staff_id, reason) VALUES (%s, %s, %s, AES_ENCRYPT(%s, %s))"
                     await cursor.execute(sql, (interaction.guild.id, user.id, interaction.user.id, reason, self.enc_key))
                     await conn.commit()
-            await interaction.followup.send(f"✅ **{user.name}** banned.")
-        except:
+        except Exception as e:
+            await self.report_error(f"Database Error in Ban: {traceback.format_exc()}")
+            return await interaction.followup.send("❌ Failed to log ban to database. Action cancelled.")
+
+        # 2. EXECUTE DISCORD BAN
+        try:
+            await self.send_dm_safe(user, discord.Embed(title=f"Banned: {interaction.guild.name}", description=reason, color=discord.Color.red()))
+            await user.ban(reason=reason)
+            await interaction.followup.send(f"✅ **{user.name}** has been banned and logged.")
+        except discord.Forbidden:
+            await interaction.followup.send("❌ **Permission Error:** My role is likely below that user or I am missing 'Ban Members' permissions.")
+        except Exception as e:
             await self.report_error(traceback.format_exc())
-            await interaction.followup.send("❌ Error banning user.")
+            await interaction.followup.send(f"❌ An error occurred while banning: {e}")
 
     @app_commands.command(name="add-note", description="Add a staff note to a user.")
     @app_commands.checks.has_permissions(moderate_members=True)
