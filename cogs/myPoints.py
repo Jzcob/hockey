@@ -25,11 +25,18 @@ class MyPoints(commands.Cog, name="MyPoints"):
             try:
                 command_log_channel = self.bot.get_channel(config.command_log)
                 if command_log_channel:
+                    # Fix: Safe check for guild name
                     guild_name = interaction.guild.name if interaction.guild else "DMs"
-                    full_command_name = f"{interaction.command.parent.name} {interaction.command.name}"
+                    
+                    # Fix: Safe check for parent command name
+                    if interaction.command.parent:
+                        full_command_name = f"{interaction.command.parent.name} {interaction.command.name}"
+                    else:
+                        full_command_name = interaction.command.name
+                        
                     await command_log_channel.send(f"`/{full_command_name}` used by `{interaction.user.name}` in `{guild_name}` at `{datetime.now()}`\n---")
             except Exception as e:
-                print(f"Command logging failed for /{interaction.command.name}: {e}")
+                print(f"Command logging failed: {e}")
 
     mypoints = app_commands.Group(name="mypoints", description="Commands for viewing your points in various games.")
 
@@ -51,7 +58,7 @@ class MyPoints(commands.Cog, name="MyPoints"):
 
         except Exception as e:
             error_channel = self.bot.get_channel(config.error_channel)
-            await error_channel.send(f"<@920797181034778655>```{traceback.format_exc()}```")
+            await error_channel.send(f"<@920797181034778655> Error in fantasy_points:```{traceback.format_exc()}```")
             await interaction.followup.send("An error occurred. The issue has been reported.", ephemeral=True)
 
     # --- Trivia Points ---
@@ -62,18 +69,22 @@ class MyPoints(commands.Cog, name="MyPoints"):
         await self.log_command(interaction)
         try:
             await interaction.response.defer(ephemeral=True)
-            result = None
+            
+            # Fix: Fallback for DM context
+            guild_id = interaction.guild.id if interaction.guild else 0
+            location_text = "in this server" if interaction.guild else "in DMs"
+
             async with self.db_pool.acquire() as conn:
                 async with conn.cursor(aiomysql.DictCursor) as cursor:
-                    await cursor.execute("SELECT points FROM trivia_scores WHERE user_id = %s AND guild_id = %s", (interaction.user.id, interaction.guild.id))
+                    await cursor.execute("SELECT points FROM trivia_scores WHERE user_id = %s AND guild_id = %s", (interaction.user.id, guild_id))
                     result = await cursor.fetchone()
 
             points = result['points'] if result else 0
-            await interaction.followup.send(f"You have `{points:,}` trivia point{'s' if points != 1 else ''} in this server!", ephemeral=True)
+            await interaction.followup.send(f"You have `{points:,}` trivia point{'s' if points != 1 else ''} {location_text}!", ephemeral=True)
 
         except Exception as e:
             error_channel = self.bot.get_channel(config.error_channel)
-            await error_channel.send(f"<@920797181034778655>```{traceback.format_exc()}```")
+            await error_channel.send(f"<@920797181034778655> Error in trivia_points:```{traceback.format_exc()}```")
             await interaction.followup.send("An error occurred. The issue has been reported.", ephemeral=True)
 
     @mypoints.command(name="gtp", description="Check your Guess The Player points for this server.")
@@ -83,18 +94,22 @@ class MyPoints(commands.Cog, name="MyPoints"):
         await self.log_command(interaction)
         try:
             await interaction.response.defer(ephemeral=True)
-            result = None
+
+            # Fix: Fallback for DM context
+            guild_id = interaction.guild.id if interaction.guild else 0
+            location_text = "in this server" if interaction.guild else "in DMs"
+
             async with self.db_pool.acquire() as conn:
                 async with conn.cursor(aiomysql.DictCursor) as cursor:
-                    await cursor.execute("SELECT points FROM gtp_scores WHERE user_id = %s AND guild_id = %s", (interaction.user.id, interaction.guild.id))
+                    await cursor.execute("SELECT points FROM gtp_scores WHERE user_id = %s AND guild_id = %s", (interaction.user.id, guild_id))
                     result = await cursor.fetchone()
 
             points = result['points'] if result else 0
-            await interaction.followup.send(f"You have `{points:,}` Guess The Player point{'s' if points != 1 else ''} in this server!", ephemeral=True)
+            await interaction.followup.send(f"You have `{points:,}` Guess The Player point{'s' if points != 1 else ''} {location_text}!", ephemeral=True)
 
         except Exception as e:
             error_channel = self.bot.get_channel(config.error_channel)
-            await error_channel.send(f"<@920797181034778655>```{traceback.format_exc()}```")
+            await error_channel.send(f"<@920797181034778655> Error in gtp_points:```{traceback.format_exc()}```")
             await interaction.followup.send("An error occurred. The issue has been reported.", ephemeral=True)
 
 async def setup(bot):
