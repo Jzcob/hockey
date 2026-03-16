@@ -257,7 +257,6 @@ class PunishPublic(commands.Cog):
         await interaction.response.defer()
         if not await self.check_released(interaction): return
 
-        # 1. LOG TO DATABASE FIRST (So it shows in history even if the user left)
         try:
             async with self.db_pool.acquire() as conn:
                 async with conn.cursor() as cursor:
@@ -268,7 +267,6 @@ class PunishPublic(commands.Cog):
             await self.report_error(f"Database Error in Ban: {traceback.format_exc()}")
             return await interaction.followup.send("❌ Failed to log ban to database. Action cancelled.")
 
-        # 2. EXECUTE DISCORD BAN
         try:
             await self.send_dm_safe(user, discord.Embed(title=f"Banned: {interaction.guild.name}", description=reason, color=discord.Color.red()))
             await user.ban(reason=reason)
@@ -412,7 +410,6 @@ class PunishPublic(commands.Cog):
                     await cursor.execute(query, params)
                     history = await cursor.fetchall()
             
-            # --- Processing Loop ---
             if not history:
                 return await interaction.followup.send("No punishment history found to export.", ephemeral=True)
 
