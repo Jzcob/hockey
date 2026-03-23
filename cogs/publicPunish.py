@@ -84,6 +84,18 @@ class PunishPublic(commands.Cog):
         if error_channel:
             await error_channel.send(f"<@920797181034778655> Error in `publicPunish`:```{error_trace}```")
 
+    async def log_command(self, interaction: discord.Interaction):
+        if config.command_log_bool:
+            try:
+                command_log_channel = self.bot.get_channel(config.command_log)
+                if command_log_channel:
+                    guild_name = interaction.guild.name if interaction.guild else "DMs"
+                    # For grouped commands, the full name is needed
+                    full_command_name = f"{interaction.command.parent.name} {interaction.command.name}"
+                    await command_log_channel.send(f"`/{full_command_name}` used by `{interaction.user.name}` in `{guild_name}` at `{datetime.now()}`\n---")
+            except Exception as e:
+                print(f"Command logging failed for /{interaction.command.name}: {e}") 
+
     # --- Tasks ---
 
     @tasks.loop(hours=24)
@@ -116,6 +128,7 @@ class PunishPublic(commands.Cog):
     @app_commands.command(name="punishments", description="View punishment history.")
     @app_commands.checks.has_permissions(moderate_members=True)
     async def punishments(self, interaction: discord.Interaction, user: discord.Member):
+        await self.log_command(interaction)
         await interaction.response.defer()
         if not await self.check_released(interaction): return
 
@@ -186,6 +199,7 @@ class PunishPublic(commands.Cog):
     @app_commands.command(name="warn", description="Warn a user.")
     @app_commands.checks.has_permissions(moderate_members=True)
     async def warn(self, interaction: discord.Interaction, user: discord.Member, reason: str):
+        await self.log_command(interaction)
         await interaction.response.defer()
         if not await self.check_released(interaction): return
         
@@ -208,6 +222,7 @@ class PunishPublic(commands.Cog):
     @app_commands.checks.has_permissions(moderate_members=True)
     async def timeout(self, interaction: discord.Interaction, user: discord.Member, duration: str, reason: str):
         await interaction.response.defer()
+        await self.log_command(interaction)
         if not await self.check_released(interaction): return
 
         delta = self.parse_duration(duration)
@@ -234,6 +249,7 @@ class PunishPublic(commands.Cog):
     @app_commands.checks.has_permissions(kick_members=True)
     async def kick(self, interaction: discord.Interaction, user: discord.Member, reason: str):
         await interaction.response.defer()
+        await self.log_command(interaction)
         if not await self.check_released(interaction): return
 
         try:
@@ -255,6 +271,7 @@ class PunishPublic(commands.Cog):
     @app_commands.checks.has_permissions(ban_members=True)
     async def ban(self, interaction: discord.Interaction, user: discord.Member, reason: str):
         await interaction.response.defer()
+        await self.log_command(interaction)
         if not await self.check_released(interaction): return
 
         try:
@@ -280,6 +297,7 @@ class PunishPublic(commands.Cog):
     @app_commands.command(name="add-note", description="Add a staff note to a user.")
     @app_commands.checks.has_permissions(moderate_members=True)
     async def add_note(self, interaction: discord.Interaction, user: discord.Member, note: str):
+        await self.log_command(interaction)
         await interaction.response.defer()
         if not await self.check_released(interaction): return
         if not await self.is_guild_premium(interaction.guild.id):
@@ -301,6 +319,7 @@ class PunishPublic(commands.Cog):
     @app_commands.command(name="remove-note", description="Delete a staff note by its ID.")
     @app_commands.checks.has_permissions(moderate_members=True)
     async def delete_note(self, interaction: discord.Interaction, note_id: int):
+        await self.log_command(interaction)
         await interaction.response.defer()
         if not await self.check_released(interaction): return
         if not await self.is_guild_premium(interaction.guild.id):
@@ -325,6 +344,7 @@ class PunishPublic(commands.Cog):
     @app_commands.command(name="view-notes", description="View staff notes for a user.")
     @app_commands.checks.has_permissions(moderate_members=True)
     async def view_notes(self, interaction: discord.Interaction, user: discord.Member):
+        await self.log_command(interaction)
         await interaction.response.defer()
         if not await self.check_released(interaction): return
         if not await self.is_guild_premium(interaction.guild.id):
@@ -351,6 +371,7 @@ class PunishPublic(commands.Cog):
     @app_commands.command(name="set-logs", description="Set log channel.")
     @app_commands.checks.has_permissions(administrator=True)
     async def set_logs(self, interaction: discord.Interaction, channel: discord.TextChannel):
+        await self.log_command(interaction)
         await interaction.response.defer(ephemeral=True)
         if not await self.check_released(interaction): return
         
@@ -368,6 +389,7 @@ class PunishPublic(commands.Cog):
     @app_commands.command(name="export-history", description="Export punishment history for a user as CSV.")
     @app_commands.checks.has_permissions(administrator=True)
     async def export_history(self, interaction: discord.Interaction, user: discord.Member = None):
+        await self.log_command(interaction)
         await interaction.response.defer()
         if not await self.check_released(interaction): return
         if not await self.is_guild_premium(interaction.guild.id):
