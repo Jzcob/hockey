@@ -90,11 +90,20 @@ class PunishPublic(commands.Cog):
                 command_log_channel = self.bot.get_channel(config.command_log)
                 if command_log_channel:
                     guild_name = interaction.guild.name if interaction.guild else "DMs"
-                    # For grouped commands, the full name is needed
-                    full_command_name = f"{interaction.command.parent.name} {interaction.command.name}"
-                    await command_log_channel.send(f"`/{full_command_name}` used by `{interaction.user.name}` in `{guild_name}` at `{datetime.now()}`\n---")
+                    
+                    # Check if the command has a parent (is part of a group)
+                    if interaction.command.parent:
+                        full_command_name = f"{interaction.command.parent.name} {interaction.command.name}"
+                    else:
+                        full_command_name = interaction.command.name
+                    
+                    await command_log_channel.send(
+                        f"`/{full_command_name}` used by `{interaction.user.name}` "
+                        f"in `{guild_name}` at `{datetime.now().strftime('%Y-%m-%d %H:%M:%S')}`\n---"
+                    )
             except Exception as e:
-                print(f"Command logging failed for /{interaction.command.name}: {e}") 
+                # Using interaction.command.name here is safe because the command itself exists
+                print(f"Command logging failed for /{interaction.command.name}: {e}")
 
     # --- Tasks ---
 
