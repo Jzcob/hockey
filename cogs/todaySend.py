@@ -39,6 +39,15 @@ class DailySchedule(commands.Cog):
         self.db_pool = bot.db_pool
         self.http_session = aiohttp.ClientSession()
         self.send_daily_schedule.start()
+        self.bot.loop.create_task(self.check_for_active_games())
+
+    async def check_for_active_games(self):
+        await self.bot.wait_until_ready()
+        _, _, all_final = await self.get_schedule_embed_async()
+        if not all_final:
+            if not self.update_live_scores.is_running():
+                print("Games are currently live. Resuming update loop.")
+                self.update_live_scores.start()
 
     @tasks.loop(time=run_time)
     async def send_daily_schedule(self):
