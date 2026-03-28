@@ -40,7 +40,6 @@ class DailySchedule(commands.Cog):
         self.http_session = aiohttp.ClientSession()
         self.send_daily_schedule.start()
 
-    # --- TASK 1: SEND AND SAVE (Runs once at 5:30 AM EST) ---
     @tasks.loop(time=run_time)
     async def send_daily_schedule(self):
         print(f"Running daily schedule task... (5:30 AM EST)")
@@ -79,7 +78,6 @@ class DailySchedule(commands.Cog):
                 except Exception as e:
                     print(f"Failed to send/save schedule for guild {guild_id}: {e}")
 
-        # --- THE NEW WAITING LOGIC ---
         if earliest_start and not all_final:
             now = datetime.now(pytz.utc)
             delay = (earliest_start - now).total_seconds()
@@ -93,50 +91,49 @@ class DailySchedule(commands.Cog):
                 print("First game starting! Launching live updates.")
                 self.update_live_scores.start()
 
-    # --- TASK 2: FETCH AND UPDATE (Runs every 5 minutes when games are active) ---
     @tasks.loop(minutes=5)
     async def update_live_scores(self):
         try:
-            # Unpack the new return values here as well
             updated_embed, earliest_start, all_final = await self.get_schedule_embed_async()
             if not updated_embed: return
             
-            # Check if all games have concluded
+            records = []
+            try:
+                async with self.db_pool.acquire() as conn:
+                    await conn.ping(reconnect=True)
+                    async with conn.cursor() as cursor:
+                        await cursor.execute("""
+                            SELECT guild_id, daily_schedule_channel_id, daily_schedule_message_id 
+                            FROM guild_settings 
+                            WHERE daily_schedule_channel_id IS NOT NULL 
+                            AND daily_schedule_message_id IS NOT NULL
+                        """)
+                        records = await cursor.fetchall()
+            except Exception as e:
+                print(f"DailySchedule Update: Database error: {e}")
+                return
+
+            for guild_id, channel_id, message_id in records:
+                channel = self.bot.get_channel(channel_id)
+                if channel:
+                    try:
+                        msg = await channel.fetch_message(message_id)
+                        await msg.edit(embed=updated_embed)
+                    except discord.NotFound:
+                        async with self.db_pool.acquire() as conn:
+                            async with conn.cursor() as cursor:
+                                await cursor.execute("UPDATE guild_settings SET daily_schedule_message_id = NULL WHERE guild_id = %s", (guild_id,))
+                                await conn.commit()
+                    except Exception:
+                        continue
+
             if all_final:
-                print("All games are final. Shutting down live updates for the night.")
+                print("All games are final. Last update sent. Shutting down live updates.")
                 self.update_live_scores.cancel()
+
         except Exception:
+            print(f"Error in update loop: {traceback.format_exc()}")
             return
-
-        records = []
-        try:
-            async with self.db_pool.acquire() as conn:
-                await conn.ping(reconnect=True)
-                async with conn.cursor() as cursor:
-                    await cursor.execute("""
-                        SELECT guild_id, daily_schedule_channel_id, daily_schedule_message_id 
-                        FROM guild_settings 
-                        WHERE daily_schedule_channel_id IS NOT NULL 
-                        AND daily_schedule_message_id IS NOT NULL
-                    """)
-                    records = await cursor.fetchall()
-        except Exception as e:
-            print(f"DailySchedule Update: Database error: {e}")
-            return
-
-        for guild_id, channel_id, message_id in records:
-            channel = self.bot.get_channel(channel_id)
-            if channel:
-                try:
-                    msg = await channel.fetch_message(message_id)
-                    await msg.edit(embed=updated_embed)
-                except discord.NotFound:
-                    async with self.db_pool.acquire() as conn:
-                        async with conn.cursor() as cursor:
-                            await cursor.execute("UPDATE guild_settings SET daily_schedule_message_id = NULL WHERE guild_id = %s", (guild_id,))
-                            await conn.commit()
-                except Exception:
-                    continue
 
     @send_daily_schedule.before_loop
     @update_live_scores.before_loop
