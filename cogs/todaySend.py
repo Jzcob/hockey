@@ -177,6 +177,10 @@ class DailySchedule(commands.Cog):
             for game in games:
                 gs = game["gameState"]
                 home_t, away_t = game["homeTeam"], game["awayTeam"]
+                # I need the time left and which period it is so it is like "1st - 10:23 remaining" instead of just "LIVE" yes
+                time_left = game.get("timeRemaining", "")
+                if time_left and game.get("currentPeriodOrdinal"):
+                    time_left = f"{game['currentPeriodOrdinal']} - {time_left} remaining"
                 
                 h_name = home_t.get("placeName", {}).get("default") or home_t.get("commonName", {}).get("default", "TBD")
                 a_name = away_t.get("placeName", {}).get("default") or away_t.get("commonName", {}).get("default", "TBD")
@@ -198,7 +202,7 @@ class DailySchedule(commands.Cog):
                 elif gs in ("FINAL", "OFF"):
                     embed.add_field(name="Final", value=f"{away_s} @ {home_s}\n{away_t.get('score',0)} - {home_t.get('score',0)}", inline=False)
                 elif gs in ("LIVE", "CRIT"):
-                    embed.add_field(name="🔴 LIVE", value=f"{away_s} @ {home_s}\n{away_t.get('score',0)} - {home_t.get('score',0)}", inline=False)
+                    embed.add_field(name=f"🔴 LIVE {time_left}", value=f"{away_s} @ {home_s}\n{away_t.get('score',0)} - {home_t.get('score',0)}", inline=False)
             
             # Return the embed alongside the tracking data
             return embed, earliest_start, all_final
