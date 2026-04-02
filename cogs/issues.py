@@ -27,7 +27,7 @@ class IssueModal(ui.Modal, title='Report an Issue'):
 
     async def on_submit(self, interaction: discord.Interaction):
         try:
-            error_channel = self.bot.get_channel(config.error_channel)
+            issue_channel = self.bot.get_channel(config.issue_channel)
             
             embed = discord.Embed(
                 title="New Issue Reported",
@@ -41,14 +41,14 @@ class IssueModal(ui.Modal, title='Report an Issue'):
             )
             embed.set_footer(text=f"User ID: {interaction.user.id}")
             
-            if error_channel:
-                await error_channel.send(embed=embed)
+            if issue_channel:
+                await issue_channel.send(embed=embed)
                 await interaction.response.send_message("✅ Your issue has been reported to the developers! Thanks for helping improve the bot.", ephemeral=True)
             else:
-                await interaction.response.send_message("❌ Error channel not found. Please contact an admin.", ephemeral=True)
+                await interaction.response.send_message("❌ Issue channel not found. Please /reportissue to the developers.", ephemeral=True)
 
         except Exception:
-            if error_channel:
+            if error_channel := self.bot.get_channel(config.error_channel):
                 await error_channel.send(f"<@920797181034778655> Error in Issue Modal:\n```{traceback.format_exc()}```")
             await interaction.response.send_message("An error occurred while reporting your issue.", ephemeral=True)
 
@@ -56,7 +56,7 @@ class Issues(commands.Cog):
     def __init__(self, bot):
         self.bot = bot
 
-    @app_commands.command(name="report", description="Report an issue with the bot to the developers.")
+    @app_commands.command(name="reportissue", description="Report an issue with the bot to the developers.")
     async def report(self, interaction: discord.Interaction):
         await interaction.response.send_modal(IssueModal(self.bot))
 async def setup(bot):
