@@ -52,7 +52,7 @@ class Help(commands.Cog):
                 embed.add_field(name="`/info`", value="Shows the info menu!", inline=False)
                 embed.add_field(name="`/avatar`", value="Get the avatar of the bot or a user!", inline=False)
                 embed.add_field(name="`/suggest`", value="Suggest a new feature or improvement for the bot!", inline=False)
-                
+                embed.add_field(name="`/report`", value="Report an issue with the bot to the developer!", inline=False)
             
             elif menu.value == "nhl":
                 #embed.add_field(name="`/bracket`", value="Get the NHL Playoff bracket!", inline=False)
