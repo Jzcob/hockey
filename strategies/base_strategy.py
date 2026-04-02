@@ -1,4 +1,8 @@
+# base_strategy.py
 from abc import ABC, abstractmethod
+from datetime import datetime
+import discord
+import config
 
 class LeagueStrategy(ABC):
     @abstractmethod
@@ -30,10 +34,6 @@ class LeagueStrategy(ABC):
         pass
 
     @abstractmethod
-    async def get_random_player(self): #For the guess the player game
-        pass
-
-    @abstractmethod
     async def get_tomorrow_games(self):
         pass
 
@@ -42,9 +42,30 @@ class LeagueStrategy(ABC):
         pass
 
     @abstractmethod
-    async def get_leaderboards(self):
+    async def set_schedule_channel(self, channel_id):
         pass
 
     @abstractmethod
-    async def get_trivia_questions(self):
+    async def remove_schedule_channel(self):
         pass
+
+    @abstractmethod
+    async def post_daily_schedule(self):
+        pass
+
+    @abstractmethod
+    async def get_playoff_bracket(self):
+        pass
+
+    @abstractmethod
+    async def log_command(self, interaction: discord.Interaction):
+        if config.command_log_bool:
+            try:
+                command_log_channel = self.bot.get_channel(config.command_log)
+                if command_log_channel:
+                    guild_name = interaction.guild.name if interaction.guild else "DMs"
+                    # For grouped commands, the full name is needed
+                    full_command_name = f"{interaction.command.parent.name} {interaction.command.name}"
+                    await command_log_channel.send(f"`/{full_command_name}` used by `{interaction.user.name}` in `{guild_name}` at `{datetime.now()}`\n---")
+            except Exception as e:
+                print(f"Command logging failed for /{interaction.command.name}: {e}")
