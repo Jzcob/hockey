@@ -38,7 +38,7 @@ class Leaderboards(commands.Cog, name="Leaderboards"):
     leaderboard = app_commands.Group(name="leaderboard", description="Commands for viewing game leaderboards and stats.")
 
     # --- Fantasy League Leaderboard ---
-    @leaderboard.command(name="fantasy", description="Displays the top 10 players in the fantasy league.")
+    @leaderboard.command(name="fantasy", description="Displays the players from the 1st Hockey Bot fantasy league.")
     @app_commands.allowed_installs(guilds=True, users=True)
     @app_commands.allowed_contexts(guilds=True, dms=True, private_channels=True)
     async def fantasy_leaderboard(self, interaction: discord.Interaction):
@@ -48,7 +48,7 @@ class Leaderboards(commands.Cog, name="Leaderboards"):
             leaders = []
             async with self.db_pool.acquire() as conn:
                 async with conn.cursor(aiomysql.DictCursor) as cursor:
-                    await cursor.execute("SELECT user_id, points FROM rosters ORDER BY points DESC LIMIT 10")
+                    await cursor.execute("SELECT user_id, points FROM rosters ORDER BY points DESC")
                     leaders = await cursor.fetchall()
 
             if not leaders:
