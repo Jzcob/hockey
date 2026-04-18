@@ -55,7 +55,9 @@ class Help(commands.Cog):
                 embed.add_field(name="`/report`", value="Report an issue with the bot to the developer!", inline=False)
             
             elif menu.value == "nhl":
-                #embed.add_field(name="`/bracket`", value="Get the NHL Playoff bracket!", inline=False)
+                embed.add_field(name="`/bracket`", value="Get the NHL Playoff bracket!", inline=False)
+                embed.add_field(name="`/setup-playoff-tracker`", value="Set a channel for a live-updating playoff bracket!", inline=False)
+                embed.add_field(name="`/remove-playoff-tracker`", value="Remove the channel for the live-updating playoff bracket!", inline=False)
                 embed.add_field(name="`/player <name>`", value="Gets the information of a player!", inline=False)
                 embed.add_field(name="`/team <abbreviation>`", value="Gets the information of a team!", inline=False)
                 embed.add_field(name="`/teams`", value="Lists all NHL teams!", inline=False)
@@ -80,11 +82,11 @@ class Help(commands.Cog):
 
             elif menu.value == "hockey-bot-league":
                 #embed.add_field(name="`/join-league` ACTIVE UNTIL OCTOBER 7th", value="Start here! A two-step process to pick your 5 active and 3 bench teams.", inline=False)
-                embed.add_field(name="`/my-roster`", value="View your current team selections, total points, and remaining swaps.", inline=False)
-                embed.add_field(name="`/swap-teams`", value="Use one of your 10 seasonal swaps.", inline=False)
-                embed.add_field(name="`/ace-team`", value="Choose your weekly x3 points multiplier team.", inline=False)
+                #embed.add_field(name="`/my-roster`", value="View your current team selections, total points, and remaining swaps.", inline=False)
+                #embed.add_field(name="`/swap-teams`", value="Use one of your 10 seasonal swaps.", inline=False)
+                #embed.add_field(name="`/ace-team`", value="Choose your weekly x3 points multiplier team.", inline=False)
                 embed.add_field(name="`/leaderboard fantasy`", value="See how you stack up against the competition!", inline=False)
-                embed.add_field(name="`/mypoints fantasy`", value="Check your current point total in the fantasy league.", inline=False)
+                #embed.add_field(name="`/mypoints fantasy`", value="Check your current point total in the fantasy league.", inline=False)
             elif menu.value == "moderation":
                 embed.description = ("Here are the moderation commands you can use with this bot!\n\n"
                     "<> = Required\n() = Optional\n\n"
