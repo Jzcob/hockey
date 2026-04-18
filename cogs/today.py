@@ -74,7 +74,6 @@ class today(commands.Cog):
                     embed.add_field(name=status, value=f"{a_str} @ {h_str}\nScore: {a_t.get('score',0)} | {h_t.get('score',0)}", inline=False)
 
                 elif gs in ("LIVE", "CRIT"):
-                    # For Live games, we fetch the boxscore to get the clock
                     try:
                         r2 = requests.get(f"https://api-web.nhle.com/v1/gamecenter/{game['id']}/boxscore")
                         g2 = r2.json()
@@ -82,14 +81,17 @@ class today(commands.Cog):
                         period = game.get('periodDescriptor', {}).get('number')
                         period_ord = {1: "1st", 2: "2nd", 3: "3rd", 4: "OT"}.get(period, f"P{period}")
                         
+                        matchup = f"{a_str} @ {h_str}"
+
                         if clock.get('inIntermission'):
                             status = "Intermission"
+                            value = f"{matchup}\nScore: {a_t.get('score',0)} | {h_t.get('score',0)}"
                         else:
                             time_rem = clock.get('timeRemaining', '00:00')
                             status = f"🔴 LIVE - {period_ord}"
-                            a_str = f"{a_str}\nScore: {a_t.get('score',0)} | {h_t.get('score',0)}\n`{time_rem}`"
+                            value = f"{matchup}\nScore: {a_t.get('score',0)} | {h_t.get('score',0)}\n`{time_rem}`"
                         
-                        embed.add_field(name=status, value=f"{a_str} @ {h_str}" if "LIVE" not in status else a_str, inline=False)
+                        embed.add_field(name=status, value=value, inline=False)
                     except:
                         embed.add_field(name="🔴 LIVE", value=f"{a_str} @ {h_str}\nScore: {a_t.get('score',0)} | {h_t.get('score',0)}", inline=False)
 
