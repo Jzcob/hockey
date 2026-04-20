@@ -107,6 +107,8 @@ class playoffs(commands.Cog):
             return f"{now.year - 1}{now.year}"
     
     @app_commands.command(name="brackets", description="Get the current NHL playoff brackets")
+    @app_commands.allowed_installs(guilds=True, users=True)
+    @app_commands.allowed_contexts(guilds=True, dms=True, private_channels=True)
     async def brackets(self, interaction: discord.Interaction):
         try:
             # Logging logic
