@@ -5,7 +5,8 @@ import aiohttp
 import asyncio
 import traceback
 import config
-from datetime import datetime
+from datetime import datetime, timezone
+import time
 
 # Reusing your existing TEAM_EMOJIS or the logic from the previous bracket
 TEAM_MAP = {
@@ -39,7 +40,8 @@ class PlayoffTracker(commands.Cog):
 
     async def build_playoff_embeds(self):
         """Fetches API data and builds the list of embeds (one per round)."""
-        now = datetime.now()
+        now = datetime.now(timezone.utc)
+        # Determine season automatically
         season = f"{now.year}{now.year + 1}" if now.month >= 7 else f"{now.year - 1}{now.year}"
         url = f"https://api-web.nhle.com/v1/playoff-series/carousel/{season}/"
         
@@ -49,12 +51,18 @@ class PlayoffTracker(commands.Cog):
 
         rounds = data.get("rounds", [])
         embeds = []
+        
+        # Generate the Unix timestamp for dynamic Discord formatting
+        unix_now = int(time.time())
+        last_updated_str = f"<t:{unix_now}:R> (<t:{unix_now}:f>)"
+
         for rnd in rounds:
             label = rnd.get("roundLabel", f"Round {rnd.get('roundNumber')}")
             embed = discord.Embed(
                 title=f"🏆 {label} - {season[:4]}/{season[4:]} Playoffs",
                 color=discord.Color.gold(),
-                timestamp=datetime.now()
+                # This 'timestamp' shows the small text at the very bottom (Today at X)
+                timestamp=now 
             )
             
             for series in rnd.get("series", []):
@@ -62,15 +70,31 @@ class PlayoffTracker(commands.Cog):
                 bottom = series.get("bottomSeed", {})
                 t_wins, b_wins = top.get("wins", 0), bottom.get("wins", 0)
                 
-                status = "✅ Final" if (t_wins >= 4 or b_wins >= 4) else "🏒 In Progress" if (t_wins > 0 or b_wins > 0) else "🕓 Scheduled"
+                # Logic for series status
+                if t_wins >= 4 or b_wins >= 4:
+                    status = "✅ Final"
+                elif t_wins > 0 or b_wins > 0:
+                    status = "🏒 In Progress"
+                else:
+                    status = "🕓 Scheduled"
                 
                 matchup = f"{self.get_team_string(bottom.get('abbrev', 'TBD'))} ({b_wins}) vs {self.get_team_string(top.get('abbrev', 'TBD'))} ({t_wins})"
+                
                 embed.add_field(
                     name=f"Series {series.get('seriesLetter', '?')}",
                     value=f"{matchup}\n*{status}*",
                     inline=False
                 )
+
+            # Add the dynamic "Last Updated" field at the bottom of the content
+            embed.add_field(
+                name="System Status", 
+                value=f"🔄 **Last Updated:** {last_updated_str}", 
+                inline=False
+            )
+            
             embeds.append(embed)
+            
         return embeds
 
     @tasks.loop(minutes=30)
