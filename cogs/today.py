@@ -31,6 +31,8 @@ class today(commands.Cog):
         self.bot = bot
 
     @app_commands.command(name="today", description="Get today's schedule!")
+    @app_commands.allowed_installs(guilds=True, users=True)
+    @app_commands.allowed_contexts(guilds=True, dms=True, private_channels=True)
     async def today_cmd(self, interaction: discord.Interaction):
         await interaction.response.defer()
         try:
