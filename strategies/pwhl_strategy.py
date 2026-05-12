@@ -64,3 +64,4 @@ class PWHLStrategy(base_strategy.LeagueStrategy):
     async def remove_schedule_channel(self, interaction): pass
     async def post_daily_schedule(self): pass
     async def get_playoff_bracket(self, interaction): pass
+    async def update_live_scores(self): pass

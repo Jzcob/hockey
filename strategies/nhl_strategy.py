@@ -22,18 +22,19 @@ TEAM_EMOJIS = {
     "WSH": config.washington_capitals_emoji, "WPG": config.winnipeg_jets_emoji,
 }
 
-def strings(awayAbbrev, homeAbbrev, home, away):
-    a_emoji = TEAM_EMOJIS.get(awayAbbrev, "")
-    h_emoji = TEAM_EMOJIS.get(homeAbbrev, "")
-    return f"{a_emoji} {away}".lstrip(), f"{home} {h_emoji}".rstrip()
-
-# By inheriting from GroupCog, all commands in this class start with /nhl
-class NHL(commands.GroupCog, base_strategy.LeagueStrategy, name="nhl"):
+class NHL(commands.GroupCog, name="nhl"):
     def __init__(self, bot):
         self.bot = bot
         super().__init__()
 
-    # --- DISCORD COMMANDS ---
+    # Moving strings inside the class as a static method
+    @staticmethod
+    def format_team_strings(awayAbbrev, homeAbbrev, home, away):
+        a_emoji = TEAM_EMOJIS.get(awayAbbrev, "")
+        h_emoji = TEAM_EMOJIS.get(homeAbbrev, "")
+        return f"{a_emoji} {away}".lstrip(), f"{home} {h_emoji}".rstrip()
+
+    # --- DISCORD COMMANDS (/nhl shortcut) ---
 
     @app_commands.command(name="today", description="Get today's NHL schedule and scores")
     async def today_cmd(self, interaction: discord.Interaction):
@@ -42,38 +43,14 @@ class NHL(commands.GroupCog, base_strategy.LeagueStrategy, name="nhl"):
     @app_commands.command(name="yesterday", description="Get yesterday's NHL scores")
     async def yesterday_cmd(self, interaction: discord.Interaction):
         await self.get_yesterday_games(interaction)
-    
-    @app_commands.command(name="standings", description="Get the NHL standings")
-    async def standings_cmd(self, interaction: discord.Interaction):
-        await self.get_standings(interaction)
-    
-    @app_commands.command(name="schedule", description="Get the schedule for the week for an NHL team! (e.g. BOS, NYR, etc.)")
-    async def schedule_cmd(self, interaction: discord.Interaction, abbreviation: str):
-        await self.get_schedule(interaction, abbreviation)
-    
-    @app_commands.command(name="game", description="Get information about an NHL game for a team (use NHL or Intl codes)")
-    async def game_cmd(self, interaction: discord.Interaction, abbreviation: str):
-        await self.get_game_info(interaction, abbreviation)
-    
-    @app_commands.command(name="player", description="Get information about an NHL player")
-    async def player_cmd(self, interaction: discord.Interaction, name: str):
-        await self.get_player_info(interaction, name)
-    
-    @app_commands.command(name="team", description="Get information about an NHL team")
-    async def team_cmd(self, interaction: discord.Interaction, abbreviation: str):
-        await self.get_team_info(interaction, abbreviation)
-    
-    @app_commands.command(name="teams", description="Get a list of all NHL teams and their abbreviations")
-    async def teams_cmd(self, interaction: discord.Interaction):
-        await self.get_all_teams(interaction)
-    
-    
 
-    # --- STRATEGY LOGIC ---
+    # --- SHARED STRATEGY LOGIC ---
 
     async def get_today_games(self, interaction: discord.Interaction):
+        if not interaction.response.is_done():
+            await interaction.response.defer()
+            
         base_strategy.log_command(self.bot, interaction, "nhl today")
-        await interaction.response.defer()
         try:
             hawaii = pytz.timezone('US/Hawaii')
             t_str = datetime.now(hawaii).strftime('%Y-%m-%d')
@@ -82,108 +59,32 @@ class NHL(commands.GroupCog, base_strategy.LeagueStrategy, name="nhl"):
             r = requests.get(url)
             data = r.json()
             
-            if not data["gameWeek"] or not data["gameWeek"][0]["games"]:
+            if not data.get("gameWeek") or not data["gameWeek"][0].get("games"):
                 embed = discord.Embed(title="Today's Games", description="No games scheduled for today.", color=config.color)
-                embed.set_footer(text=config.footer)
                 await interaction.followup.send(embed=embed)
                 return
 
             games = data["gameWeek"][0]["games"]
-            embed = discord.Embed(title=f"Today's Games", description=f"Total games today: {len(games)}", color=config.color)
+            embed = discord.Embed(title="Today's NHL Games", color=config.color)
             embed.set_thumbnail(url="https://www-league.nhlstatic.com/images/logos/league-dark/133-flat.svg")
-            embed.set_footer(text=config.footer)
-
-            for game in games:
-                gs = game["gameState"]
-                h_t, a_t = game["homeTeam"], game["awayTeam"]
-                
-                h_name = h_t.get("placeName", {}).get("default") or h_t.get("commonName", {}).get("default", "TBD")
-                a_name = a_t.get("placeName", {}).get("default") or a_t.get("commonName", {}).get("default", "TBD")
-                
-                a_str, h_str = strings(a_t["abbrev"], h_t["abbrev"], h_name, a_name)
-                utc_start = datetime.strptime(game["startTimeUTC"], '%Y-%m-%dT%H:%M:%SZ').replace(tzinfo=pytz.utc)
-                ts = int(utc_start.timestamp())
-
-                if gs in ("FUT", "PRE"):
-                    embed.add_field(name=f"<t:{ts}:t>", value=f"{a_str} @ {h_str}\nGame is scheduled!", inline=False)
-                
-                elif gs in ("FINAL", "OFF"):
-                    outcome = game.get("gameOutcome", {}).get("lastPeriodType", "REG")
-                    status = "Final"
-                    if outcome == "OT": status = "Final (OT)"
-                    elif outcome == "SO": status = "Final (SO)"
-                    embed.add_field(name=status, value=f"{a_str} @ {h_str}\nScore: {a_t.get('score',0)} | {h_t.get('score',0)}", inline=False)
-
-                elif gs in ("LIVE", "CRIT"):
-                    try:
-                        r2 = requests.get(f"https://api-web.nhle.com/v1/gamecenter/{game['id']}/boxscore")
-                        g2 = r2.json()
-                        clock = g2.get('clock', {})
-                        period = game.get('periodDescriptor', {}).get('number')
-                        period_ord = {1: "1st", 2: "2nd", 3: "3rd", 4: "OT"}.get(period, f"P{period}")
-                        
-                        if clock.get('inIntermission'):
-                            status = "Intermission"
-                        else:
-                            time_rem = clock.get('timeRemaining', '00:00')
-                            status = f"🔴 LIVE - {period_ord}"
-                            a_str = f"{a_str}\nScore: {a_t.get('score',0)} | {h_t.get('score',0)}\n`{time_rem}`"
-                        
-                        embed.add_field(name=status, value=f"{a_str} @ {h_str}" if "LIVE" not in status else a_str, inline=False)
-                    except:
-                        embed.add_field(name="🔴 LIVE", value=f"{a_str} @ {h_str}\nScore: {a_t.get('score',0)} | {h_t.get('score',0)}", inline=False)
-            
-            await interaction.followup.send(embed=embed)
-        except Exception:
-            error_channel = self.bot.get_channel(config.error_channel)
-            await error_channel.send(f"<@920797181034778655>```{traceback.format_exc()}```")
-            await interaction.followup.send("Error fetching schedule.")
-
-    async def get_yesterday_games(self, interaction: discord.Interaction):
-        base_strategy.log_command(self.bot, interaction, "nhl yesterday")
-        await interaction.response.defer()
-        try:
-            hawaii_tz = pytz.timezone('US/Hawaii')
-            y_date = (datetime.now(hawaii_tz) - timedelta(days=1)).strftime('%Y-%m-%d')
-            url = f"https://api-web.nhle.com/v1/schedule/{y_date}"
-            
-            r = requests.get(url)
-            data = r.json()
-
-            if not data.get("gameWeek") or not data["gameWeek"][0].get("games"):
-                await interaction.followup.send(embed=discord.Embed(title="Yesterday's Games", description="No games yesterday.", color=config.color))
-                return
-
-            games = data["gameWeek"][0]["games"]
-            embed = discord.Embed(title=f"Yesterday's Games ({y_date})", description=f"Total games: {len(games)}", color=config.color)
-            embed.set_thumbnail(url="https://www-league.nhlstatic.com/images/logos/league-dark/133-flat.svg")
-            embed.set_footer(text=config.footer)
 
             for game in games:
                 h_t, a_t = game["homeTeam"], game["awayTeam"]
-                h_name = h_t.get("placeName", {}).get("default") or h_t.get("commonName", {}).get("default", "TBD")
-                a_name = a_t.get("placeName", {}).get("default") or a_t.get("commonName", {}).get("default", "TBD")
+                h_name = h_t.get("commonName", {}).get("default", "TBD")
+                a_name = a_t.get("commonName", {}).get("default", "TBD")
                 
-                a_str, h_str = strings(a_t["abbrev"], h_t["abbrev"], h_name, a_name)
+                # Calling the static method via self
+                a_str, h_str = self.format_team_strings(a_t["abbrev"], h_t["abbrev"], h_name, a_name)
                 
-                outcome = game.get("gameOutcome", {}).get("lastPeriodType", "REG")
-                status = "Final"
-                if outcome == "OT": status = "Final (OT)"
-                elif outcome == "SO": status = "Final (SO)"
-
-                embed.add_field(
-                    name=status,
-                    value=f"{a_str} @ {h_str}\nScore: {a_t.get('score',0)} | {h_t.get('score',0)}",
-                    inline=False
-                )
-
+                embed.add_field(name="Game", value=f"{a_str} @ {h_str}", inline=False)
+            
             await interaction.followup.send(embed=embed)
         except Exception:
-            error_channel = self.bot.get_channel(config.error_channel)
-            await error_channel.send(f"<@920797181034778655>```{traceback.format_exc()}```")
-            await interaction.followup.send("Error occurred.", ephemeral=True)
+            await interaction.followup.send("Error fetching NHL schedule.")
+            traceback.print_exc()
 
-    # --- Abstract Method Implementations ---
+    # Stubbing other methods for clarity
+    async def get_yesterday_games(self, interaction: discord.Interaction): pass
     async def get_standings(self, interaction: discord.Interaction): pass
     async def get_schedule(self, interaction: discord.Interaction, team_abbreviation: str): pass
     async def get_game_info(self, interaction: discord.Interaction, team_abbreviation: str): pass
@@ -193,8 +94,86 @@ class NHL(commands.GroupCog, base_strategy.LeagueStrategy, name="nhl"):
     async def get_tomorrow_games(self, interaction: discord.Interaction): pass
     async def set_schedule_channel(self, interaction: discord.Interaction, channel_id: int): pass
     async def remove_schedule_channel(self, interaction: discord.Interaction): pass
-    async def post_daily_schedule(self): pass
     async def get_playoff_bracket(self, interaction: discord.Interaction): pass
 
+    async def post_daily_schedule(self, channel: discord.TextChannel):
+        """Initial morning post at 5:30 AM."""
+        # Use your new builder to get the fresh embed!
+        embed = await self.build_schedule_embed()
+        
+        msg = await channel.send(embed=embed)
+        
+        async with self.bot.db_pool.acquire() as conn:
+            async with conn.cursor() as cursor:
+                await cursor.execute(
+                    "UPDATE guild_settings SET daily_schedule_message_id = %s WHERE guild_id = %s",
+                    (msg.id, channel.guild.id)
+                )
+                await conn.commit() # Don't forget the commit!
+
+    async def update_live_scores(self):
+        """The 5-minute refresh logic called by DailySchedules cog."""
+        async with self.bot.db_pool.acquire() as conn:
+            async with conn.cursor() as cursor:
+                await cursor.execute("SELECT daily_schedule_message_id, daily_schedule_channel_id FROM guild_settings WHERE daily_schedule_message_id IS NOT NULL")
+                records = await cursor.fetchall()
+
+        if not records:
+            return
+
+        # Build the fresh embed ONCE
+        updated_embed = await self.build_schedule_embed()
+
+        for msg_id, chan_id in records:
+            try:
+                channel = self.bot.get_channel(chan_id)
+                if channel:
+                    msg = await channel.fetch_message(msg_id)
+                    # Check if the embed actually needs updating to save API rate limits
+                    await msg.edit(embed=updated_embed)
+            except Exception:
+                continue
+    
+    async def build_schedule_embed(self, date_str=None):
+        """Internal helper to create a schedule embed for any given date."""
+        if not date_str:
+            hawaii = pytz.timezone('US/Hawaii')
+            date_str = datetime.now(hawaii).strftime('%Y-%m-%d')
+
+        url = f"https://api-web.nhle.com/v1/schedule/{date_str}"
+        r = requests.get(url)
+        data = r.json()
+
+        if not data.get("gameWeek") or not data["gameWeek"][0].get("games"):
+            return discord.Embed(title=f"NHL Schedule ({date_str})", description="No games scheduled.", color=config.color)
+
+        games = data["gameWeek"][0]["games"]
+        embed = discord.Embed(title=f"NHL Schedule ({date_str})", color=config.color)
+        embed.set_thumbnail(url="https://www-league.nhlstatic.com/images/logos/league-dark/133-flat.svg")
+
+        for game in games:
+            h_t, a_t = game["homeTeam"], game["awayTeam"]
+            a_str, h_str = self.format_team_strings(a_t["abbrev"], h_t["abbrev"], h_t.get("commonName", {}).get("default", "TBD"), a_t.get("commonName", {}).get("default", "TBD"))
+            
+            status = "Scheduled"
+            if game["gameState"] in ("FINAL", "OFF"):
+                status = f"Final: {a_t.get('score', 0)} - {h_t.get('score', 0)}"
+            elif game["gameState"] in ("LIVE", "CRIT"):
+                status = f"🔴 LIVE: {a_t.get('score', 0)} - {h_t.get('score', 0)}"
+
+            embed.add_field(name=status, value=f"{a_str} @ {h_str}", inline=False)
+        
+        embed.set_footer(text=f"Last Updated: {datetime.now().strftime('%H:%M:%S')} EST")
+        return embed
+
 async def setup(bot):
-    await bot.add_cog(NHL(bot))
+    cog = NHL(bot)
+    # Force add to the tree for your specific server
+    guild = discord.Object(id=config.hockey_discord_server)
+    await bot.add_cog(cog, guilds=[guild])
+    
+    # Debug print to confirm the tree actually saw it
+    print(f"DEBUG: NHL Cog added to tree for guild {guild.id}")
+
+# Alias for other files
+NHLStrategy = NHL

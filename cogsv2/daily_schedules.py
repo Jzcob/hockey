@@ -1,48 +1,68 @@
-# The day's schedules that get posted to the schedule channel every morning at 5:30 AM EST, 
-# no matter the league. Uses the same strategy pattern as the other commands to get the schedules for each league.
-
 import discord
 from discord.ext import commands, tasks
-from strategies.base_strategy import BaseStrategy
-from strategies.nhl_strategy import NHLStrategy
-from strategies.ahl_strategy import AHLStrategy
+from strategies.nhl_strategy import NHL
 from strategies.pwhl_strategy import PWHLStrategy
-from strategies.kwl_strategy import KWLStrategy
+# from strategies.ahl_strategy import AHLStrategy
 import config
 from datetime import datetime, time, timedelta
-import asyncio
+import pytz
 import traceback
-import aiomysql
 
 class DailySchedules(commands.Cog):
     def __init__(self, bot):
         self.bot = bot
+        # Mapping leagues to their strategy logic
         self.strategies = {
-            "nhl": NHLStrategy(bot),
-            "ahl": AHLStrategy(bot),
+            "nhl": NHL(bot),
             "pwhl": PWHLStrategy(bot),
-            "kwl": KWLStrategy(bot)
+            # "ahl": AHLStrategy(bot),
         }
-        self.schedule_channel_id = config.schedule_channel
-        self.post_schedules.start()  # Start the background task
+        
+        self.schedule_channel_id = 1
+        self.eastern = pytz.timezone("US/Eastern")
+        
+        # Start the loops
+        self.post_morning_schedule.start()
+        self.live_update_loop.start()
 
     @commands.Cog.listener()
     async def on_ready(self):
-        print(f"LOADED: `daily_schedules.py`")
+        print(f"LOADED: `daily_schedules.py` with Strategy Pattern")
 
-    @tasks.loop(minutes=1)
-    async def post_schedules(self):
-        now = datetime.now()
-        target_time = time(5, 30)  # 5:30 AM EST
-        if now.time() >= target_time and now.time() < (datetime.combine(now.date(), target_time) + timedelta(minutes=1)).time():
-            schedule_channel = self.bot.get_channel(self.schedule_channel_id)
-            if schedule_channel:
-                for league, strategy in self.strategies.items():
-                    try:
-                        await strategy.post_daily_schedule(schedule_channel)
-                    except Exception as e:
-                        print(f"Error posting {league} schedule: {e}")
-                        traceback.print_exc()
-            else:
-                print(f"Schedule channel with ID {self.schedule_channel_id} not found.")
-    
+    # 1. THE MORNING POST (5:30 AM EST)
+    # Using the time parameter is much more efficient than checking every minute
+    @tasks.loop(time=time(hour=5, minute=30, tzinfo=pytz.timezone("US/Eastern")))
+    async def post_morning_schedule(self):
+        print("Running morning schedule post...")
+        channel = self.bot.get_channel(self.schedule_channel_id)
+        if not channel: return
+
+        for league, strategy in self.strategies.items():
+            try:
+                # Every strategy MUST implement this in base_strategy.py
+                await strategy.post_daily_schedule(channel)
+            except Exception as e:
+                print(f"Error posting {league} morning schedule: {e}")
+
+    # 2. THE LIVE UPDATE LOOP (Every 5 Minutes)
+    @tasks.loop(minutes=5)
+    async def live_update_loop(self):
+        """
+        Iterates through active strategies and updates 
+        their existing schedule messages if games are live.
+        """
+        for league, strategy in self.strategies.items():
+            try:
+                # We delegate the "Should I update?" logic to the strategy itself
+                # The strategy should check its own database/cache for the message_id
+                await strategy.update_live_scores()
+            except Exception as e:
+                print(f"Error in live update for {league}: {e}")
+
+    @post_morning_schedule.before_loop
+    @live_update_loop.before_loop
+    async def before_loops(self):
+        await self.bot.wait_until_ready()
+
+async def setup(bot):
+    await bot.add_cog(DailySchedules(bot), guilds=[discord.Object(id=config.hockey_discord_server)])

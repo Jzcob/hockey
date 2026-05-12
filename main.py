@@ -44,14 +44,25 @@ class MyBot(commands.Bot):
             return
 
         print("--- Loading Cogs ---")
-        for filename in os.listdir('./cogs'):
-            if filename.endswith('.py'):
-                try:
-                    await self.load_extension(f'cogs.{filename[:-3]}')
-                    print(f'✅ Loaded: `{filename}`')
-                except Exception as e:
-                    print(f"❌ Failed to load cog {filename}: {e}")
-                    traceback.print_exc()
+        # Define the directories you want to load from
+        cog_directories = ['./cogs', './cogsv2']
+
+        for directory in cog_directories:
+            if not os.path.exists(directory):
+                continue
+                
+            for filename in os.listdir(directory):
+                if filename.endswith('.py'):
+                    # Convert path to python module format (e.g., cogs.help)
+                    path = directory.replace('./', '').replace('/', '.')
+                    cog_path = f"{path}.{filename[:-3]}"
+                    
+                    try:
+                        await self.load_extension(cog_path)
+                        print(f'✅ Loaded: `{cog_path}`')
+                    except Exception as e:
+                        print(f"❌ Failed to load cog {cog_path}: {e}")
+                        traceback.print_exc()
         print("--------------------")
 
 bot = MyBot(command_prefix=';;', intents=intents, help_command=None)
@@ -134,8 +145,11 @@ async def sync(ctx) -> None:
 async def syncserver(ctx) -> None:
     if ctx.author.id == config.jacob:
         try:
-            fmt = await ctx.bot.tree.sync(guild=ctx.guild)
-            print(f"Synced {len(fmt)} commands.")
+            try:
+                fmt = await ctx.bot.tree.sync(guild=ctx.guild)
+                print(f"Synced {len(fmt)} commands: {[c.name for c in fmt]}") # Add this print!
+            except Exception as e:
+                print(f"Sync Error: {e}")
             embed = discord.Embed(title="Synced", description=f"Synced {len(fmt)} commands to this server.", color=0x00ff00)
             await ctx.send(embed=embed)
         except Exception as e:
