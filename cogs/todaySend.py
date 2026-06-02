@@ -224,7 +224,7 @@ class DailySchedule(commands.Cog):
             if not data.get("gameWeek") or not data["gameWeek"][0].get("games"):
                 embed = discord.Embed(
                     title=f"🏆 STANLEY CUP FINAL ({today_str})", 
-                    description="No games scheduled today. Teams are resting up for the next battle! 🏒", 
+                    description="No games scheduled today.", 
                     color=discord.Color.light_grey()
                 )
                 return embed, None, True 
@@ -234,14 +234,14 @@ class DailySchedule(commands.Cog):
             # 2. Spruced up main embed base
             embed = discord.Embed(
                 title=f"🏆 STANLEY CUP FINAL 🏆 | {today_str}", 
-                description="**The hardest trophy to win in sports.**\n" + ("▬" * 20), 
+                description=("▬" * 20), 
                 color=discord.Color.gold()
             )
             embed.set_thumbnail(url="https://www-league.nhlstatic.com/images/logos/league-dark/133-flat.svg")
             
             # Optional: Add a wide banner image for the finals (replace URL with your preferred graphic)
             embed.set_image(url="https://media.nhl.com/site/asset/public/ext/2023-24/2024-SCF-Logo-LightBkgd.jpg")
-            embed.set_footer(text=f"{config.footer} | Game On!")
+            embed.set_footer(text=f"{config.footer}")
 
             earliest_start = None
             all_final = True
