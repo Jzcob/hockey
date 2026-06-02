@@ -150,7 +150,7 @@ class DailySchedule(commands.Cog):
         await self.bot.wait_until_ready()
 
     # --- ORIGINAL API LOGIC ---
-    async def get_schedule_embed_async(self):
+    """async def get_schedule_embed_async(self):
         try:
             hawaii_tz = pytz.timezone('US/Hawaii')
             today_str = datetime.now(hawaii_tz).strftime('%Y-%m-%d')
@@ -205,6 +205,88 @@ class DailySchedule(commands.Cog):
                     embed.add_field(name=f"🔴 LIVE {time_left}", value=f"{away_s} @ {home_s}\n{away_t.get('score',0)} - {home_t.get('score',0)}", inline=False)
             
             # Return the embed alongside the tracking data
+            return embed, earliest_start, all_final
+        except Exception:
+            return None, None, True"""
+    
+    # STANLEY CUP FINAL VERSION
+    async def get_schedule_embed_async(self):
+        try:
+            hawaii_tz = pytz.timezone('US/Hawaii')
+            today_str = datetime.now(hawaii_tz).strftime('%Y-%m-%d')
+            url = f"https://api-web.nhle.com/v1/schedule/{today_str}"
+            
+            async with self.http_session.get(url) as r:
+                r.raise_for_status()
+                data = await r.json()
+            
+            # 1. Spruced up "No Games" embed
+            if not data.get("gameWeek") or not data["gameWeek"][0].get("games"):
+                embed = discord.Embed(
+                    title=f"🏆 STANLEY CUP FINAL ({today_str})", 
+                    description="No games scheduled today. Teams are resting up for the next battle! 🏒", 
+                    color=discord.Color.light_grey()
+                )
+                return embed, None, True 
+
+            games = data["gameWeek"][0]["games"]
+            
+            # 2. Spruced up main embed base
+            embed = discord.Embed(
+                title=f"🏆 STANLEY CUP FINAL 🏆 | {today_str}", 
+                description="**The hardest trophy to win in sports.**\n" + ("▬" * 20), 
+                color=discord.Color.gold()
+            )
+            embed.set_thumbnail(url="https://www-league.nhlstatic.com/images/logos/league-dark/133-flat.svg")
+            
+            # Optional: Add a wide banner image for the finals (replace URL with your preferred graphic)
+            embed.set_image(url="https://media.nhl.com/site/asset/public/ext/2023-24/2024-SCF-Logo-LightBkgd.jpg")
+            embed.set_footer(text=f"{config.footer} | Game On!")
+
+            earliest_start = None
+            all_final = True
+
+            for game in games:
+                gs = game["gameState"]
+                home_t, away_t = game["homeTeam"], game["awayTeam"]
+                
+                time_left = game.get("timeRemaining", "")
+                if time_left and game.get("currentPeriodOrdinal"):
+                    time_left = f"{game['currentPeriodOrdinal']} - {time_left} remaining"
+                
+                h_name = home_t.get("placeName", {}).get("default") or home_t.get("commonName", {}).get("default", "TBD")
+                a_name = away_t.get("placeName", {}).get("default") or away_t.get("commonName", {}).get("default", "TBD")
+                
+                away_s, home_s = strings(away_t["abbrev"], home_t["abbrev"], h_name, a_name)
+                utc_start = datetime.strptime(game["startTimeUTC"], '%Y-%m-%dT%H:%M:%SZ').replace(tzinfo=pytz.utc)
+                ts = int(utc_start.timestamp())
+
+                if earliest_start is None or utc_start < earliest_start:
+                    earliest_start = utc_start
+                    
+                if gs not in ("FINAL", "OFF"):
+                    all_final = False
+
+                # 3. Enhanced field formatting for the matchup
+                if gs in ("FUT", "PRE"):
+                    embed.add_field(
+                        name=f"🗓️ Scheduled: <t:{ts}:t>", 
+                        value=f"**{away_s}** \n*@*\n **{home_s}**\n\n*Puck Drop: <t:{ts}:R>*", 
+                        inline=False
+                    )
+                elif gs in ("FINAL", "OFF"):
+                    embed.add_field(
+                        name="🏁 FINAL", 
+                        value=f"**{away_s}**: {away_t.get('score', 0)}\n**{home_s}**: {home_t.get('score', 0)}", 
+                        inline=False
+                    )
+                elif gs in ("LIVE", "CRIT"):
+                    embed.add_field(
+                        name=f"🚨 LIVE | {time_left}", 
+                        value=f"**{away_s}**: {away_t.get('score', 0)}\n**{home_s}**: {home_t.get('score', 0)}", 
+                        inline=False
+                    )
+            
             return embed, earliest_start, all_final
         except Exception:
             return None, None, True
