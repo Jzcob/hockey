@@ -315,6 +315,83 @@ class DailySchedule(commands.Cog):
                 await cursor.execute(sql, (interaction.guild.id,))
                 await conn.commit()
         await interaction.response.send_message("✅ Daily hockey schedule channel cleared.", ephemeral=True)
+    
+    @app_commands.command(name="force-update-schedule", description="Forces an immediate update of today's schedule to the new layout.")
+    @app_commands.checks.has_permissions(manage_guild=True)
+    async def force_update_schedule(self, interaction: discord.Interaction):
+        # Defer since fetching messages and hitting the API can sometimes cross the 3-second limit
+        await interaction.response.defer(ephemeral=True)
+        if interaction.guild.id is not config.hockey_discord_server_id:
+            if interaction.user.id != config.jacob:
+                await interaction.followup.send("❌ This command can only be used by the bot Developer!", ephemeral=True)
+                return
+        
+        guild_id = interaction.guild.id
+        channel_id = None
+        message_id = None
+        
+        try:
+            async with self.db_pool.acquire() as conn:
+                async with conn.cursor() as cursor:
+                    await cursor.execute(
+                        "SELECT daily_schedule_channel_id, daily_schedule_message_id FROM guild_settings WHERE guild_id = %s", 
+                        (guild_id,)
+                    )
+                    record = await cursor.fetchone()
+                    if record:
+                        channel_id, message_id = record
+        except Exception as e:
+            await interaction.followup.send(f"❌ Database error: {e}", ephemeral=True)
+            return
+
+        if not channel_id:
+            await interaction.followup.send("❌ No schedule channel has been configured for this guild. Use `/set-schedule-channel` first.", ephemeral=True)
+            return
+
+        channel = self.bot.get_channel(channel_id)
+        if not channel:
+            await interaction.followup.send("❌ Configured schedule channel not found or inaccessible.", ephemeral=True)
+            return
+
+        # Generate the fresh Stanley Cup Finals embed
+        schedule_embed, earliest_start, all_final = await self.get_schedule_embed_async()
+        if not schedule_embed:
+            await interaction.followup.send("❌ Failed to pull data or generate the schedule embed.", ephemeral=True)
+            return
+
+        msg = None
+        if message_id:
+            try:
+                msg = await channel.fetch_message(message_id)
+                await msg.edit(embed=schedule_embed)
+                await interaction.followup.send("✅ Successfully updated today's schedule message!", ephemeral=True)
+            except discord.NotFound:
+                # The message was likely deleted, handle by sending a fresh one below
+                msg = None 
+            except Exception as e:
+                await interaction.followup.send(f"❌ Failed to edit the existing message: {e}", ephemeral=True)
+                return
+
+        # If there wasn't a previous message or it was deleted, send a new one
+        if not msg:
+            try:
+                msg = await channel.send(embed=schedule_embed)
+                async with self.db_pool.acquire() as conn:
+                    async with conn.cursor() as cursor:
+                        await cursor.execute(
+                            "UPDATE guild_settings SET daily_schedule_message_id = %s WHERE guild_id = %s",
+                            (msg.id, guild_id)
+                        )
+                        await conn.commit()
+                await interaction.followup.send("✅ Sent a new schedule message and locked it in for live updates!", ephemeral=True)
+            except Exception as e:
+                await interaction.followup.send(f"❌ Failed to send fresh schedule message: {e}", ephemeral=True)
+                return
+
+        # Safety check: if games are live but the task isn't running, wake it up
+        if not all_final and not self.update_live_scores.is_running():
+            print("Games active during manual refresh. Starting live update task loop.")
+            self.update_live_scores.start()
 
 async def setup(bot):
     await bot.add_cog(DailySchedule(bot))
