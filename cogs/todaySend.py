@@ -321,10 +321,9 @@ class DailySchedule(commands.Cog):
     async def force_update_schedule(self, interaction: discord.Interaction):
         # Defer since fetching messages and hitting the API can sometimes cross the 3-second limit
         await interaction.response.defer(ephemeral=True)
-        if interaction.guild.id is not config.hockey_discord_server_id:
-            if interaction.user.id != config.jacob:
-                await interaction.followup.send("❌ This command can only be used by the bot Developer!", ephemeral=True)
-                return
+        if interaction.user.id != config.jacob:
+            await interaction.followup.send("❌ This command can only be used by the bot Developer!", ephemeral=True)
+            return
         
         guild_id = interaction.guild.id
         channel_id = None
