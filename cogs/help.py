@@ -55,21 +55,21 @@ class Help(commands.Cog):
                 embed.add_field(name="`/report`", value="Report an issue with the bot to the developer!", inline=False)
             
             elif menu.value == "nhl":
-                embed.add_field(name="`/bracket`", value="Get the NHL Playoff bracket!", inline=False)
-                embed.add_field(name="`/setup-playoff-tracker`", value="Set a channel for a live-updating playoff bracket!", inline=False)
-                embed.add_field(name="`/remove-playoff-tracker`", value="Remove the channel for the live-updating playoff bracket!", inline=False)
+                #embed.add_field(name="`/bracket`", value="Get the NHL Playoff bracket!", inline=False)
+                #embed.add_field(name="`/setup-playoff-tracker`", value="Set a channel for a live-updating playoff bracket!", inline=False)
+                #embed.add_field(name="`/remove-playoff-tracker`", value="Remove the channel for the live-updating playoff bracket!", inline=False)
                 embed.add_field(name="`/player <name>`", value="Gets the information of a player!", inline=False)
                 embed.add_field(name="`/team <abbreviation>`", value="Gets the information of a team!", inline=False)
                 embed.add_field(name="`/teams`", value="Lists all NHL teams!", inline=False)
-                embed.add_field(name="`/standings`", value="Get the NHL standings!", inline=False)
-                embed.add_field(name="`/schedule <abbreviation>`", value="Get the schedule of an NHL team!", inline=False)
-                embed.add_field(name="`/game <abbreviation>`", value="Get information about a game!", inline=False)
-                embed.add_field(name="`/today`", value="List today's games!", inline=False)
-                embed.add_field(name="`/tomorrow`", value="List tomorrow's games!", inline=False)
-                embed.add_field(name="`/yesterday`", value="List yesterday's games!", inline=False)
-                embed.add_field(name="`/set-schedule-channel <channel>`", value="Set the channel for daily NHL schedule messages!", inline=False)
-                embed.add_field(name="`/remove-schedule-channel`", value="Remove the channel for daily NHL schedule messages!", inline=False)
-            
+                #embed.add_field(name="`/standings`", value="Get the NHL standings!", inline=False)
+                #embed.add_field(name="`/schedule <abbreviation>`", value="Get the schedule of an NHL team!", inline=False)
+                #embed.add_field(name="`/game <abbreviation>`", value="Get information about a game!", inline=False)
+                #embed.add_field(name="`/today`", value="List today's games!", inline=False)
+                #embed.add_field(name="`/tomorrow`", value="List tomorrow's games!", inline=False)
+                #embed.add_field(name="`/yesterday`", value="List yesterday's games!", inline=False)
+                #embed.add_field(name="`/set-schedule-channel <channel>`", value="Set the channel for daily NHL schedule messages!", inline=False)
+                #embed.add_field(name="`/remove-schedule-channel`", value="Remove the channel for daily NHL schedule messages!", inline=False)
+
             elif menu.value == "games":
                 embed.add_field(name="`/guess-the-player`", value="Guess a random NHL player!", inline=False)
                 embed.add_field(name="`/guess-the-team`", value="Guess a random NHL team from scrambled letters!", inline=False)
