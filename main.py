@@ -65,7 +65,7 @@ class MyBot(commands.Bot):
                         traceback.print_exc()
         print("--------------------")
 
-bot = MyBot(command_prefix=';;', intents=intents, help_command=None)
+bot = MyBot(command_prefix=';;;', intents=intents, help_command=None)
 
 # --- Helper Function for Premium Logging ---
 async def log_premium_event(bot, title, entity_id, is_guild, color):

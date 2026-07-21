@@ -58,7 +58,7 @@ class schedule(commands.Cog):
                 start_timestamp = int(startTime.timestamp())
                 embed.add_field(name=f"<t:{start_timestamp}:F>", value=f"{away} @ {home}", inline=False)
             embed.set_thumbnail(url="https://www-league.nhlstatic.com/images/logos/league-dark/133-flat.svg")
-            embed.set_footer(text=config.footer)
+            embed.set_footer(text=config.footer)https://control.sparkedhost.us/server/cf246128/files
             await msg.edit(embed=embed)
         except:
             error_channel = self.bot.get_channel(config.error_channel)
