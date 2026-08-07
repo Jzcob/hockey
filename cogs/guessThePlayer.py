@@ -100,7 +100,7 @@ class GTP(commands.Cog):
         await interaction.followup.send(embed=embed)
 
         def check(m):
-            return m.channel == interaction.channel and m.author == interaction.user
+            return m.channel.id == interaction.channel.id and m.author.id == interaction.user.id
 
         try:
             msg = await self.bot.wait_for("message", check=check, timeout=15.0)

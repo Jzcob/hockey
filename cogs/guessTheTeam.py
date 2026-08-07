@@ -1,3 +1,5 @@
+from email.mime import message
+
 import discord
 from discord.ext import commands
 from discord import app_commands
@@ -66,7 +68,7 @@ class GuessTheTeam(commands.Cog):
             start_time = datetime.now()
 
             def check(message):
-                return message.channel == interaction.channel and not message.author.bot
+                return message.channel.id == interaction.channel.id and not message.author.bot
 
             while True:
                 elapsed = (datetime.now() - start_time).total_seconds()
