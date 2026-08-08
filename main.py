@@ -1,3 +1,5 @@
+# HOCKEY V2 MAIN
+
 import discord
 import asyncio
 from discord.ext import commands
