@@ -43,10 +43,10 @@ class GuessTheTeam(commands.Cog):
                 "Columbus Blue Jackets", "Dallas Stars", "Detroit Red Wings",
                 "Edmonton Oilers", "Florida Panthers", "Los Angeles Kings",
                 "Minnesota Wild", "Montréal Canadiens", "Nashville Predators",
-                "New Jersey Devils", "New York Islanders", "New Rangers",
+                "New Jersey Devils", "New York Islanders", "New York Rangers",
                 "Ottawa Senators", "Philadelphia Flyers", "Pittsburgh Penguins",
                 "Seattle Kraken", "San Jose Sharks", "St. Louis Blues",
-                "Tampa Bay Lightning", "Toronto Maple Leafs", "Utah Hockey Club",
+                "Tampa Bay Lightning", "Toronto Maple Leafs", "Utah Mammoth",
                 "Vancouver Canucks", "Vegas Golden Knights", "Washington Capitals",
                 "Winnipeg Jets"
             ]
