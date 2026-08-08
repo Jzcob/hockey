@@ -86,6 +86,15 @@ class GTP(commands.Cog):
 
     @app_commands.command(name="guess-the-player", description="Solo mode: Guess the player yourself!")
     async def guess_the_player(self, interaction: discord.Interaction):
+        target_guild_id = 1530756253754724362
+        is_target_server = interaction.guild and interaction.guild.id == target_guild_id
+        
+        if is_target_server:
+            guild = interaction.guild
+            me = guild.me if guild else None
+            permissions = interaction.channel.permissions_for(me) if me and interaction.channel else None
+            print(f"🔍 [GTP SOLO AUDIT] Server Match! Message Content Intent: {self.bot.intents.message_content}, View: {permissions.view_channel if permissions else 'N/A'}, Send: {permissions.send_messages if permissions else 'N/A'}")
+
         await interaction.response.defer()
         
         data = await self.get_random_player()
@@ -100,7 +109,10 @@ class GTP(commands.Cog):
         await interaction.followup.send(embed=embed)
 
         def check(m):
-            return m.channel.id == interaction.channel.id and m.author.id == interaction.user.id
+            is_match = m.channel.id == interaction.channel.id and m.author.id == interaction.user.id
+            if is_target_server:
+                print(f"DEBUG AUDIT [Solo Check]: Heard message from {m.author} content: '{m.content}' -> Valid Match: {is_match}")
+            return is_match
 
         try:
             msg = await self.bot.wait_for("message", check=check, timeout=15.0)
@@ -123,6 +135,15 @@ class GTP(commands.Cog):
 
     @app_commands.command(name="gtp-race", description="Head-to-Head: First person in the channel to guess wins!")
     async def gtp_race(self, interaction: discord.Interaction):
+        target_guild_id = 1530756253754724362
+        is_target_server = interaction.guild and interaction.guild.id == target_guild_id
+        
+        if is_target_server:
+            guild = interaction.guild
+            me = guild.me if guild else None
+            permissions = interaction.channel.permissions_for(me) if me and interaction.channel else None
+            print(f"🔍 [GTP RACE AUDIT] Server Match! Message Content Intent: {self.bot.intents.message_content}, View: {permissions.view_channel if permissions else 'N/A'}, Send: {permissions.send_messages if permissions else 'N/A'}")
+
         await interaction.response.defer()
 
         data = await self.get_random_player()
@@ -141,7 +162,10 @@ class GTP(commands.Cog):
         start_time = datetime.now()
         
         def race_check(m):
-            return m.channel == interaction.channel and not m.author.bot
+            is_match = m.channel.id == interaction.channel.id and not m.author.bot
+            if is_target_server and not m.author.bot:
+                print(f"DEBUG AUDIT [Race Check]: Heard message from {m.author} content: '{m.content}' -> Valid Match: {is_match}")
+            return is_match
 
         while True:
             elapsed = (datetime.now() - start_time).total_seconds()
