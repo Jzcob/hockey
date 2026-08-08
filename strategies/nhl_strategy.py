@@ -10,6 +10,7 @@ import json
 import asyncio
 from thefuzz import fuzz
 import strategies.base_strategy as base_strategy
+import random
 
 TEAM_EMOJIS = {
     "ANA": config.anahiem_ducks_emoji, "BOS": config.boston_bruins_emoji, "BUF": config.buffalo_sabres_emoji,
@@ -81,24 +82,28 @@ class NHL(commands.GroupCog, name="nhl"):
     # --- DISCORD COMMAND INTERFACES ---
 
     @app_commands.command(name="today", description="Get today's NHL schedule and scores")
-    async def today_cmd(self, interaction: discord.Interaction):
-        await self.get_today_games(interaction)
+    @app_commands.describe(date="Override date for testing (YYYY-MM-DD)")
+    async def today_cmd(self, interaction: discord.Interaction, date: str = None):
+        await self.get_today_games(interaction, date_str=date)
 
     @app_commands.command(name="yesterday", description="Get yesterday's NHL scores")
     async def yesterday_cmd(self, interaction: discord.Interaction):
         await self.get_yesterday_games(interaction)
 
     @app_commands.command(name="standings", description="Get the NHL standings")
-    async def standings_cmd(self, interaction: discord.Interaction):
-        await self.get_standings(interaction)
+    @app_commands.describe(date="Override date for testing (YYYY-MM-DD)")
+    async def standings_cmd(self, interaction: discord.Interaction, date: str = None):
+        await self.get_standings(interaction, date_str=date)
 
     @app_commands.command(name="schedule", description="Get the schedule for the week for an NHL team")
-    async def schedule_cmd(self, interaction: discord.Interaction, abbreviation: str):
-        await self.get_schedule(interaction, abbreviation)
+    @app_commands.describe(date="Override date/week context (YYYY-MM-DD)")
+    async def schedule_cmd(self, interaction: discord.Interaction, abbreviation: str, date: str = None):
+        await self.get_schedule(interaction, abbreviation, date_str=date)
 
     @app_commands.command(name="game", description="Check live or past game stats for an NHL team")
-    async def game_cmd(self, interaction: discord.Interaction, abbreviation: str):
-        await self.get_game_info(interaction, abbreviation)
+    @app_commands.describe(date="Override date for testing (YYYY-MM-DD)")
+    async def game_cmd(self, interaction: discord.Interaction, abbreviation: str, date: str = None):
+        await self.get_game_info(interaction, abbreviation, date_str=date)
 
     @app_commands.command(name="player", description="Gets the complete career overview of an NHL player")
     async def player_cmd(self, interaction: discord.Interaction, name: str):
@@ -110,11 +115,11 @@ class NHL(commands.GroupCog, name="nhl"):
 
     # --- SHARED STRATEGY ARCHITECTURE LOGIC ---
 
-    async def get_today_games(self, interaction: discord.Interaction):
+    async def get_today_games(self, interaction: discord.Interaction, date_str: str = None):
         if not interaction.response.is_done(): await interaction.response.defer()
         base_strategy.log_command(self.bot, interaction, "nhl today")
         try:
-            embed = await self.build_schedule_embed()
+            embed = await self.build_schedule_embed(date_str=date_str)
             await interaction.followup.send(embed=embed)
         except Exception:
             await interaction.followup.send("Error processing schedule request.")
@@ -130,12 +135,13 @@ class NHL(commands.GroupCog, name="nhl"):
         except Exception:
             await interaction.followup.send("Error processing retrospective scores.")
 
-    async def get_standings(self, interaction: discord.Interaction):
+    async def get_standings(self, interaction: discord.Interaction, date_str: str = None):
         if not interaction.response.is_done(): await interaction.response.defer()
         base_strategy.log_command(self.bot, interaction, "nhl standings")
         try:
-            today = datetime.today().strftime('%Y-%m-%d')
-            data = requests.get(f"https://api-web.nhle.com/v1/standings/{today}").json()
+            if not date_str:
+                date_str = datetime.today().strftime('%Y-%m-%d')
+            data = requests.get(f"https://api-web.nhle.com/v1/standings/{date_str}").json()
             
             divisions = {"Atlantic": [], "Metropolitan": [], "Central": [], "Pacific": []}
             for record in data.get("standings", []):
@@ -145,7 +151,7 @@ class NHL(commands.GroupCog, name="nhl"):
                     wildcard = "🃏" if record.get("wildcardSequence") in [1, 2] else ""
                     divisions[div].append(f"{emoji_name} ({record['wins']}-{record['losses']}-{record['otLosses']}) {record['points']}pts {wildcard}")
 
-            embed = discord.Embed(title="NHL Standings Overview", color=config.color)
+            embed = discord.Embed(title=f"NHL Standings Overview ({date_str})", color=config.color)
             embed.set_thumbnail(url="https://www-league.nhlstatic.com/images/logos/league-dark/133-flat.svg")
             for div_name, lines in divisions.items():
                 embed.add_field(name=f"{div_name} Division", value="\n".join(lines) if lines else "No data", inline=False)
@@ -154,7 +160,7 @@ class NHL(commands.GroupCog, name="nhl"):
         except Exception:
             await interaction.followup.send("Error processing standings.")
 
-    async def get_schedule(self, interaction: discord.Interaction, team_abbreviation: str):
+    async def get_schedule(self, interaction: discord.Interaction, team_abbreviation: str, date_str: str = None):
         if not interaction.response.is_done(): await interaction.response.defer()
         base_strategy.log_command(self.bot, interaction, f"nhl schedule {team_abbreviation}")
         try:
@@ -163,7 +169,8 @@ class NHL(commands.GroupCog, name="nhl"):
             if abbrev not in teams:
                 return await interaction.followup.send("Invalid team identifier. Try matching format via `/nhl teams`.")
 
-            data = requests.get(f'https://api-web.nhle.com/v1/club-schedule/{abbrev}/week/now').json()
+            endpoint = f'https://api-web.nhle.com/v1/club-schedule/{abbrev}/week/{date_str}' if date_str else f'https://api-web.nhle.com/v1/club-schedule/{abbrev}/week/now'
+            data = requests.get(endpoint).json()
             embed = discord.Embed(title=f"{teams[abbrev]} Weekly Outlook", color=config.color)
             
             for game in data.get('games', []):
@@ -178,19 +185,20 @@ class NHL(commands.GroupCog, name="nhl"):
         except Exception:
             await interaction.followup.send("Failed to extract look-ahead week schedules.")
 
-    async def get_game_info(self, interaction: discord.Interaction, team_abbreviation: str):
+    async def get_game_info(self, interaction: discord.Interaction, team_abbreviation: str, date_str: str = None):
         if not interaction.response.is_done(): await interaction.response.defer()
         base_strategy.log_command(self.bot, interaction, f"nhl game {team_abbreviation}")
         try:
             abbrev = team_abbreviation.upper()
-            hawaii = pytz.timezone('US/Hawaii')
-            today = datetime.now(hawaii).strftime('%Y-%m-%d')
+            if not date_str:
+                hawaii = pytz.timezone('US/Hawaii')
+                date_str = datetime.now(hawaii).strftime('%Y-%m-%d')
             
-            data = requests.get(f'https://api-web.nhle.com/v1/club-schedule/{abbrev}/week/{today}').json()
-            game_data = next((g for g in data.get('games', []) if g.get('gameDate') == today), None)
+            data = requests.get(f'https://api-web.nhle.com/v1/club-schedule/{abbrev}/week/{date_str}').json()
+            game_data = next((g for g in data.get('games', []) if g.get('gameDate') == date_str), None)
             
             if not game_data:
-                return await interaction.followup.send(f"Selected team specified (`{abbrev}`) has no matches slated today.")
+                return await interaction.followup.send(f"Selected team specified (`{abbrev}`) has no matches slated for `{date_str}`.")
 
             g_id = game_data['id']
             b_data = requests.get(f"https://api-web.nhle.com/v1/gamecenter/{g_id}/boxscore").json()
@@ -199,7 +207,7 @@ class NHL(commands.GroupCog, name="nhl"):
             h_n = h_t.get('commonName', {}).get('default') or 'Home'
             a_n = a_t.get('commonName', {}).get('default') or 'Away'
 
-            embed = discord.Embed(title=f"{a_n} @ {h_n}", color=config.color)
+            embed = discord.Embed(title=f"{a_n} @ {h_n} ({date_str})", color=config.color)
             embed.add_field(name="Current State", value=b_data.get('gameState', 'FUT'), inline=True)
             embed.add_field(name="Scoreboard Status", value=f"{a_t.get('score',0)} - {h_t.get('score',0)}", inline=True)
             
@@ -252,7 +260,6 @@ class NHL(commands.GroupCog, name="nhl"):
             
             lines = []
             for abbr, name in teams_data.items():
-                # Clean the name safely outside of the f-string expression block
                 attr_name = f"{name.lower().replace(' ', '_')}_emoji"
                 emoji = getattr(config, attr_name, "")
                 lines.append(f"**{abbr}** - {name} {emoji}")

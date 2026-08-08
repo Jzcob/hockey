@@ -4,14 +4,12 @@ from discord.ext import commands
 import config
 from typing import Literal
 
-# Import the classes directly
 from strategies.nhl_strategy import NHL
 from strategies.pwhl_strategy import PWHLStrategy
 
 class HockeyLeagues(commands.Cog):
     def __init__(self, bot):
         self.bot = bot
-        # We instantiate the strategies here for the hub to use
         self.strategies = {
             "nhl": self.bot.get_cog("nhl") or NHL(bot),
             "pwhl": self.bot.get_cog("pwhl") or PWHLStrategy(bot)
@@ -19,8 +17,6 @@ class HockeyLeagues(commands.Cog):
 
     async def get_strat(self, interaction: discord.Interaction, league_val: str):
         strat = self.strategies.get(league_val)
-        
-        # Fallback to fetching the cog if it wasn't captured in __init__
         if not strat:
             strat = self.bot.get_cog(league_val)
             self.strategies[league_val] = strat
@@ -35,10 +31,11 @@ class HockeyLeagues(commands.Cog):
         app_commands.Choice(name="NHL", value="nhl"),
         app_commands.Choice(name="PWHL", value="pwhl")
     ])
-    async def today_cmd(self, interaction: discord.Interaction, league: app_commands.Choice[str]):
+    @app_commands.describe(date="Override date for testing (YYYY-MM-DD)")
+    async def today_cmd(self, interaction: discord.Interaction, league: app_commands.Choice[str], date: str = None):
         strat = await self.get_strat(interaction, league.value)
         if strat:
-            await strat.get_today_games(interaction)
+            await strat.get_today_games(interaction, date_str=date)
 
     @app_commands.command(name="yesterday", description="Get yesterday's scores")
     @app_commands.choices(league=[
@@ -55,30 +52,33 @@ class HockeyLeagues(commands.Cog):
         app_commands.Choice(name="NHL", value="nhl"),
         app_commands.Choice(name="PWHL", value="pwhl")
     ])
-    async def standings_cmd(self, interaction: discord.Interaction, league: app_commands.Choice[str]):
+    @app_commands.describe(date="Override date for testing (YYYY-MM-DD)")
+    async def standings_cmd(self, interaction: discord.Interaction, league: app_commands.Choice[str], date: str = None):
         strat = await self.get_strat(interaction, league.value)
         if strat:
-            await strat.get_standings(interaction)
+            await strat.get_standings(interaction, date_str=date)
 
     @app_commands.command(name="schedule", description="Get the schedule for a specific team")
     @app_commands.choices(league=[
         app_commands.Choice(name="NHL", value="nhl"),
         app_commands.Choice(name="PWHL", value="pwhl")
     ])
-    async def schedule_cmd(self, interaction: discord.Interaction, league: app_commands.Choice[str], abbreviation: str):
+    @app_commands.describe(date="Override date/context if needed (YYYY-MM-DD)")
+    async def schedule_cmd(self, interaction: discord.Interaction, league: app_commands.Choice[str], abbreviation: str, date: str = None):
         strat = await self.get_strat(interaction, league.value)
         if strat:
-            await strat.get_schedule(interaction, abbreviation)
+            await strat.get_schedule(interaction, abbreviation, date_str=date)
 
     @app_commands.command(name="game", description="Check live or past game stats for a team")
     @app_commands.choices(league=[
         app_commands.Choice(name="NHL", value="nhl"),
         app_commands.Choice(name="PWHL", value="pwhl")
     ])
-    async def game_cmd(self, interaction: discord.Interaction, league: app_commands.Choice[str], abbreviation: str):
+    @app_commands.describe(date="Override date for testing (YYYY-MM-DD)")
+    async def game_cmd(self, interaction: discord.Interaction, league: app_commands.Choice[str], abbreviation: str, date: str = None):
         strat = await self.get_strat(interaction, league.value)
         if strat:
-            await strat.get_game_info(interaction, abbreviation)
+            await strat.get_game_info(interaction, abbreviation, date_str=date)
 
     @app_commands.command(name="player", description="Gets the complete career overview of a player")
     @app_commands.choices(league=[
