@@ -34,30 +34,6 @@ class GuessTheTeam(commands.Cog):
     @app_commands.command(name="guess-the-team", description="Race to unscramble the NHL team name!")
     async def guessTheTeam(self, interaction: discord.Interaction):
         await self.log_command(interaction)
-        
-        # --- TARGETED AUDIT FOR SERVER 1530756253754724362 ---
-        target_guild_id = 1530756253754724362
-        is_target_server = interaction.guild and interaction.guild.id == target_guild_id
-        
-        if is_target_server:
-            guild = interaction.guild
-            me = guild.me if guild else None
-            permissions = interaction.channel.permissions_for(me) if me and interaction.channel else None
-            
-            audit_report = (
-                f"🔍 **[GUESS-THE-TEAM AUDIT]**\n"
-                f"• Server ID Match: `True` ({target_guild_id})\n"
-                f"• Bot User: `{self.bot.user}` (ID: `{self.bot.user.id}`)\n"
-                f"• Message Content Intent Enabled: `{self.bot.intents.message_content}`\n"
-                f"• Members Intent Enabled: `{self.bot.intents.members}`\n"
-                f"• Channel Type: `{interaction.channel.type}`\n"
-                f"• Permissions -> View Channel: `{permissions.view_channel if permissions else 'N/A'}` | "
-                f"Send Messages: `{permissions.send_messages if permissions else 'N/A'}` | "
-                f"Read Message History: `{permissions.read_message_history if permissions else 'N/A'}`\n"
-                f"• Total Cached Members in Guild: `{guild.member_count if guild else 'N/A'}` (Cached locally: `{len(guild.members) if guild else 'N/A'}`)"
-            )
-            print(audit_report.replace("**", "").replace("`", ""))
-            
         await interaction.response.defer()
 
         try:
@@ -87,19 +63,12 @@ class GuessTheTeam(commands.Cog):
                 color=config.color
             )
             embed.set_footer(text="Anyone in the channel can guess!")
-            msg_sent = await interaction.followup.send(embed=embed)
-            
-            # Send audit report to channel if it's the target server so you can read it easily in Discord
-            if is_target_server:
-                await interaction.channel.send(audit_report)
+            await interaction.followup.send(embed=embed)
 
             start_time = datetime.now()
 
             def check(message):
-                is_match = message.channel.id == interaction.channel.id and not message.author.bot
-                if is_target_server and not message.author.bot:
-                    print(f"DEBUG AUDIT [Team Check]: Heard message from {message.author} content: '{message.content}' -> Valid Match: {is_match}")
-                return is_match
+                return message.channel.id == interaction.channel.id and not message.author.bot
 
             while True:
                 elapsed = (datetime.now() - start_time).total_seconds()
