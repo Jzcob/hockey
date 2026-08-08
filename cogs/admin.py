@@ -89,13 +89,13 @@ class admin(commands.Cog):
             error_channel = self.bot.get_channel(config.error_channel)
             await error_channel.send(f"```{traceback.format_exc()}```")
 
-    @app_commands.command(name="bot-audit", description="Run a deep diagnostic audit for a specific server or user (Owner Only).")
+    @app_commands.command(name="debug", description="Run a deep diagnostic audit for a specific server or user (Owner Only).")
     @is_owner()
     @app_commands.describe(
         guild_id="Optional: Target Server ID to audit",
         user_id="Optional: Target User ID to audit"
     )
-    async def bot_audit(self, interaction: discord.Interaction, guild_id: str = None, user_id: str = None):
+    async def debug(self, interaction: discord.Interaction, guild_id: str = None, user_id: str = None):
         await interaction.response.defer(ephemeral=True)
         
         audit_results = ["🔍 **[DEEP BOT DIAGNOSTIC AUDIT]**"]
