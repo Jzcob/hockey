@@ -89,18 +89,19 @@ class admin(commands.Cog):
             error_channel = self.bot.get_channel(config.error_channel)
             await error_channel.send(f"```{traceback.format_exc()}```")
 
-    @app_commands.command(name="debug", description="Run a deep diagnostic audit for a specific server or user (Owner Only).")
+    @app_commands.command(name="debug", description="Run a deep diagnostic audit for a specific server or channel (Owner Only).")
     @is_owner()
     @app_commands.describe(
         guild_id="Optional: Target Server ID to audit",
+        channel_id="Optional: Specific Channel ID to audit",
         user_id="Optional: Target User ID to audit"
     )
-    async def debug(self, interaction: discord.Interaction, guild_id: str = None, user_id: str = None):
+    async def debug(self, interaction: discord.Interaction, guild_id: str = None, channel_id: str = None, user_id: str = None):
         await interaction.response.defer(ephemeral=True)
         
         audit_results = ["🔍 **[DEEP BOT DIAGNOSTIC AUDIT]**"]
         
-        # 1. Global Core Health
+        # 1. Core System & Intents
         audit_results.append(
             f"**1. Core System & Intents:**\n"
             f"• Latency: `{round(self.bot.latency * 1000, 2)}ms`\n"
@@ -121,49 +122,69 @@ class admin(commands.Cog):
                 db_status = f"❌ Error: {e}"
         audit_results.append(f"**2. Database Pool:**\n• Status: `{db_status}`")
         
-        # 3. Targeted Guild Diagnostics (if provided)
+        # Resolve Guild (if guild_id given, or fallback to channel's guild if channel_id given)
+        target_guild = None
+        target_channel = None
+        
         if guild_id:
             try:
-                g_id = int(guild_id)
-                guild = self.bot.get_guild(g_id) or await self.bot.fetch_guild(g_id)
-                if guild:
-                    me = guild.me or await guild.fetch_member(self.bot.user.id)
-                    permissions = interaction.channel.permissions_for(me) if interaction.channel else None
-                    
-                    audit_results.append(
-                        f"**3. Target Server Audit (`{guild.name}`):**\n"
-                        f"• Server ID: `{guild.id}`\n"
-                        f"• Member Count: `{guild.member_count}`\n"
-                        f"• Bot Cached Members: `{len(guild.members)}`\n"
-                        f"• Bot Permissions in Current Channel:\n"
-                        f"  - View Channel: `{permissions.view_channel if permissions else 'N/A'}`\n"
-                        f"  - Send Messages: `{permissions.send_messages if permissions else 'N/A'}`\n"
-                        f"  - Read Message History: `{permissions.read_message_history if permissions else 'N/A'}`"
+                target_guild = self.bot.get_guild(int(guild_id)) or await self.bot.fetch_guild(int(guild_id))
+            except Exception as e:
+                audit_results.append(f"**3. Target Server Audit:**\n• ❌ Failed to fetch guild `{guild_id}`: `{e}`")
+                
+        if channel_id:
+            try:
+                target_channel = self.bot.get_channel(int(channel_id)) or await self.bot.fetch_channel(int(channel_id))
+                if target_channel and not target_guild and hasattr(target_channel, 'guild'):
+                    target_guild = target_channel.guild
+            except Exception as e:
+                audit_results.append(f"**3. Target Channel Audit:**\n• ❌ Failed to fetch channel `{channel_id}`: `{e}`")
+
+        # 3. Server & Channel Diagnostics
+        if target_guild:
+            try:
+                me = target_guild.me or await target_guild.fetch_member(self.bot.user.id)
+                permissions = target_channel.permissions_for(me) if target_channel else None
+                
+                server_info = (
+                    f"**3. Target Server & Channel Audit (`{target_guild.name}`):**\n"
+                    f"• Server ID: `{target_guild.id}`\n"
+                    f"• Member Count: `{target_guild.member_count}`\n"
+                    f"• Bot Cached Members: `{len(target_guild.members)}`\n"
+                )
+                
+                if target_channel:
+                    server_info += (
+                        f"• Target Channel: `#{target_channel.name}` (ID: `{target_channel.id}`)\n"
+                        f"• Channel Permissions for Bot:\n"
+                        f"  - View Channel: `{permissions.view_channel}`\n"
+                        f"  - Send Messages: `{permissions.send_messages}`\n"
+                        f"  - Read Message History: `{permissions.read_message_history}`"
                     )
                 else:
-                    audit_results.append(f"**3. Target Server Audit:**\n• ❌ Bot is not in a guild with ID `{guild_id}` or couldn't fetch it.")
+                    server_info += f"• *No specific `channel_id` provided — checking server-wide base bot member state.*"
+                    
+                audit_results.append(server_info)
             except Exception as e:
-                audit_results.append(f"**3. Target Server Audit:**\n• ❌ Failed to parse/fetch guild: `{e}`")
-                
+                audit_results.append(f"**3. Target Server Audit:**\n• ❌ Error processing guild/channel stats: `{e}`")
+
         # 4. Targeted User Diagnostics (if provided)
         if user_id:
             try:
                 u_id = int(user_id)
                 user = self.bot.get_user(u_id) or await self.bot.fetch_user(u_id)
                 if user:
-                    # Check if user has active scores/data in DB if pool is up
                     db_user_info = "Not Checked"
                     if self.db_pool:
                         async with self.db_pool.acquire() as conn:
                             async with conn.cursor() as cursor:
                                 await cursor.execute("SELECT points FROM gtp_scores WHERE user_id = %s LIMIT 1", (u_id,))
                                 row = await cursor.fetchone()
-                                db_user_info = f"Found in GTP Scores (Points data exists)" if row else "No GTP Score entry found"
+                                db_user_info = f"Found in GTP Scores" if row else "No GTP Score entry found"
                                 
                     audit_results.append(
                         f"**4. Target User Audit (`{user.name}`):**\n"
                         f"• User ID: `{user.id}`\n"
-                        f"• Bot Mutuals / Cached: `{'Yes' if self.bot.get_user(u_id) else 'No (Fetched via API)'}`\n"
                         f"• Database State: `{db_user_info}`"
                     )
                 else:
@@ -171,7 +192,7 @@ class admin(commands.Cog):
             except Exception as e:
                 audit_results.append(f"**4. Target User Audit:**\n• ❌ Failed to fetch user: `{e}`")
 
-        # Compile and send (split if too long for one message)
+        # Compile and send
         full_response = "\n\n".join(audit_results)
         if len(full_response) > 2000:
             full_response = full_response[:1990] + "..."
