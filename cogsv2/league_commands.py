@@ -2,10 +2,42 @@ import discord
 from discord import app_commands
 from discord.ext import commands
 import config
-from typing import Literal
+import json
 
 from strategies.nhl_strategy import NHL
-from strategies.pwhl_strategy import PWHLStrategy
+from strategies.pwhl_strategy import PWHLStrategy, PWHL_TEAMS
+
+# Global Autocomplete Function for Team Resolution
+async def team_autocomplete(interaction: discord.Interaction, current: str) -> list[app_commands.Choice[str]]:
+    # Retrieve the 'league' parameter selected by the user
+    league_param = getattr(interaction.namespace, 'league', None)
+    
+    # Safely extract string value regardless of whether Discord passes a Choice or str
+    if hasattr(league_param, 'value'):
+        league_val = str(league_param.value).lower()
+    elif league_param:
+        league_val = str(league_param).lower()
+    else:
+        league_val = "nhl"
+    
+    choices = []
+
+    if league_val == "pwhl":
+        for abbr, (name, emoji) in PWHL_TEAMS.items():
+            if current.lower() in name.lower() or current.lower() in abbr.lower():
+                choices.append(app_commands.Choice(name=f"{emoji} {name} ({abbr})", value=abbr))
+    else:
+        try:
+            with open("teams.json", "r", encoding="utf-8") as f:
+                teams_data = json.load(f)
+            for abbr, name in teams_data.items():
+                if current.lower() in name.lower() or current.lower() in abbr.lower():
+                    choices.append(app_commands.Choice(name=f"{name} ({abbr})", value=abbr))
+        except Exception:
+            pass
+
+    return choices[:25]
+
 
 class HockeyLeagues(commands.Cog):
     def __init__(self, bot):
@@ -63,7 +95,8 @@ class HockeyLeagues(commands.Cog):
         app_commands.Choice(name="NHL", value="nhl"),
         app_commands.Choice(name="PWHL", value="pwhl")
     ])
-    @app_commands.describe(date="Override date/context if needed (YYYY-MM-DD)")
+    @app_commands.describe(abbreviation="Type or pick a team from the drop-down list", date="Override date/context if needed (YYYY-MM-DD)")
+    @app_commands.autocomplete(abbreviation=team_autocomplete)
     async def schedule_cmd(self, interaction: discord.Interaction, league: app_commands.Choice[str], abbreviation: str, date: str = None):
         strat = await self.get_strat(interaction, league.value)
         if strat:
@@ -74,7 +107,8 @@ class HockeyLeagues(commands.Cog):
         app_commands.Choice(name="NHL", value="nhl"),
         app_commands.Choice(name="PWHL", value="pwhl")
     ])
-    @app_commands.describe(date="Override date for testing (YYYY-MM-DD)")
+    @app_commands.describe(abbreviation="Type or pick a team from the drop-down list", date="Override date for testing (YYYY-MM-DD)")
+    @app_commands.autocomplete(abbreviation=team_autocomplete)
     async def game_cmd(self, interaction: discord.Interaction, league: app_commands.Choice[str], abbreviation: str, date: str = None):
         strat = await self.get_strat(interaction, league.value)
         if strat:

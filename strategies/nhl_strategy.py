@@ -26,6 +26,19 @@ TEAM_EMOJIS = {
     "WSH": config.washington_capitals_emoji, "WPG": config.winnipeg_jets_emoji,
 }
 
+async def nhl_team_autocomplete(interaction: discord.Interaction, current: str) -> list[app_commands.Choice[str]]:
+    choices = []
+    try:
+        with open("teams.json", "r", encoding="utf-8") as f:
+            teams_data = json.load(f)
+        for abbr, name in teams_data.items():
+            if current.lower() in name.lower() or current.lower() in abbr.lower():
+                choices.append(app_commands.Choice(name=f"{name} ({abbr})", value=abbr))
+    except Exception:
+        pass
+    return choices[:25]
+
+
 class GameStatsView(discord.ui.View):
     def __init__(self, boxscore_data, original_embed):
         super().__init__(timeout=300)
@@ -64,6 +77,7 @@ class GameStatsView(discord.ui.View):
     async def home_roster_button(self, interaction, button): 
         await interaction.response.edit_message(embed=self._build_roster_embed('home'))
 
+
 class NHL(commands.GroupCog, name="nhl"):
     def __init__(self, bot):
         self.bot = bot
@@ -96,12 +110,14 @@ class NHL(commands.GroupCog, name="nhl"):
         await self.get_standings(interaction, date_str=date)
 
     @app_commands.command(name="schedule", description="Get the schedule for the week for an NHL team")
-    @app_commands.describe(date="Override date/week context (YYYY-MM-DD)")
+    @app_commands.describe(abbreviation="Type or pick a team from the drop-down list", date="Override date/week context (YYYY-MM-DD)")
+    @app_commands.autocomplete(abbreviation=nhl_team_autocomplete)
     async def schedule_cmd(self, interaction: discord.Interaction, abbreviation: str, date: str = None):
         await self.get_schedule(interaction, abbreviation, date_str=date)
 
     @app_commands.command(name="game", description="Check live or past game stats for an NHL team")
-    @app_commands.describe(date="Override date for testing (YYYY-MM-DD)")
+    @app_commands.describe(abbreviation="Type or pick a team from the drop-down list", date="Override date for testing (YYYY-MM-DD)")
+    @app_commands.autocomplete(abbreviation=nhl_team_autocomplete)
     async def game_cmd(self, interaction: discord.Interaction, abbreviation: str, date: str = None):
         await self.get_game_info(interaction, abbreviation, date_str=date)
 
@@ -232,6 +248,7 @@ class NHL(commands.GroupCog, name="nhl"):
                         if f"{fn} {ln}".lower() == player_name.lower():
                             found_player = (p["id"], teams[team_abbr])
                             break
+                    if found_player: break
                 if found_player: break
 
             if not found_player:
@@ -272,65 +289,6 @@ class NHL(commands.GroupCog, name="nhl"):
             await interaction.followup.send(embed=embed, ephemeral=True)
         except Exception:
             await interaction.followup.send("Asset serialization read error.")
-
-    # --- GAMES LOGIC ATTACHMENTS ---
-
-    async def get_random_player_data(self):
-        try:
-            with open("teams.json", "r") as f: teams = json.load(f)
-            team_abbr = random.choice(list(teams.keys()))
-            roster = requests.get(f"https://api-web.nhle.com/v1/roster/{team_abbr}/current").json()
-            group = random.choice(["forwards", "defensemen", "goalies"])
-            p = random.choice(roster[group])
-            return {"team": teams[team_abbr], "first": p["firstName"]["default"], "last": p["lastName"]["default"], "code": p["positionCode"]}
-        except: return None
-
-    async def run_gtp_game(self, interaction: discord.Interaction, is_race=False):
-        data = await self.get_random_player_data()
-        if not data: return await interaction.followup.send("Failed to extract sample roster entities.")
-        
-        full_name = f"{data['first']} {data['last']}"
-        pos = {"G": "Goalie", "D": "Defenseman", "C": "Center", "L": "Left Wing", "R": "Right Wing"}.get(data['code'], "Skater")
-        
-        embed = discord.Embed(title="🎯 Guess The NHL Player!" if not is_race else "🏁 GTP Race!", description=f"Unmask the player belonging to the **{data['team']}**!\nHint: Name starts with `{data['first'][0]}` | Position: `{pos}`", color=discord.Color.blue())
-        await interaction.followup.send(embed=embed)
-
-        def check(m): return m.channel == interaction.channel and not m.author.bot
-        try:
-            msg = await self.bot.wait_for("message", check=check, timeout=20.0)
-            if fuzz.partial_ratio(msg.content.strip().lower(), full_name.lower()) >= 85:
-                async with self.bot.db_pool.acquire() as conn:
-                    async with conn.cursor() as cursor:
-                        await cursor.execute("INSERT INTO gtp_scores (user_id, guild_id, points) VALUES (%s, %s, 1) ON DUPLICATE KEY UPDATE points = points + 1", (msg.author.id, interaction.guild.id if interaction.guild else 0))
-                await msg.reply(f"🏆 Match confirmed! The individual was `{full_name}`!")
-            else:
-                await interaction.followup.send(f"Incorrect tracking metrics. Answer resolved to: `{full_name}`.")
-        except asyncio.TimeoutError:
-            await interaction.followup.send(f"Time metrics expired. Targeted answer was: `{full_name}`.")
-
-    # --- REFRESH INFRASTRUCTURE ENGINE ---
-
-    async def post_daily_schedule(self, channel: discord.TextChannel):
-        embed = await self.build_schedule_embed()
-        msg = await channel.send(embed=embed)
-        async with self.bot.db_pool.acquire() as conn:
-            async with conn.cursor() as cursor:
-                await cursor.execute("UPDATE guild_settings SET daily_schedule_message_id = %s WHERE guild_id = %s", (msg.id, channel.guild.id))
-
-    async def update_live_scores(self):
-        async with self.bot.db_pool.acquire() as conn:
-            async with conn.cursor() as cursor:
-                await cursor.execute("SELECT daily_schedule_message_id, daily_schedule_channel_id FROM guild_settings WHERE daily_schedule_message_id IS NOT NULL")
-                records = await cursor.fetchall()
-        if not records: return
-        updated_embed = await self.build_schedule_embed()
-        for m_id, c_id in records:
-            try:
-                ch = self.bot.get_channel(c_id)
-                if ch:
-                    msg = await ch.fetch_message(m_id)
-                    await msg.edit(embed=updated_embed)
-            except: continue
 
     async def build_schedule_embed(self, date_str=None):
         if not date_str:

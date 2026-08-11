@@ -5,3 +5,4 @@ TOKEN.py
 .env
 *.xml
 *.iml
+endpointtest.py

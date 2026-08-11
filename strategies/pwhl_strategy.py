@@ -11,7 +11,9 @@ import asyncio
 from thefuzz import fuzz
 import strategies.base_strategy as base_strategy
 
-# Updated with official PWHL franchise identities
+# Toggleable Debug Mode: Set to True to enable console logging, False to disable
+DEBUG_MODE = True
+
 PWHL_TEAMS = {
     "BOS": ("Boston Fleet", config.boston_fleet_emoji if hasattr(config, 'boston_fleet_emoji') else "⚓"),
     "MIN": ("Minnesota Frost", config.minnesota_frost_emoji if hasattr(config, 'minnesota_frost_emoji') else "❄️"),
@@ -19,11 +21,25 @@ PWHL_TEAMS = {
     "NY":  ("New York Sirens", config.new_york_sirens_emoji if hasattr(config, 'new_york_sirens_emoji') else "🚨"),
     "OTT": ("Ottawa Charge", config.ottawa_charge_emoji if hasattr(config, 'ottawa_charge_emoji') else "⚡"),
     "TOR": ("Toronto Sceptres", config.toronto_sceptres_emoji if hasattr(config, 'toronto_sceptres_emoji') else "👑"),
+    "DET": ("PWHL Detroit", "🏒"),
+    "HAM": ("PWHL Hamilton", "🏒"),
+    "LV":  ("PWHL Las Vegas", "🎲"),
+    "SJ":  ("PWHL San Jose", "🦈"),
+    "SEA": ("Seattle Torrent", "🌊"),
+    "VAN": ("Vancouver Goldeneyes", "🦅"),
 }
 
 PWHL_API_KEY = "446521baf8c38984"
 PWHL_CLIENT_CODE = "pwhl"
-CURRENT_SEASON_ID = 5 # Update this integer for future seasons
+CURRENT_SEASON_ID = 5
+
+async def pwhl_team_autocomplete(interaction: discord.Interaction, current: str) -> list[app_commands.Choice[str]]:
+    choices = []
+    for abbr, (name, emoji) in PWHL_TEAMS.items():
+        if current.lower() in name.lower() or current.lower() in abbr.lower():
+            choices.append(app_commands.Choice(name=f"{emoji} {name} ({abbr})", value=abbr))
+    return choices[:25]
+
 
 class PWHLGameStatsView(discord.ui.View):
     def __init__(self, gc_data, original_embed):
@@ -31,30 +47,46 @@ class PWHLGameStatsView(discord.ui.View):
         self.gc_data = gc_data
         self.original_embed = original_embed
         
-        # HockeyTech GameCenter data hierarchy
-        self.game_info = self.gc_data.get('Parameters', {})
-        self.home_team = self.gc_data.get('Home', {})
-        self.away_team = self.gc_data.get('Visitor', {})
+        self.home_lineup = self.gc_data.get('home_team_lineup', {})
+        self.away_lineup = self.gc_data.get('visitor_team_lineup', {})
+        self.home_info = self.gc_data.get('home', {})
+        self.away_info = self.gc_data.get('visitor', {})
 
     def _build_roster_embed(self, team_type: str) -> discord.Embed:
-        team_data = self.away_team if team_type == 'away' else self.home_team
-        team_name = team_data.get('info', {}).get('name', 'Team')
+        is_away = (team_type == 'away')
+        team_data = self.away_lineup if is_away else self.home_lineup
+        team_info = self.away_info if is_away else self.home_info
+        team_name = team_info.get('name') or team_info.get('city') or 'Team'
         
-        embed = discord.Embed(title=f"{team_name} Roster Stats", color=self.original_embed.color)
+        embed = discord.Embed(title=f"{team_name} Game Roster", color=self.original_embed.color)
         
         try:
-            skaters = team_data.get('skaters', [])
-            def fmt(p): return f"#{p.get('jerseyNumber', '00')} {p.get('firstName')} {p.get('lastName')} ({p.get('goals',0)}G, {p.get('assists',0)}A)"
+            players = team_data.get('players', [])
+            skater_lines = []
+            for p in players:
+                num = p.get('jersey_number', '00')
+                fname = p.get('first_name', '')
+                lname = p.get('last_name', '')
+                pos = p.get('position_str', 'F')
+                g = p.get('goals', 0)
+                a = p.get('assists', 0)
+                skater_lines.append(f"#{num} **{fname} {lname}** ({pos}) - {g}G, {a}A")
             
-            # HockeyTech doesn't always split F/D cleanly in the basic GC return, so we list top skaters
-            formatted_skaters = "\n".join([fmt(p) for p in skaters[:20]]) 
-            
+            formatted_skaters = "\n".join(skater_lines[:20])
             embed.add_field(name="Active Skaters", value=formatted_skaters[:1024] if formatted_skaters else "N/A", inline=False)
             
             goalies = team_data.get('goalies', [])
-            def fmt_g(g): return f"#{g.get('jerseyNumber', '00')} {g.get('firstName')} {g.get('lastName')} (SV%: {g.get('savePct', '.000')})"
-            formatted_goalies = "\n".join([fmt_g(g) for g in goalies])
+            goalie_lines = []
+            for g in goalies:
+                num = g.get('jersey_number', '00')
+                fname = g.get('first_name', '')
+                lname = g.get('last_name', '')
+                saves = g.get('saves', 0)
+                ga = g.get('goals_against', 0)
+                time_str = g.get('time', '0:00')
+                goalie_lines.append(f"#{num} **{fname} {lname}** - {saves} SV / {ga} GA ({time_str})")
             
+            formatted_goalies = "\n".join(goalie_lines)
             embed.add_field(name="Goalies", value=formatted_goalies[:1024] if formatted_goalies else "N/A", inline=False)
             
         except Exception: 
@@ -79,10 +111,7 @@ class PWHL(commands.GroupCog, name="pwhl"):
         self.bot = bot
         super().__init__()
 
-    # --- API HELPER ---
-    
     def fetch_ht_api(self, feed: str, **kwargs) -> dict:
-        """Wrapper for the HockeyTech LeagueStat API with request URL logging and safe JSON handling."""
         base_url = "https://lscluster.hockeytech.com/feed/index.php"
         params = {
             "key": PWHL_API_KEY,
@@ -92,24 +121,31 @@ class PWHL(commands.GroupCog, name="pwhl"):
         }
         params.update(kwargs)
         
-        # Build full request URL and print to console for inspection
         req = requests.Request('GET', base_url, params=params)
         prepared = req.prepare()
-        print(f"[PWHL API Request]: {prepared.url}")
+        if DEBUG_MODE:
+            print(f"[PWHL API Request]: {prepared.url}")
 
         try:
             response = requests.get(base_url, params=params, timeout=10)
             if response.status_code != 200 or not response.text.strip():
-                print(f"[PWHL API Error]: Status Code {response.status_code}, Body: {response.text[:200]}")
+                if DEBUG_MODE:
+                    print(f"[PWHL API Error]: Status Code {response.status_code}, Body: {response.text[:200]}")
                 return {}
-            return response.json()
-        except (requests.RequestException, json.JSONDecodeError) as e:
-            print(f"[PWHL API Exception]: {e}")
+            
+            clean_text = response.text.strip()
+            if clean_text.startswith("(") and clean_text.endswith(")"):
+                clean_text = clean_text[1:-1]
+            
+            return json.loads(clean_text)
+        except Exception as e:
+            if DEBUG_MODE:
+                print(f"[PWHL API Exception]: {e}")
             return {}
 
     @staticmethod
     def get_team_emoji(abbrev: str) -> str:
-        return PWHL_TEAMS.get(abbrev.upper(), ("", ""))[1]
+        return PWHL_TEAMS.get(abbrev.upper(), ("", "🏒"))[1]
 
     @staticmethod
     def get_team_name(abbrev: str) -> str:
@@ -132,12 +168,14 @@ class PWHL(commands.GroupCog, name="pwhl"):
         await self.get_standings(interaction, date_str=date)
 
     @app_commands.command(name="schedule", description="Get the schedule for a PWHL team")
-    @app_commands.describe(date="Override date/month context if needed")
+    @app_commands.describe(abbreviation="Type or pick a team from the drop-down list", date="Override date/month context if needed")
+    @app_commands.autocomplete(abbreviation=pwhl_team_autocomplete)
     async def schedule_cmd(self, interaction: discord.Interaction, abbreviation: str, date: str = None):
         await self.get_schedule(interaction, abbreviation, date_str=date)
 
     @app_commands.command(name="game", description="Check live or past game stats for a PWHL team")
-    @app_commands.describe(date="Override date for testing (YYYY-MM-DD)")
+    @app_commands.describe(abbreviation="Type or pick a team from the drop-down list", date="Override date for testing (YYYY-MM-DD)")
+    @app_commands.autocomplete(abbreviation=pwhl_team_autocomplete)
     async def game_cmd(self, interaction: discord.Interaction, abbreviation: str, date: str = None):
         await self.get_game_info(interaction, abbreviation, date_str=date)
 
@@ -158,6 +196,8 @@ class PWHL(commands.GroupCog, name="pwhl"):
             embed = await self.build_schedule_embed(date_str=date_str)
             await interaction.followup.send(embed=embed)
         except Exception as e:
+            if DEBUG_MODE:
+                traceback.print_exc()
             await interaction.followup.send(f"Error processing schedule request: {e}")
 
     async def get_yesterday_games(self, interaction: discord.Interaction):
@@ -169,6 +209,8 @@ class PWHL(commands.GroupCog, name="pwhl"):
             embed = await self.build_schedule_embed(date_str=y_date)
             await interaction.followup.send(embed=embed)
         except Exception:
+            if DEBUG_MODE:
+                traceback.print_exc()
             await interaction.followup.send("Error processing retrospective scores.")
 
     async def get_standings(self, interaction: discord.Interaction, date_str: str = None):
@@ -186,7 +228,6 @@ class PWHL(commands.GroupCog, name="pwhl"):
                 params["date"] = date_str
 
             data = self.fetch_ht_api(**params)
-            
             site_kit = data.get("SiteKit", {})
             standings_data = site_kit.get("statviewtype") or site_kit.get("Statviewtype") or []
             
@@ -195,20 +236,24 @@ class PWHL(commands.GroupCog, name="pwhl"):
             
             lines = []
             for record in standings_data:
+                if not isinstance(record, dict) or "team_code" not in record:
+                    continue
                 team_code = record.get("team_code", "UNK")
-                name = record.get("name", team_code)
+                name = record.get("team_name") or record.get("name", team_code)
                 emoji = self.get_team_emoji(team_code)
                 wins = record.get("wins", 0)
                 losses = record.get("losses", 0)
                 ot_losses = record.get("ot_losses", 0)
                 points = record.get("points", 0)
                 
-                lines.append(f"{emoji} **{name}** ({wins}-{losses}-{ot_losses}) - {points} pts")
+                lines.append(f"{emoji} **{name}** ({wins}-{losses}-{ot_losses}) - **{points}** pts")
 
             embed.description = "\n".join(lines) if lines else "Standings data unavailable."
             embed.set_footer(text=config.footer)
             await interaction.followup.send(embed=embed)
-        except Exception:
+        except Exception as e:
+            if DEBUG_MODE:
+                traceback.print_exc()
             await interaction.followup.send("Error processing standings.")
 
     async def get_schedule(self, interaction: discord.Interaction, team_abbreviation: str, date_str: str = None):
@@ -219,9 +264,7 @@ class PWHL(commands.GroupCog, name="pwhl"):
             if abbrev not in PWHL_TEAMS:
                 return await interaction.followup.send("Invalid team identifier. Try matching format via `/pwhl teams`.")
 
-            # HockeyTech requires internal team IDs for schedules, we fetch teams first to map it
             team_data = self.fetch_ht_api(feed="modulekit", view="teamsbyseason", season_id=CURRENT_SEASON_ID)
-            
             site_kit = team_data.get("SiteKit", {})
             raw_teams = site_kit.get("teamsbyseason") or site_kit.get("Teamsbyseason") or []
             
@@ -235,10 +278,8 @@ class PWHL(commands.GroupCog, name="pwhl"):
             if not team_id:
                 return await interaction.followup.send("Could not map team abbreviation to LeagueStat ID.")
 
-            # Note: statviewfeed schedule feed requires 'team' and 'season' parameters
             data = self.fetch_ht_api(feed="statviewfeed", view="schedule", team=team_id, season=CURRENT_SEASON_ID, month=-1)
             
-            # The second payload sample shows a nested structure: [ { "sections": [ { "data": [...] } ] } ]
             games = []
             if isinstance(data, list) and len(data) > 0:
                 for item in data:
@@ -265,7 +306,7 @@ class PWHL(commands.GroupCog, name="pwhl"):
             embed = discord.Embed(title=f"{self.get_team_name(abbrev)} Schedule", color=config.color)
             
             if date_str:
-                upcoming = [g for g in games if g.get("date") == date_str or date_str in g.get("date", "")]
+                upcoming = [g for g in games if date_str in str(g.get("date", ""))]
                 if not upcoming:
                     upcoming = games[:7]
             else:
@@ -275,12 +316,18 @@ class PWHL(commands.GroupCog, name="pwhl"):
                 home = game.get("home_team_name", "TBD")
                 away = game.get("visiting_team_name", "TBD")
                 d_str = game.get("date_with_day", "")
-                embed.add_field(name=d_str or "Game", value=f"{away} @ {home}", inline=False)
+                status_txt = game.get("status", "Scheduled")
+                h_goals = game.get("home_goal_count", "")
+                v_goals = game.get("visiting_goal_count", "")
+                
+                score_str = f" ({v_goals} - {h_goals})" if h_goals and v_goals else ""
+                embed.add_field(name=f"{d_str} - {status_txt}", value=f"{away} @ {home}{score_str}", inline=False)
 
             embed.set_thumbnail(url="https://www.thepwhl.com/wp-content/uploads/sites/2/2023/10/PWHL_Logo_Color_RGB.png")
             await interaction.followup.send(embed=embed)
         except Exception as e:
-            traceback.print_exc()
+            if DEBUG_MODE:
+                traceback.print_exc()
             await interaction.followup.send(f"Failed to extract look-ahead week schedules: {e}")
 
     async def get_game_info(self, interaction: discord.Interaction, team_abbreviation: str, date_str: str = None):
@@ -292,72 +339,79 @@ class PWHL(commands.GroupCog, name="pwhl"):
                 hawaii = pytz.timezone('US/Hawaii')
                 date_str = datetime.now(hawaii).strftime('%Y-%m-%d')
             
-            # Use the scorebar feed which reliably includes games and scores across dates
-            scorebar_data = self.fetch_ht_api(feed="modulekit", view="scorebar", numberofdaysback=30, numberofdaysahead=30)
+            scorebar_data = self.fetch_ht_api(feed="modulekit", view="scorebar", numberofdaysback=180, numberofdaysahead=180)
+            site_kit = scorebar_data.get("SiteKit", {})
+            scorebar_games = site_kit.get("Scorebar") or site_kit.get("scorebar") or []
             
             target_game = None
-            # HockeyTech scorebar usually returns games grouped by date or inside SiteKit
-            site_kit = scorebar_data.get("SiteKit", {})
-            scorebar_games = site_kit.get("scorebar") or site_kit.get("Scorebar") or []
-            
-            # If scorebar structure varies, let's search team schedule directly as a robust fallback
-            if not scorebar_games:
-                team_data = self.fetch_ht_api(feed="modulekit", view="teamsbyseason", season_id=CURRENT_SEASON_ID)
-                raw_teams = site_kit.get("teamsbyseason") or site_kit.get("Teamsbyseason") or []
-                team_id = None
-                for t in raw_teams:
-                    if (t.get("team_code") or t.get("code") or "").upper() == abbrev:
-                        team_id = t.get("id") or t.get("team_id")
+            for g in scorebar_games:
+                g_date = g.get("Date") or g.get("date")
+                if g_date == date_str or date_str in str(g.get("GameDateISO8601", "")):
+                    if g.get("HomeCode") == abbrev or g.get("VisitorCode") == abbrev:
+                        target_game = {
+                            "game_id": g.get("ID") or g.get("game_id"),
+                            "home_team_name": g.get("HomeLongName") or g.get("HomeCity"),
+                            "visiting_team_name": g.get("VisitorLongName") or g.get("VisitorCity"),
+                            "home_goal_count": g.get("HomeGoals", 0),
+                            "visiting_goal_count": g.get("VisitorGoals", 0),
+                            "status": g.get("GameStatus"),
+                            "status_string": g.get("GameStatusStringLong") or g.get("GameStatusString")
+                        }
                         break
+
+            if not target_game:
+                team_data = self.fetch_ht_api(feed="modulekit", view="teamsbyseason", season_id=CURRENT_SEASON_ID)
+                raw_teams = team_data.get("SiteKit", {}).get("Teamsbyseason") or []
+                team_id = next((t.get("id") for t in raw_teams if (t.get("code") or "").upper() == abbrev), None)
                 
                 if team_id:
                     sched_data = self.fetch_ht_api(feed="statviewfeed", view="schedule", team=team_id, season=CURRENT_SEASON_ID, month=-1)
-                    for item in sched_data:
-                        for section in item.get("sections", []):
-                            for r in section.get("data", []):
-                                row = r.get("row", {})
-                                if row.get("date_with_day") or date_str in str(row):
-                                    # Map row fields to target game structure
-                                    if abbrev in row.get("home_team_city", "").upper() or abbrev in row.get("visiting_team_city", "").upper():
+                    if isinstance(sched_data, list):
+                        for item in sched_data:
+                            for section in item.get("sections", []):
+                                for r in section.get("data", []):
+                                    row = r.get("row", {})
+                                    row_date = r.get("prop", {}).get("game_summary_long", {}).get("link", "")
+                                    if date_str in str(row) or date_str in row_date:
                                         target_game = {
                                             "game_id": row.get("game_id"),
                                             "home_team_name": row.get("home_team_city"),
                                             "visiting_team_name": row.get("visiting_team_city"),
                                             "home_goal_count": row.get("home_goal_count", 0),
                                             "visiting_goal_count": row.get("visiting_goal_count", 0),
-                                            "status": 4 if "Final" in row.get("game_status", "") else 1
+                                            "status_string": row.get("game_status")
                                         }
                                         break
-            else:
-                for g in scorebar_games:
-                    g_date = g.get("date") or g.get("game_date")
-                    if g_date == date_str:
-                        if g.get("home_team_code") == abbrev or g.get("visiting_team_code") == abbrev:
-                            target_game = g
-                            break
 
             if not target_game:
                 return await interaction.followup.send(f"Selected team specified (`{abbrev}`) has no matches slated for `{date_str}`.")
 
             game_id = target_game.get("game_id")
             
-            # Get verbose Game Center Data
             gc_data = self.fetch_ht_api(feed="gc", tab="gamesummary", game_id=game_id)
             parsed_gc = gc_data.get("GC", {}).get("Gamesummary", {})
             
-            h_t = target_game.get("home_team_name", "Home")
-            a_t = target_game.get("visiting_team_name", "Away")
+            meta = parsed_gc.get("meta", {})
+            h_t = target_game.get("home_team_name") or parsed_gc.get("home", {}).get("name", "Home")
+            a_t = target_game.get("visiting_team_name") or parsed_gc.get("visitor", {}).get("name", "Away")
             
-            status = "Scheduled" if str(target_game.get("status")) == "1" else "Final" if str(target_game.get("status")) == "4" else "Live"
+            status = target_game.get("status_string") or parsed_gc.get("status_value", "Final")
+            v_score = meta.get("visiting_goal_count") or target_game.get("visiting_goal_count", 0)
+            h_score = meta.get("home_goal_count") or target_game.get("home_goal_count", 0)
 
             embed = discord.Embed(title=f"{a_t} @ {h_t} ({date_str})", color=config.color)
             embed.add_field(name="Current State", value=status, inline=True)
-            embed.add_field(name="Scoreboard Status", value=f"{target_game.get('visiting_goal_count', 0)} - {target_game.get('home_goal_count', 0)}", inline=True)
+            embed.add_field(name="Scoreboard Status", value=f"{v_score} - {h_score}", inline=True)
+            
+            venue = parsed_gc.get("venue")
+            if venue:
+                embed.add_field(name="Venue", value=venue, inline=False)
             
             view = PWHLGameStatsView(parsed_gc, embed)
             await interaction.followup.send(embed=embed, view=view)
         except Exception as e:
-            traceback.print_exc()
+            if DEBUG_MODE:
+                traceback.print_exc()
             await interaction.followup.send(f"Failed to build real-time interactive dashboard components: {e}")
 
     async def get_player_info(self, interaction: discord.Interaction, player_name: str):
@@ -375,30 +429,54 @@ class PWHL(commands.GroupCog, name="pwhl"):
             
             p_data = self.fetch_ht_api(feed="modulekit", view="player", category="profile", player_id=player_id)
             p_site_kit = p_data.get("SiteKit", {})
-            profile = p_site_kit.get("player", {}).get("profile") or p_site_kit.get("Player", {}).get("profile", {})
+            
+            # Extract player object safely regardless of capitalization
+            player_obj = p_site_kit.get("Player") or p_site_kit.get("player") or {}
+            profile = player_obj.get("profile") if isinstance(player_obj.get("profile"), dict) else player_obj
+            
+            # Map field fallbacks
+            first_name = profile.get("first_name", "")
+            last_name = profile.get("last_name", "")
+            full_name = profile.get("name") or f"{first_name} {last_name}".strip()
+            
+            position = profile.get("position", "Skater")
+            team_name = profile.get("most_recent_team_name") or profile.get("team_name") or "PWHL"
+            jersey_num = profile.get("jersey_number") or "N/A"
             
             embed = discord.Embed(
-                title=f"{profile.get('first_name', '')} {profile.get('last_name', '')}", 
-                description=f"{profile.get('position', 'Skater')} for {profile.get('team_name', 'PWHL')} #{profile.get('jersey_number', 'N/A')}", 
+                title=full_name, 
+                description=f"{position} for {team_name} #{jersey_num}", 
                 color=config.color
             )
             
-            if profile.get('player_image'):
-                embed.set_thumbnail(url=profile.get('player_image'))
+            thumb_url = profile.get("primary_image") or profile.get("player_image")
+            if thumb_url:
+                embed.set_thumbnail(url=thumb_url)
                 
-            embed.add_field(name="Birth Date", value=profile.get("birthdate_year", "Unknown"))
-            embed.add_field(name="Place of Origin", value=profile.get("hometown", "Unknown"))
+            birth_date = profile.get("birthdate") or profile.get("birthdate_year") or "Unknown"
+            origin = profile.get("hometown") or profile.get("birthtown") or "Unknown"
             
+            embed.add_field(name="Birth Date", value=birth_date)
+            embed.add_field(name="Place of Origin", value=origin)
+            
+            # Statistics Extraction
             stats_data = self.fetch_ht_api(feed="modulekit", view="player", category="mostrecentseasonstats", player_id=player_id)
             stats_site_kit = stats_data.get("SiteKit", {})
-            stats = stats_site_kit.get("player", {}).get("mostrecentseasonstats") or stats_site_kit.get("Player", {}).get("mostrecentseasonstats", {})
+            stats_obj = stats_site_kit.get("Player") or stats_site_kit.get("player") or {}
+            stats = stats_obj.get("mostrecentseasonstats") if isinstance(stats_obj.get("mostrecentseasonstats"), dict) else stats_obj
             
-            if stats:
-                embed.add_field(name="Latest Season (GP/G/A/PTS)", value=f"`{stats.get('games_played','0')}` GP | `{stats.get('goals','0')}` G | `{stats.get('assists','0')}` A | `{stats.get('points','0')}` PTS", inline=False)
+            if isinstance(stats, dict) and stats.get("games_played"):
+                embed.add_field(
+                    name=f"Latest Season Statistics ({stats.get('season_name', 'Regular Season')})", 
+                    value=f"`{stats.get('games_played','0')}` GP | `{stats.get('goals','0')}` G | `{stats.get('assists','0')}` A | `{stats.get('points','0')}` PTS", 
+                    inline=False
+                )
             
             await interaction.followup.send(embed=embed)
-        except Exception:
-            await interaction.followup.send("Roster parser error.")
+        except Exception as e:
+            if DEBUG_MODE:
+                traceback.print_exc()
+            await interaction.followup.send(f"Roster parser error: {e}")
 
     async def get_all_teams(self, interaction: discord.Interaction):
         if not interaction.response.is_done(): 
@@ -417,22 +495,27 @@ class PWHL(commands.GroupCog, name="pwhl"):
         except Exception:
             await interaction.followup.send("Asset serialization read error.")
 
-    # --- REFRESH INFRASTRUCTURE ENGINE ---
-
     async def build_schedule_embed(self, date_str=None):
         if not date_str:
             hawaii = pytz.timezone('US/Hawaii')
             date_str = datetime.now(hawaii).strftime('%Y-%m-%d')
             
-        data = self.fetch_ht_api(feed="modulekit", view="gamesperday", start_date=date_str, end_date=date_str)
-        site_kit = data.get("SiteKit", {})
-        games_data = site_kit.get("gamesperday") or site_kit.get("Gamesperday", {})
+        scorebar_data = self.fetch_ht_api(feed="modulekit", view="scorebar", numberofdaysback=30, numberofdaysahead=30)
+        site_kit = scorebar_data.get("SiteKit", {})
+        scorebar_games = site_kit.get("Scorebar") or site_kit.get("scorebar") or []
         
-        if isinstance(games_data, list):
-            games = []
-        else:
-            games = games_data.get(date_str, [])
+        games = [g for g in scorebar_games if g.get("Date") == date_str or date_str in str(g.get("GameDateISO8601", ""))]
         
+        if not games:
+            gpd_data = self.fetch_ht_api(feed="modulekit", view="gamesperday", start_date=date_str, end_date=date_str)
+            site_kit_gpd = gpd_data.get("SiteKit", {})
+            raw_gpd = site_kit_gpd.get("gamesperday") or site_kit_gpd.get("Gamesperday") or []
+            
+            if isinstance(raw_gpd, list) and len(raw_gpd) > 0 and "home_team_code" in raw_gpd[0]:
+                games = raw_gpd
+            elif isinstance(raw_gpd, dict):
+                games = raw_gpd.get(date_str, [])
+
         if not games:
             return discord.Embed(title=f"PWHL Schedule Overview ({date_str})", description="No games scheduled for specified tracking metrics.", color=config.color)
 
@@ -440,46 +523,30 @@ class PWHL(commands.GroupCog, name="pwhl"):
         embed.set_thumbnail(url="https://www.thepwhl.com/wp-content/uploads/sites/2/2023/10/PWHL_Logo_Color_RGB.png")
 
         for game in games:
-            h_code, a_code = game.get("home_team_code"), game.get("visiting_team_code")
-            h_name, a_name = self.get_team_name(h_code), self.get_team_name(a_code)
+            h_code = game.get("HomeCode") or game.get("home_team_code")
+            a_code = game.get("VisitorCode") or game.get("visiting_team_code")
+            
+            h_name = game.get("HomeLongName") or self.get_team_name(h_code)
+            a_name = game.get("VisitorLongName") or self.get_team_name(a_code)
             h_emoji, a_emoji = self.get_team_emoji(h_code), self.get_team_emoji(a_code)
             
             a_str = f"{a_emoji} {a_name}".lstrip()
             h_str = f"{h_name} {h_emoji}".rstrip()
             
-            status_code = str(game.get("status", "1"))
-            if status_code == "4":
-                status = f"Final: {game.get('visiting_goal_count', 0)} - {game.get('home_goal_count', 0)}"
-            elif status_code in ("2", "3"):
-                status = f"🔴 LIVE: {game.get('visiting_goal_count', 0)} - {game.get('home_goal_count', 0)}"
+            status_code = str(game.get("GameStatus") or game.get("status", "1"))
+            v_goals = game.get("VisitorGoals") or game.get("visiting_goal_count", 0)
+            h_goals = game.get("HomeGoals") or game.get("home_goal_count", 0)
+            
+            if status_code in ("4", "FINAL", "OFF"):
+                status = f"Final: {v_goals} - {h_goals}"
+            elif status_code in ("2", "3", "LIVE", "CRIT"):
+                status = f"🔴 LIVE ({game.get('GameClock', '')}): {v_goals} - {h_goals}"
             else:
-                status = "Scheduled"
+                status = f"Scheduled ({game.get('ScheduledFormattedTime', 'TBD')})"
                 
             embed.add_field(name=status, value=f"{a_str} @ {h_str}", inline=False)
             
         return embed
-
-    async def post_daily_schedule(self, channel: discord.TextChannel):
-        embed = await self.build_schedule_embed()
-        msg = await channel.send(embed=embed)
-        async with self.bot.db_pool.acquire() as conn:
-            async with conn.cursor() as cursor:
-                await cursor.execute("UPDATE guild_settings SET daily_schedule_message_id = %s WHERE guild_id = %s", (msg.id, channel.guild.id))
-
-    async def update_live_scores(self):
-        async with self.bot.db_pool.acquire() as conn:
-            async with conn.cursor() as cursor:
-                await cursor.execute("SELECT daily_schedule_message_id, daily_schedule_channel_id FROM guild_settings WHERE daily_schedule_message_id IS NOT NULL")
-                records = await cursor.fetchall()
-        if not records: return
-        updated_embed = await self.build_schedule_embed()
-        for m_id, c_id in records:
-            try:
-                ch = self.bot.get_channel(c_id)
-                if ch:
-                    msg = await ch.fetch_message(m_id)
-                    await msg.edit(embed=updated_embed)
-            except: continue
 
 async def setup(bot):
     cog = PWHL(bot)
