@@ -63,11 +63,10 @@ class HockeyLeagues(commands.Cog):
         app_commands.Choice(name="NHL", value="nhl"),
         app_commands.Choice(name="PWHL", value="pwhl")
     ])
-    @app_commands.describe(date="Override date for testing (YYYY-MM-DD)")
-    async def today_cmd(self, interaction: discord.Interaction, league: app_commands.Choice[str], date: str = None):
+    async def today_cmd(self, interaction: discord.Interaction, league: app_commands.Choice[str]):
         strat = await self.get_strat(interaction, league.value)
         if strat:
-            await strat.get_today_games(interaction, date_str=date)
+            await strat.get_today_games(interaction, date_str=None)
 
     @app_commands.command(name="yesterday", description="Get yesterday's scores")
     @app_commands.choices(league=[
@@ -84,35 +83,34 @@ class HockeyLeagues(commands.Cog):
         app_commands.Choice(name="NHL", value="nhl"),
         app_commands.Choice(name="PWHL", value="pwhl")
     ])
-    @app_commands.describe(date="Override date for testing (YYYY-MM-DD)")
-    async def standings_cmd(self, interaction: discord.Interaction, league: app_commands.Choice[str], date: str = None):
+    async def standings_cmd(self, interaction: discord.Interaction, league: app_commands.Choice[str]):
         strat = await self.get_strat(interaction, league.value)
         if strat:
-            await strat.get_standings(interaction, date_str=date)
+            await strat.get_standings(interaction, date_str=None)
 
     @app_commands.command(name="schedule", description="Get the schedule for a specific team")
     @app_commands.choices(league=[
         app_commands.Choice(name="NHL", value="nhl"),
         app_commands.Choice(name="PWHL", value="pwhl")
     ])
-    @app_commands.describe(abbreviation="Type or pick a team from the drop-down list", date="Override date/context if needed (YYYY-MM-DD)")
+    @app_commands.describe(abbreviation="Type or pick a team from the drop-down list")
     @app_commands.autocomplete(abbreviation=team_autocomplete)
-    async def schedule_cmd(self, interaction: discord.Interaction, league: app_commands.Choice[str], abbreviation: str, date: str = None):
+    async def schedule_cmd(self, interaction: discord.Interaction, league: app_commands.Choice[str], abbreviation: str):
         strat = await self.get_strat(interaction, league.value)
         if strat:
-            await strat.get_schedule(interaction, abbreviation, date_str=date)
+            await strat.get_schedule(interaction, abbreviation, date_str=None)
 
     @app_commands.command(name="game", description="Check live or past game stats for a team")
     @app_commands.choices(league=[
         app_commands.Choice(name="NHL", value="nhl"),
         app_commands.Choice(name="PWHL", value="pwhl")
     ])
-    @app_commands.describe(abbreviation="Type or pick a team from the drop-down list", date="Override date for testing (YYYY-MM-DD)")
+    @app_commands.describe(abbreviation="Type or pick a team from the drop-down list")
     @app_commands.autocomplete(abbreviation=team_autocomplete)
-    async def game_cmd(self, interaction: discord.Interaction, league: app_commands.Choice[str], abbreviation: str, date: str = None):
+    async def game_cmd(self, interaction: discord.Interaction, league: app_commands.Choice[str], abbreviation: str):
         strat = await self.get_strat(interaction, league.value)
         if strat:
-            await strat.get_game_info(interaction, abbreviation, date_str=date)
+            await strat.get_game_info(interaction, abbreviation, date_str=None)
 
     @app_commands.command(name="player", description="Gets the complete career overview of a player")
     @app_commands.choices(league=[
@@ -135,4 +133,4 @@ class HockeyLeagues(commands.Cog):
             await strat.get_all_teams(interaction)
 
 async def setup(bot):
-    await bot.add_cog(HockeyLeagues(bot), guilds=[discord.Object(id=config.hockey_discord_server)])
+    await bot.add_cog(HockeyLeagues(bot))
