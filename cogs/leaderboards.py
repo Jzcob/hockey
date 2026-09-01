@@ -261,6 +261,51 @@ class Leaderboards(commands.Cog, name="Leaderboards"):
                 await error_channel.send(f"<@920797181034778655>```{traceback.format_exc()}```")
                 await interaction.followup.send("An error occurred. The issue has been reported.", ephemeral=True)
 
+    @leaderboard.command(name="fantasy-history", description="View the fantasy league history.")
+    @app_commands.allowed_installs(guilds=True, users=True)
+    @app_commands.allowed_contexts(guilds=True, dms=True, private_channels=True)
+    @app_commands.describe(year="The year of the fantasy league history you want to view.")
+    @app_commands.choices(year=[
+        app_commands.Choice(name='2025-2026', value=2025)])
+    async def fantasy_history(self, interaction: discord.Interaction, year: int):
+        await self.log_command(interaction)
+        try:
+            await interaction.response.defer()
+            table_name = f"rosters_{year}" if year == 2025 else "rosters"
+            leaders = []
+            async with self.db_pool.acquire() as conn:
+                async with conn.cursor(aiomysql.DictCursor) as cursor:
+                    await cursor.execute(f"SELECT user_id, points FROM {table_name} ORDER BY points DESC LIMIT 10")
+                    leaders = await cursor.fetchall()
+
+            if not leaders:
+                if not interaction.is_expired():
+                    await interaction.followup.send(f"There are no players on the fantasy leaderboard for {year} yet!")
+                return
+
+            embed = discord.Embed(title=f"🏆 Fantasy League Leaderboard {year}", color=discord.Color.gold())
+            description = []
+            for rank, leader in enumerate(leaders, 1):
+                try:
+                    user = await self.bot.fetch_user(leader['user_id'])
+                    user_name = user.display_name
+                except discord.errors.NotFound:
+                    user_name = f"Unknown User ({leader['user_id']})"
+                
+                rank_emoji = "🥇" if rank == 1 else "🥈" if rank == 2 else "🥉" if rank == 3 else f"**{rank}.**"
+                description.append(f"{rank_emoji} {user_name} - **{leader['points']}** points")
+            
+            embed.description = "\n".join(description)
+            if not interaction.is_expired():
+                await interaction.followup.send(embed=embed)
+
+        except Exception as e:
+            if not interaction.is_expired():
+                error_channel = self.bot.get_channel(config.error_channel)
+                await error_channel.send(f"<@920797181034778655>```{traceback.format_exc()}```")
+                await interaction.followup.send("An error occurred. The issue has been reported.", ephemeral=True)
+        
+
 
 async def setup(bot):
     await bot.add_cog(Leaderboards(bot))

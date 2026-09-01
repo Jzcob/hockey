@@ -27,7 +27,7 @@ def get_nhl_teams():
         "New Jersey Devils", "New York Islanders", "New York Rangers",
         "Ottawa Senators", "Philadelphia Flyers", "Pittsburgh Penguins",
         "San Jose Sharks", "Seattle Kraken", "St. Louis Blues",
-        "Tampa Bay Lightning", "Toronto Maple Leafs", "Utah Hockey Club",
+        "Tampa Bay Lightning", "Toronto Maple Leafs", "Utah Mammoth",
         "Vancouver Canucks", "Vegas Golden Knights", "Washington Capitals", "Winnipeg Jets"
     ]
 
