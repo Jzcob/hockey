@@ -53,7 +53,6 @@ class Help(commands.Cog):
                 embed.add_field(name="`/info`", value="Shows the info menu!", inline=False)
                 embed.add_field(name="`/avatar`", value="Get the avatar of the bot or a user!", inline=False)
                 embed.add_field(name="`/suggest`", value="Suggest a new feature or improvement for the bot!", inline=False)
-                
             elif menu.value == "nhl":
                 embed.add_field(name="`/today [league] [date]`", value="Get today's schedule and scores (supports NHL & PWHL)!", inline=False)
                 embed.add_field(name="`/yesterday [league]`", value="Get yesterday's scores!", inline=False)
@@ -63,7 +62,6 @@ class Help(commands.Cog):
                 embed.add_field(name="`/standings <league> [date]`", value="Get the league standings!", inline=False)
                 embed.add_field(name="`/schedule <league> <abbreviation> [date]`", value="Get the schedule of a team!", inline=False)
                 embed.add_field(name="`/game <league> <abbreviation> [date]`", value="Get information about a game!", inline=False)
-                
             elif menu.value == "pwhl":
                 embed.add_field(name="`/today league:PWHL`", value="Get today's PWHL schedule and scores!", inline=False)
                 embed.add_field(name="`/yesterday league:PWHL`", value="Get yesterday's PWHL scores!", inline=False)
@@ -71,7 +69,6 @@ class Help(commands.Cog):
                 embed.add_field(name="`/schedule league:PWHL <abbreviation>`", value="Get the schedule for a PWHL team!", inline=False)
                 embed.add_field(name="`/game league:PWHL <abbreviation>`", value="Get live or past game stats for a PWHL team!", inline=False)
                 embed.add_field(name="`/teams league:PWHL`", value="Get all PWHL team codes and abbreviations!", inline=False)
-            
             elif menu.value == "games":
                 embed.add_field(name="`/guess-the-player`", value="Guess a random NHL player!", inline=False)
                 embed.add_field(name="`/guess-the-team`", value="Guess a random NHL team from scrambled letters!", inline=False)
@@ -80,7 +77,6 @@ class Help(commands.Cog):
                 embed.add_field(name="`/leaderboard <subcommand>`", value="View leaderboards (`trivia`, `gtp`, `fantasy`, `fantasy-history`) or manage your visibility (`trivia-status`, `gtp-status`).", inline=False)
                 embed.add_field(name="`/mypoints <subcommand>`", value="Check your points for a specific game (`trivia`, `gtp`, `fantasy`).", inline=False)
                 embed.add_field(name="`/suggest-trivia <question> <answer>`", value="Suggest a trivia question!", inline=False)
-
             elif menu.value == "hockey-bot-league":
                 embed.add_field(name="`/join fantasy` ACTIVE UNTIL SEPTEMBER 29TH", value="Join the fantasy league!", inline=False)
                 embed.add_field(name="`/my-roster`", value="View your current team selections, total points, and remaining swaps.", inline=False)
@@ -89,7 +85,6 @@ class Help(commands.Cog):
                 embed.add_field(name="`/leaderboard fantasy`", value="See how you stack up against the competition!", inline=False)
                 embed.add_field(name="`/leaderboard fantasy-history`", value="View past fantasy league history standings.", inline=False)
                 embed.add_field(name="`/mypoints fantasy`", value="Check your current point total in the fantasy league.", inline=False)
-
             elif menu.value == "moderation":
                 embed.description = (
                     "Here are the moderation commands you can use with this bot!\n\n"
