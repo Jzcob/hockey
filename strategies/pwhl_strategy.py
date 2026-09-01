@@ -33,7 +33,7 @@ PWHL_TEAMS = {
     "VAN": ("Vancouver Goldeneyes", "🦅"),
 }
 
-PWHL_API_KEY = os.getenv("PWHL_API_KEY")  # Default to a placeholder if not set
+PWHL_API_KEY = os.getenv("PWHL_API_KEY")  #API Key is publically available, but still stored in .env for consistency and future-proofing.
 PWHL_CLIENT_CODE = "pwhl"
 CURRENT_SEASON_ID = 5
 
