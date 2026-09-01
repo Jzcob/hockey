@@ -1,3 +1,4 @@
+import re
 import discord
 from discord.ext import commands
 from discord import app_commands
@@ -17,6 +18,17 @@ class SuggestTrivia(commands.Cog):
     @app_commands.allowed_installs(guilds=True, users=True)
     @app_commands.allowed_contexts(guilds=True, dms=True, private_channels=True)
     async def suggest_trivia(self, interaction: discord.Interaction, question: str, answer: str):
+        banned_users = ['gamernum21', 'jace0920']
+        if interaction.user.name in banned_users:
+            await interaction.response.send_message("You have been blacklisted from using this command due to inappropriate behavior.", ephemeral=True)
+            return
+        BLACKLIST_REGEX = re.compile(
+            r'\b(f[a@4]g{1,2}(s|ot)?|n[i!1]g{2,}[e3a@4]r(s|z)?|c[u*]nt|wh[o0]re|tr[a@]nny|r[e3]t[a@]rd|kys|kill\s*your\s*self)\b',
+            re.IGNORECASE
+        )
+        if BLACKLIST_REGEX.search(question) or BLACKLIST_REGEX.search(answer):
+            await interaction.response.send_message("Your suggestion contains inappropriate content.", ephemeral=True)
+            return
         if config.command_log_bool:
             try:
                 command_log_channel = self.bot.get_channel(config.command_log)
