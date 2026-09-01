@@ -367,4 +367,4 @@ class adminLeague(commands.Cog, name="adminLeague"):
             if not interaction.is_expired(): await interaction.followup.send("An error occurred while sending alerts. The issue has been reported.", ephemeral=True)
 
 async def setup(bot):
-    await bot.add_admin_cog = bot.add_cog(adminLeague(bot), guilds=[discord.Object(id=config.hockey_discord_server)])
+    await bot.add_cog(adminLeague(bot), guilds=[discord.Object(id=config.hockey_discord_server)])

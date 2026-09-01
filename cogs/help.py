@@ -20,6 +20,7 @@ class Help(commands.Cog):
     @app_commands.choices(menu=[
         app_commands.Choice(name="general", value="general"),
         app_commands.Choice(name="nhl", value="nhl"),
+        app_commands.Choice(name="pwhl", value="pwhl"),
         app_commands.Choice(name="games", value="games"),
         app_commands.Choice(name="hockey-bot-league", value="hockey-bot-league"),
         app_commands.Choice(name="moderation", value="moderation")
@@ -53,60 +54,69 @@ class Help(commands.Cog):
                 embed.add_field(name="`/avatar`", value="Get the avatar of the bot or a user!", inline=False)
                 embed.add_field(name="`/suggest`", value="Suggest a new feature or improvement for the bot!", inline=False)
                 
-            
             elif menu.value == "nhl":
-                #embed.add_field(name="`/bracket`", value="Get the NHL Playoff bracket!", inline=False)
-                embed.add_field(name="`/player <name>`", value="Gets the information of a player!", inline=False)
-                embed.add_field(name="`/team <abbreviation>`", value="Gets the information of a team!", inline=False)
-                embed.add_field(name="`/teams`", value="Lists all NHL teams!", inline=False)
-                embed.add_field(name="`/standings`", value="Get the NHL standings!", inline=False)
-                embed.add_field(name="`/schedule <abbreviation>`", value="Get the schedule of an NHL team!", inline=False)
-                embed.add_field(name="`/game <abbreviation>`", value="Get information about a game!", inline=False)
-                embed.add_field(name="`/today`", value="List today's games!", inline=False)
-                embed.add_field(name="`/tomorrow`", value="List tomorrow's games!", inline=False)
-                embed.add_field(name="`/yesterday`", value="List yesterday's games!", inline=False)
-                embed.add_field(name="`/set-schedule-channel <channel>`", value="Set the channel for daily NHL schedule messages!", inline=False)
-                embed.add_field(name="`/remove-schedule-channel`", value="Remove the channel for daily NHL schedule messages!", inline=False)
+                embed.add_field(name="`/today [league] [date]`", value="Get today's schedule and scores (supports NHL & PWHL)!", inline=False)
+                embed.add_field(name="`/yesterday [league]`", value="Get yesterday's scores!", inline=False)
+                embed.add_field(name="`/player <league> <name>`", value="Gets the information of a player!", inline=False)
+                embed.add_field(name="`/team <league> <abbreviation>`", value="Gets the information of a team!", inline=False)
+                embed.add_field(name="`/teams <league>`", value="Lists all team codes and abbreviations!", inline=False)
+                embed.add_field(name="`/standings <league> [date]`", value="Get the league standings!", inline=False)
+                embed.add_field(name="`/schedule <league> <abbreviation> [date]`", value="Get the schedule of a team!", inline=False)
+                embed.add_field(name="`/game <league> <abbreviation> [date]`", value="Get information about a game!", inline=False)
+                
+            elif menu.value == "pwhl":
+                embed.add_field(name="`/today league:PWHL`", value="Get today's PWHL schedule and scores!", inline=False)
+                embed.add_field(name="`/yesterday league:PWHL`", value="Get yesterday's PWHL scores!", inline=False)
+                embed.add_field(name="`/standings league:PWHL`", value="Get PWHL league standings!", inline=False)
+                embed.add_field(name="`/schedule league:PWHL <abbreviation>`", value="Get the schedule for a PWHL team!", inline=False)
+                embed.add_field(name="`/game league:PWHL <abbreviation>`", value="Get live or past game stats for a PWHL team!", inline=False)
+                embed.add_field(name="`/teams league:PWHL`", value="Get all PWHL team codes and abbreviations!", inline=False)
             
             elif menu.value == "games":
                 embed.add_field(name="`/guess-the-player`", value="Guess a random NHL player!", inline=False)
                 embed.add_field(name="`/guess-the-team`", value="Guess a random NHL team from scrambled letters!", inline=False)
                 embed.add_field(name="`/gtp-race`", value="Compete to guess a player the fastest against your server members!", inline=False)
-                
                 embed.add_field(name="`/trivia`", value="Answer trivia questions to earn points!", inline=False)
-                embed.add_field(name="`/leaderboard <subcommand>`", value="View leaderboards (`trivia`, `gtp`, `fantasy`) or manage your visibility (`trivia-status`, `gtp-status`).", inline=False)
+                embed.add_field(name="`/leaderboard <subcommand>`", value="View leaderboards (`trivia`, `gtp`, `fantasy`, `fantasy-history`) or manage your visibility (`trivia-status`, `gtp-status`).", inline=False)
                 embed.add_field(name="`/mypoints <subcommand>`", value="Check your points for a specific game (`trivia`, `gtp`, `fantasy`).", inline=False)
                 embed.add_field(name="`/suggest-trivia <question> <answer>`", value="Suggest a trivia question!", inline=False)
 
             elif menu.value == "hockey-bot-league":
-                #embed.add_field(name="`/join-league` ACTIVE UNTIL OCTOBER 7th", value="Start here! A two-step process to pick your 5 active and 3 bench teams.", inline=False)
+                embed.add_field(name="`/join fantasy` ACTIVE UNTIL SEPTEMBER 29TH", value="Join the fantasy league!", inline=False)
                 embed.add_field(name="`/my-roster`", value="View your current team selections, total points, and remaining swaps.", inline=False)
-                embed.add_field(name="`/swap-teams`", value="Use one of your 10 seasonal swaps.", inline=False)
+                embed.add_field(name="`/swap-teams`", value="Use one of your 10 seasonal swaps via interactive dropdowns.", inline=False)
                 embed.add_field(name="`/ace-team`", value="Choose your weekly x3 points multiplier team.", inline=False)
                 embed.add_field(name="`/leaderboard fantasy`", value="See how you stack up against the competition!", inline=False)
+                embed.add_field(name="`/leaderboard fantasy-history`", value="View past fantasy league history standings.", inline=False)
                 embed.add_field(name="`/mypoints fantasy`", value="Check your current point total in the fantasy league.", inline=False)
+
             elif menu.value == "moderation":
-                embed.description = ("Here are the moderation commands you can use with this bot!\n\n"
+                embed.description = (
+                    "Here are the moderation commands you can use with this bot!\n\n"
                     "<> = Required\n() = Optional\n\n"
                     "Have any questions?\nhttps://discord.gg/WGQYdzvn8y"
                 )
-                embed.add_field(name="`/warn <member> <reason>`", value="Warn a member of the server. *Requires `Manage Messages` permission*", inline=False)
-                embed.add_field(name="`/timeout <member> <duration> <reason>`", value="Timeout a member of the server. *Requires `Timeout Members` permission*", inline=False)
+                embed.add_field(name="`/warn <member> <reason>`", value="Warn a member of the server. *Requires `Moderate Members` permission*", inline=False)
+                embed.add_field(name="`/timeout <member> <duration> <reason>`", value="Timeout a member of the server. *Requires `Moderate Members` permission*", inline=False)
                 embed.add_field(name="`/kick <member> <reason>`", value="Kick a member from the server. *Requires `Kick Members` permission*", inline=False)
                 embed.add_field(name="`/ban <member> <reason>`", value="Ban a member from the server. *Requires `Ban Members` permission*", inline=False)
                 embed.add_field(name="`/punishments <member>`", value="View a member's history. (90-day limit for Free tier)", inline=False)
-                embed.add_field(name="`/add-note <member> <note>`", value="💎 **Referee Only:** Add a staff-only note to a user.", inline=False)
-                embed.add_field(name="`/remove-note <member> <note_id>`", value="💎 **Referee Only:** Remove a staff-only note from a user.", inline=False)
-                embed.add_field(name="`/view-notes <member>`", value="💎 **Referee Only:** View staff-only notes on a user.", inline=False)
-                embed.add_field(name="`/export-history`", value="💎 **Referee Only:** Download your server's full history to a CSV file.", inline=False)
-                embed.set_footer(text="Upgrade to the Referee Tier for permanent data storage!")
+                embed.add_field(name="`/set-logs <channel>`", value="Set the logging channel for server moderation actions. *Requires `Administrator` permission*", inline=False)
+                embed.add_field(name="`/add-note <member> <note>`", value="💎 **Premium:** Add a staff-only note to a user.", inline=False)
+                embed.add_field(name="`/remove-note <note_id>`", value="💎 **Premium:** Remove a staff-only note by its ID.", inline=False)
+                embed.add_field(name="`/view-notes <member>`", value="💎 **Premium:** View staff-only notes on a user.", inline=False)
+                embed.add_field(name="`/export-history (member)`", value="💎 **Premium:** Download full punishment history to a CSV file.", inline=False)
+                embed.set_footer(text="Upgrade to Premium for permanent data storage and notes!")
 
-            embed.set_footer(text=config.footer)
+            if menu.value != "moderation":
+                embed.set_footer(text=config.footer)
+                
             await interaction.response.send_message(embed=embed, ephemeral=True)
             
         except Exception as e:
             error_channel = self.bot.get_channel(config.error_channel)
-            await error_channel.send(f"<@920797181034778655>```{traceback.format_exc()}```")
+            if error_channel:
+                await error_channel.send(f"<@920797181034778655>```{traceback.format_exc()}```")
             await interaction.response.send_message(
                 "An error occurred while displaying the help menu. The issue has been reported.",
                 ephemeral=True
