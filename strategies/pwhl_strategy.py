@@ -10,6 +10,10 @@ import json
 import asyncio
 from thefuzz import fuzz
 import strategies.base_strategy as base_strategy
+import os
+from dotenv import load_dotenv
+
+load_dotenv()
 
 # Toggleable Debug Mode: Set to True to enable console logging, False to disable
 DEBUG_MODE = True
@@ -29,7 +33,7 @@ PWHL_TEAMS = {
     "VAN": ("Vancouver Goldeneyes", "🦅"),
 }
 
-PWHL_API_KEY = "446521baf8c38984"
+PWHL_API_KEY = os.getenv("PWHL_API_KEY")  # Default to a placeholder if not set
 PWHL_CLIENT_CODE = "pwhl"
 CURRENT_SEASON_ID = 5
 
