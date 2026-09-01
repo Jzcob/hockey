@@ -1,12 +1,9 @@
-# admin_cog.py
 import discord
 from discord.ext import commands
 from discord import app_commands, ui
-import mysql.connector
-from mysql.connector import pooling
+import aiomysql
 import os
 from dotenv import load_dotenv
-import random
 import traceback
 import config
 from datetime import datetime, timedelta
@@ -87,86 +84,41 @@ def fetch_game_results(start_date_str: str, end_date_str: str):
     print(f"API: Fetched {sum(len(v) for v in results.values())} total game results.")
     return results
 
-# --- UI View for Reset Confirmation ---
-class ConfirmResetView(ui.View):
-    def __init__(self, bot: commands.Bot):
-        super().__init__(timeout=60)
-        self.bot = bot
-        self.db_pool = bot.db_pool
-
-    @ui.button(label="Confirm & Reset Season", style=discord.ButtonStyle.danger)
-    async def confirm_button(self, interaction: discord.Interaction, button: ui.Button):
-        db_conn, cursor = None, None
-        try:
-            db_conn = self.db_pool.get_connection()
-            cursor = db_conn.cursor()
-            cursor.execute("TRUNCATE TABLE rosters")
-            db_conn.commit()
-            await interaction.response.edit_message(content="✅ **The league has been reset!** All rosters and points are cleared.", view=None)
-        except Exception:
-            error_channel = self.bot.get_channel(config.error_channel)
-            if error_channel: await error_channel.send(f"<@920797181034778655>```{traceback.format_exc()}```")
-            await interaction.response.edit_message(content="❌ An error occurred during the reset. The issue has been reported.", view=None)
-        finally:
-            if cursor: cursor.close()
-            if db_conn: db_conn.close()
-        self.stop()
-
-    @ui.button(label="Cancel", style=discord.ButtonStyle.secondary)
-    async def cancel_button(self, interaction: discord.Interaction, button: ui.Button):
-        await interaction.response.edit_message(content="Reset cancelled.", view=None)
-        self.stop()
-
 # --- Admin Cog ---
 class adminLeague(commands.Cog, name="adminLeague"):
     def __init__(self, bot: commands.Bot):
         self.bot = bot
-        try:
-            self.db_pool = pooling.MySQLConnectionPool(
-                pool_name="hockey_league_pool",
-                pool_size=5,
-                host=os.getenv("db_host"),
-                user=os.getenv("db_user"),
-                password=os.getenv("db_password"),
-                database=os.getenv("db_name")
-            )
-            bot.db_pool = self.db_pool
-            print("Admin Cog: Database connection pool established and attached to bot.")
-            self.create_table()
-        except mysql.connector.Error as err:
-            print(f"❌ FAILED to create database pool in Admin Cog: {err}")
-            self.db_pool = None
-            bot.db_pool = None
+        # Note: aiomysql pool initialization is typically handled in main.py, 
+        # but if this setup manages it asynchronously, ensure bot.db_pool is set.
+        self.db_pool = getattr(bot, "db_pool", None)
         print("Grabbing a Dunkin' iced coffee for the admin... ☕")
 
     @commands.Cog.listener()
     async def on_ready(self):
         print(f"LOADED: `admin_cog.py`")
+        await self.create_table()
 
-    def create_table(self):
-        db_conn, cursor = None, None
+    async def create_table(self):
+        if not self.db_pool:
+            return
         try:
-            db_conn = self.db_pool.get_connection()
-            cursor = db_conn.cursor()
-            cursor.execute("""
-                CREATE TABLE IF NOT EXISTS rosters (
-                    user_id BIGINT PRIMARY KEY,
-                    team_one VARCHAR(255), team_two VARCHAR(255), team_three VARCHAR(255),
-                    team_four VARCHAR(255), team_five VARCHAR(255),
-                    bench_one VARCHAR(255), bench_two VARCHAR(255), bench_three VARCHAR(255),
-                    points INT DEFAULT 0, swaps_used TINYINT DEFAULT 0,
-                    aced_team_slot VARCHAR(50) NULL
-                )
-            """)
-            print("Admin Cog: Rosters table is ready.")
-        except mysql.connector.Error as err:
+            async with self.db_pool.acquire() as conn:
+                async with conn.cursor() as cursor:
+                    await cursor.execute("""
+                        CREATE TABLE IF NOT EXISTS rosters (
+                            user_id BIGINT PRIMARY KEY,
+                            team_one VARCHAR(255), team_two VARCHAR(255), team_three VARCHAR(255),
+                            team_four VARCHAR(255), team_five VARCHAR(255),
+                            bench_one VARCHAR(255), bench_two VARCHAR(255), bench_three VARCHAR(255),
+                            points INT DEFAULT 0, swaps_used TINYINT DEFAULT 0,
+                            aced_team_slot VARCHAR(50) NULL
+                        )
+                    """)
+                    print("Admin Cog: Rosters table is ready.")
+        except Exception as err:
             print(f"Admin Cog: Failed to create table: {err}")
-        finally:
-            if cursor: cursor.close()
-            if db_conn: db_conn.close()
     
     async def log_command(self, interaction: discord.Interaction):
-        # Your logging logic here
         pass
 
     @app_commands.command(name="remove_user", description="Removes a user from the fantasy league.")
@@ -174,14 +126,14 @@ class adminLeague(commands.Cog, name="adminLeague"):
     @app_commands.describe(user="The user to remove from the league.")
     async def remove_user(self, interaction: discord.Interaction, user: discord.User):
         await interaction.response.defer(ephemeral=True)
-        db_conn, cursor = None, None
         try:
-            db_conn = self.db_pool.get_connection()
-            cursor = db_conn.cursor()
-            cursor.execute("DELETE FROM rosters WHERE user_id = %s", (user.id,))
-            db_conn.commit()
+            async with self.db_pool.acquire() as conn:
+                async with conn.cursor() as cursor:
+                    await cursor.execute("DELETE FROM rosters WHERE user_id = %s", (user.id,))
+                    await conn.commit()
+                    rowcount = cursor.rowcount
 
-            if cursor.rowcount > 0:
+            if rowcount > 0:
                 await interaction.followup.send(f"✅ Successfully removed **{user.display_name}** from the league.", ephemeral=True)
             else:
                 await interaction.followup.send(f"⚠️ **{user.display_name}** was not found in the league.", ephemeral=True)
@@ -189,9 +141,6 @@ class adminLeague(commands.Cog, name="adminLeague"):
             error_channel = self.bot.get_channel(config.error_channel)
             if error_channel: await error_channel.send(f"<@920797181034778655>```{traceback.format_exc()}```")
             if not interaction.is_expired(): await interaction.followup.send("An error occurred. The issue has been reported.", ephemeral=True)
-        finally:
-            if cursor: cursor.close()
-            if db_conn: db_conn.close()
 
     @app_commands.command(name="calculate_points", description="Backs up data, then calculates points for a specified date range.")
     @app_commands.default_permissions(administrator=True)
@@ -201,13 +150,14 @@ class adminLeague(commands.Cog, name="adminLeague"):
     )
     async def calculate_points(self, interaction: discord.Interaction, start_date: str, end_date: str):
         await interaction.response.defer(ephemeral=True)
+        
         # --- 1. BACKUP DATABASE ---
-        db_conn_backup, cursor_backup = None, None
         try:
-            db_conn_backup = self.db_pool.get_connection()
-            cursor_backup = db_conn_backup.cursor(dictionary=True)
-            cursor_backup.execute("SELECT * FROM rosters")
-            all_rosters_backup = cursor_backup.fetchall()
+            async with self.db_pool.acquire() as conn:
+                async with conn.cursor(aiomysql.DictCursor) as cursor_backup:
+                    await cursor_backup.execute("SELECT * FROM rosters")
+                    all_rosters_backup = await cursor_backup.fetchall()
+                    
             if all_rosters_backup:
                 timestamp = datetime.now().strftime("%Y-%m-%d_%H-%M-%S")
                 backup_filename = f"rosters_backup_{timestamp}.sql"
@@ -228,12 +178,8 @@ class adminLeague(commands.Cog, name="adminLeague"):
             error_channel = self.bot.get_channel(config.error_channel)
             if error_channel: await error_channel.send(f"<@920797181034778655>```{traceback.format_exc()}```")
             return
-        finally:
-            if cursor_backup: cursor_backup.close()
-            if db_conn_backup: db_conn_backup.close()
 
         # --- 2. PROCEED WITH POINT CALCULATION ---
-        db_conn_calc, cursor_calc = None, None
         try:
             try:
                 datetime.strptime(start_date, '%Y-%m-%d')
@@ -249,50 +195,47 @@ class adminLeague(commands.Cog, name="adminLeague"):
                 if not interaction.is_expired(): await interaction.followup.send(f"No completed game results found for the period `{start_date}` to `{end_date}`.", ephemeral=True)
                 return
 
-            db_conn_calc = self.db_pool.get_connection()
-            cursor_calc = db_conn_calc.cursor(dictionary=True)
-            cursor_calc.execute("SELECT * FROM rosters")
-            all_rosters = cursor_calc.fetchall()
+            async with self.db_pool.acquire() as conn:
+                async with conn.cursor(aiomysql.DictCursor) as cursor_calc:
+                    await cursor_calc.execute("SELECT * FROM rosters")
+                    all_rosters = await cursor_calc.fetchall()
 
-            if not all_rosters:
-                if not interaction.is_expired(): await interaction.followup.send("No rosters found to calculate points for.", ephemeral=True)
-                return
+                    if not all_rosters:
+                        if not interaction.is_expired(): await interaction.followup.send("No rosters found to calculate points for.", ephemeral=True)
+                        return
 
-            total_points_awarded, players_updated = 0, 0
-            for roster in all_rosters:
-                period_points = 0
-                active_teams = ['team_one', 'team_two', 'team_three', 'team_four', 'team_five']
-                for slot in active_teams:
-                    team_name = roster.get(slot)
-                    if team_name and team_name in game_results:
-                        for result in game_results[team_name]:
-                            points_for_game = {'win': WIN_POINTS, 'ot_loss': OT_LOSS_POINTS, 'loss': LOSS_POINTS}.get(result, 0)
-                            if roster.get('aced_team_slot') == slot:
-                                points_for_game *= ACE_MULTIPLIER
-                            period_points += points_for_game
-                
-                if period_points != 0:
-                    cursor_calc.execute("UPDATE rosters SET points = points + %s WHERE user_id = %s", (period_points, roster['user_id']))
-                    total_points_awarded += period_points
-                    players_updated += 1
-            
-            db_conn_calc.commit()
+                    total_points_awarded, players_updated = 0, 0
+                    for roster in all_rosters:
+                        period_points = 0
+                        active_teams = ['team_one', 'team_two', 'team_three', 'team_four', 'team_five']
+                        for slot in active_teams:
+                            team_name = roster.get(slot)
+                            if team_name and team_name in game_results:
+                                for result in game_results[team_name]:
+                                    points_for_game = {'win': WIN_POINTS, 'ot_loss': OT_LOSS_POINTS, 'loss': LOSS_POINTS}.get(result, 0)
+                                    if roster.get('aced_team_slot') == slot:
+                                        points_for_game *= ACE_MULTIPLIER
+                                    period_points += points_for_game
+                        
+                        if period_points != 0:
+                            await cursor_calc.execute("UPDATE rosters SET points = points + %s WHERE user_id = %s", (period_points, roster['user_id']))
+                            total_points_awarded += period_points
+                            players_updated += 1
+                    
+                    await conn.commit()
             
             view = ui.View(timeout=180)
             reset_aces_button = ui.Button(label="Reset Weekly Aces", style=discord.ButtonStyle.primary, emoji="✨")
             async def reset_aces_callback(callback_interaction: discord.Interaction):
-                db_conn_inner, cursor_inner = None, None
                 try:
-                    db_conn_inner = self.db_pool.get_connection()
-                    cursor_inner = db_conn_inner.cursor()
-                    cursor_inner.execute("UPDATE rosters SET aced_team_slot = NULL")
-                    db_conn_inner.commit()
+                    async with self.db_pool.acquire() as conn_inner:
+                        async with conn_inner.cursor() as cursor_inner:
+                            await cursor_inner.execute("UPDATE rosters SET aced_team_slot = NULL")
+                            await conn_inner.commit()
                     await callback_interaction.response.send_message("✅ All player aces have been reset.", ephemeral=True)
                 except Exception:
                     await callback_interaction.response.send_message("❌ A database error occurred. The issue has been reported.", ephemeral=True)
-                finally:
-                    if cursor_inner: cursor_inner.close()
-                    if db_conn_inner: db_conn_inner.close()
+            
             reset_aces_button.callback = reset_aces_callback
             view.add_item(reset_aces_button)
 
@@ -305,9 +248,6 @@ class adminLeague(commands.Cog, name="adminLeague"):
             error_channel = self.bot.get_channel(config.error_channel)
             if error_channel: await error_channel.send(f"<@920797181034778655>```{traceback.format_exc()}```")
             if not interaction.is_expired(): await interaction.followup.send("An error occurred during point calculation. The issue has been reported.", ephemeral=True)
-        finally:
-            if cursor_calc: cursor_calc.close()
-            if db_conn_calc: db_conn_calc.close()
 
     @app_commands.command(name="league_admin", description="Manage the global hockey league.")
     @app_commands.default_permissions(administrator=True)
@@ -316,47 +256,35 @@ class adminLeague(commands.Cog, name="adminLeague"):
         try:
             view = ui.View(timeout=180)
 
-            """reset_button = ui.Button(label="Reset League Season", style=discord.ButtonStyle.danger, emoji="🔄")
-            async def reset_callback(callback_interaction: discord.Interaction):
-                confirm_view = ConfirmResetView(self.bot)
-                await callback_interaction.response.send_message(
-                    "⚠️ **Are you sure?** This deletes all rosters and points.", view=confirm_view, ephemeral=True)
-            reset_button.callback = reset_callback
-            view.add_item(reset_button)"""
-
             reset_aces_button = ui.Button(label="Reset Weekly Aces", style=discord.ButtonStyle.primary, emoji="✨")
             async def reset_aces_callback(callback_interaction: discord.Interaction):
-                db_conn, cursor = None, None
                 try:
-                    db_conn = self.db_pool.get_connection()
-                    cursor = db_conn.cursor()
-                    cursor.execute("UPDATE rosters SET aced_team_slot = NULL")
-                    db_conn.commit()
+                    async with self.db_pool.acquire() as conn:
+                        async with conn.cursor() as cursor:
+                            await cursor.execute("UPDATE rosters SET aced_team_slot = NULL")
+                            await conn.commit()
                     await callback_interaction.response.send_message("✅ All player aces have been reset.", ephemeral=True)
                 except Exception:
                     await callback_interaction.response.send_message("❌ A database error occurred. The issue has been reported.", ephemeral=True)
-                finally:
-                    if cursor: cursor.close()
-                    if db_conn: db_conn.close()
+            
             reset_aces_button.callback = reset_aces_callback
             view.add_item(reset_aces_button)
 
             stats_button = ui.Button(label="League Stats", style=discord.ButtonStyle.secondary, emoji="📊")
             async def stats_callback(callback_interaction: discord.Interaction):
-                db_conn, cursor = None, None
                 try:
-                    db_conn = self.db_pool.get_connection()
-                    cursor = db_conn.cursor(dictionary=True)
-                    cursor.execute("SELECT COUNT(user_id) AS count FROM rosters")
-                    player_count = cursor.fetchone()['count']
+                    async with self.db_pool.acquire() as conn:
+                        async with conn.cursor(aiomysql.DictCursor) as cursor:
+                            await cursor.execute("SELECT COUNT(user_id) AS count FROM rosters")
+                            res = await cursor.fetchone()
+                            player_count = res['count'] if res else 0
+                    
                     embed = discord.Embed(title="🏒 Global League Stats", color=discord.Color.blue())
                     embed.add_field(name="Total Players", value=str(player_count))
                     await callback_interaction.response.send_message(embed=embed, ephemeral=True)
                 except Exception:
                     await callback_interaction.response.send_message("❌ A database error occurred. The issue has been reported.", ephemeral=True)
-                finally:
-                    if cursor: cursor.close()
-                    if db_conn: db_conn.close()
+            
             stats_button.callback = stats_callback
             view.add_item(stats_button)
 
@@ -374,12 +302,12 @@ class adminLeague(commands.Cog, name="adminLeague"):
     async def alert_custom(self, interaction: discord.Interaction, message: str):
         await self.log_command(interaction)
         await interaction.response.defer(ephemeral=True)
-        db_conn, cursor = None, None
         try:
-            db_conn = self.db_pool.get_connection()
-            cursor = db_conn.cursor(dictionary=True)
-            cursor.execute("SELECT user_id FROM rosters")
-            user_ids = [row['user_id'] for row in cursor.fetchall()]
+            async with self.db_pool.acquire() as conn:
+                async with conn.cursor(aiomysql.DictCursor) as cursor:
+                    await cursor.execute("SELECT user_id FROM rosters")
+                    rows = await cursor.fetchall()
+                    user_ids = [row['user_id'] for row in rows]
 
             if not user_ids:
                 if not interaction.is_expired(): await interaction.followup.send("There are no users in the league to alert.", ephemeral=True)
@@ -399,22 +327,18 @@ class adminLeague(commands.Cog, name="adminLeague"):
             error_channel = self.bot.get_channel(config.error_channel)
             if error_channel: await error_channel.send(f"<@920797181034778655>```{traceback.format_exc()}```")
             if not interaction.is_expired(): await interaction.followup.send("An error occurred. The issue has been reported.", ephemeral=True)
-        finally:
-            if cursor: cursor.close()
-            if db_conn: db_conn.close()
 
     @alert.command(name="incomplete-roster", description="Alerts users who haven't set their bench teams.")
     @app_commands.default_permissions(administrator=True)
     async def alert_incomplete(self, interaction: discord.Interaction):
         await self.log_command(interaction)
         await interaction.response.defer(ephemeral=True)
-        db_conn, cursor = None, None
         try:
-            db_conn = self.db_pool.get_connection()
-            cursor = db_conn.cursor(dictionary=True)
-            cursor.execute("SELECT user_id FROM rosters WHERE bench_one IS NULL")
-            user_ids = [row['user_id'] for row in cursor.fetchall()]
-
+            async with self.db_pool.acquire() as conn:
+                async with conn.cursor(aiomysql.DictCursor) as cursor:
+                    await cursor.execute("SELECT user_id FROM rosters WHERE bench_one IS NULL")
+                    rows = await cursor.fetchall()
+                    user_ids = [row['user_id'] for row in rows]
 
             if not user_ids:
                 if not interaction.is_expired(): await interaction.followup.send("No users found with incomplete rosters.", ephemeral=True)
@@ -441,10 +365,6 @@ class adminLeague(commands.Cog, name="adminLeague"):
             error_channel = self.bot.get_channel(config.error_channel)
             if error_channel: await error_channel.send(f"<@920797181034778655>```{traceback.format_exc()}```")
             if not interaction.is_expired(): await interaction.followup.send("An error occurred while sending alerts. The issue has been reported.", ephemeral=True)
-        finally:
-            if cursor: cursor.close()
-            if db_conn: db_conn.close()
-
 
 async def setup(bot):
-    await bot.add_cog(adminLeague(bot), guilds=[discord.Object(id=config.hockey_discord_server)])
+    await bot.add_admin_cog = bot.add_cog(adminLeague(bot), guilds=[discord.Object(id=config.hockey_discord_server)])
