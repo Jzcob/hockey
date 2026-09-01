@@ -275,7 +275,7 @@ class Leaderboards(commands.Cog, name="Leaderboards"):
             leaders = []
             async with self.db_pool.acquire() as conn:
                 async with conn.cursor(aiomysql.DictCursor) as cursor:
-                    await cursor.execute(f"SELECT user_id, points FROM {table_name} ORDER BY points DESC LIMIT 10")
+                    await cursor.execute(f"SELECT user_id, points FROM {table_name} ORDER BY points DESC")
                     leaders = await cursor.fetchall()
 
             if not leaders:
