@@ -56,7 +56,7 @@ class GameStatsView(discord.ui.View):
         embed.set_thumbnail(url=team_data.get('logo'))
 
         try:
-            def fmt(p): return f"#{p['sweaterNumber']} {p['name']['default']} ({p.get('goals',0)}G, {p.get('assists',0)}A)"
+            def fmt(p): return f"#{p['sweaterNumber']} {p['name']['default']} ({(p.get('goals') or 0)}G, {(p.get('assists') or 0)}A)"
             fwd = "\n".join([fmt(p) for p in stats_data.get('forwards', [])])
             dfe = "\n".join([fmt(p) for p in stats_data.get('defense', [])])
             embed.add_field(name="Forwards", value=fwd[:1024] if fwd else "N/A", inline=False)
@@ -96,30 +96,28 @@ class NHL(commands.GroupCog, name="nhl"):
     # --- DISCORD COMMAND INTERFACES ---
 
     @app_commands.command(name="today", description="Get today's NHL schedule and scores")
-    @app_commands.describe(date="Override date for testing (YYYY-MM-DD)")
-    async def today_cmd(self, interaction: discord.Interaction, date: str = None):
-        await self.get_today_games(interaction, date_str=date)
+    async def today_cmd(self, interaction: discord.Interaction):
+        await self.get_today_games(interaction, date_str=None)
 
     @app_commands.command(name="yesterday", description="Get yesterday's NHL scores")
     async def yesterday_cmd(self, interaction: discord.Interaction):
         await self.get_yesterday_games(interaction)
 
     @app_commands.command(name="standings", description="Get the NHL standings")
-    @app_commands.describe(date="Override date for testing (YYYY-MM-DD)")
-    async def standings_cmd(self, interaction: discord.Interaction, date: str = None):
-        await self.get_standings(interaction, date_str=date)
+    async def standings_cmd(self, interaction: discord.Interaction):
+        await self.get_standings(interaction, date_str=None)
 
     @app_commands.command(name="schedule", description="Get the schedule for the week for an NHL team")
-    @app_commands.describe(abbreviation="Type or pick a team from the drop-down list", date="Override date/week context (YYYY-MM-DD)")
+    @app_commands.describe(abbreviation="Type or pick a team from the drop-down list")
     @app_commands.autocomplete(abbreviation=nhl_team_autocomplete)
-    async def schedule_cmd(self, interaction: discord.Interaction, abbreviation: str, date: str = None):
-        await self.get_schedule(interaction, abbreviation, date_str=date)
+    async def schedule_cmd(self, interaction: discord.Interaction, abbreviation: str):
+        await self.get_schedule(interaction, abbreviation, date_str=None)
 
     @app_commands.command(name="game", description="Check live or past game stats for an NHL team")
-    @app_commands.describe(abbreviation="Type or pick a team from the drop-down list", date="Override date for testing (YYYY-MM-DD)")
+    @app_commands.describe(abbreviation="Type or pick a team from the drop-down list")
     @app_commands.autocomplete(abbreviation=nhl_team_autocomplete)
-    async def game_cmd(self, interaction: discord.Interaction, abbreviation: str, date: str = None):
-        await self.get_game_info(interaction, abbreviation, date_str=date)
+    async def game_cmd(self, interaction: discord.Interaction, abbreviation: str):
+        await self.get_game_info(interaction, abbreviation, date_str=None)
 
     @app_commands.command(name="player", description="Gets the complete career overview of an NHL player")
     async def player_cmd(self, interaction: discord.Interaction, name: str):
@@ -156,7 +154,8 @@ class NHL(commands.GroupCog, name="nhl"):
         base_strategy.log_command(self.bot, interaction, "nhl standings")
         try:
             if not date_str:
-                date_str = datetime.today().strftime('%Y-%m-%d')
+                hawaii = pytz.timezone('US/Hawaii')
+                date_str = datetime.now(hawaii).strftime('%Y-%m-%d')
             data = requests.get(f"https://api-web.nhle.com/v1/standings/{date_str}").json()
             
             divisions = {"Atlantic": [], "Metropolitan": [], "Central": [], "Pacific": []}
@@ -165,7 +164,11 @@ class NHL(commands.GroupCog, name="nhl"):
                 if div in divisions:
                     emoji_name = self.get_division_string(record['teamName']['default'])
                     wildcard = "🃏" if record.get("wildcardSequence") in [1, 2] else ""
-                    divisions[div].append(f"{emoji_name} ({record['wins']}-{record['losses']}-{record['otLosses']}) {record['points']}pts {wildcard}")
+                    wins = record.get('wins') or 0
+                    losses = record.get('losses') or 0
+                    ot_losses = record.get('otLosses') or 0
+                    points = record.get('points') or 0
+                    divisions[div].append(f"{emoji_name} ({wins}-{losses}-{ot_losses}) {points}pts {wildcard}")
 
             embed = discord.Embed(title=f"NHL Standings Overview ({date_str})", color=config.color)
             embed.set_thumbnail(url="https://www-league.nhlstatic.com/images/logos/league-dark/133-flat.svg")
@@ -225,7 +228,9 @@ class NHL(commands.GroupCog, name="nhl"):
 
             embed = discord.Embed(title=f"{a_n} @ {h_n} ({date_str})", color=config.color)
             embed.add_field(name="Current State", value=b_data.get('gameState', 'FUT'), inline=True)
-            embed.add_field(name="Scoreboard Status", value=f"{a_t.get('score',0)} - {h_t.get('score',0)}", inline=True)
+            away_score = a_t.get('score') or 0
+            home_score = h_t.get('score') or 0
+            embed.add_field(name="Scoreboard Status", value=f"{away_score} - {home_score}", inline=True)
             
             view = GameStatsView(b_data, embed)
             await interaction.followup.send(embed=embed, view=view)
@@ -263,7 +268,11 @@ class NHL(commands.GroupCog, name="nhl"):
             embed.add_field(name="Place of Origin", value=f"{p_data.get('birthCity', {}).get('default', 'Unknown')}, {p_data.get('birthCountry', '')}")
             
             c_stats = p_data.get("featuredStats", {}).get("regularSeason", {}).get("career", {})
-            embed.add_field(name="Career Summary (GP/G/A/PTS)", value=f"`{c_stats.get('gamesPlayed','N/A')}` GP | `{c_stats.get('goals','N/A')}` G | `{c_stats.get('assists','N/A')}` A | `{c_stats.get('points','N/A')}` PTS", inline=False)
+            gp = c_stats.get('gamesPlayed') or 'N/A'
+            g = c_stats.get('goals') or 'N/A'
+            a = c_stats.get('assists') or 'N/A'
+            pts = c_stats.get('points') or 'N/A'
+            embed.add_field(name="Career Summary (GP/G/A/PTS)", value=f"`{gp}` GP | `{g}` G | `{a}` A | `{pts}` PTS", inline=False)
             await interaction.followup.send(embed=embed)
         except Exception:
             await interaction.followup.send("Roster parser error.")
@@ -306,12 +315,14 @@ class NHL(commands.GroupCog, name="nhl"):
         for game in games:
             h_t, a_t = game["homeTeam"], game["awayTeam"]
             a_str, h_str = self.format_team_strings(a_t["abbrev"], h_t["abbrev"], h_t.get("commonName",{}).get("default","TBD"), a_t.get("commonName",{}).get("default","TBD"))
-            status = f"Final: {a_t.get('score',0)} - {h_t.get('score',0)}" if game["gameState"] in ("FINAL", "OFF") else f"🔴 LIVE: {a_t.get('score',0)} - {h_t.get('score',0)}" if game["gameState"] in ("LIVE", "CRIT") else "Scheduled"
+            away_score = a_t.get('score') or 0
+            home_score = h_t.get('score') or 0
+            status = f"Final: {away_score} - {home_score}" if game["gameState"] in ("FINAL", "OFF") else f"🔴 LIVE: {away_score} - {home_score}" if game["gameState"] in ("LIVE", "CRIT") else "Scheduled"
             embed.add_field(name=status, value=f"{a_str} @ {h_str}", inline=False)
         return embed
 
 async def setup(bot):
     cog = NHL(bot)
-    await bot.add_cog(cog, guilds=[discord.Object(id=config.hockey_discord_server)])
+    await bot.add_cog(cog)
 
 NHLStrategy = NHL

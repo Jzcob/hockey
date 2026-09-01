@@ -33,7 +33,7 @@ PWHL_TEAMS = {
     "VAN": ("Vancouver Goldeneyes", "🦅"),
 }
 
-PWHL_API_KEY = os.getenv("PWHL_API_KEY")  #API Key is publically available, but still stored in .env for consistency and future-proofing.
+PWHL_API_KEY = os.getenv("PWHL_API_KEY") 
 PWHL_CLIENT_CODE = "pwhl"
 CURRENT_SEASON_ID = 5
 
@@ -72,8 +72,8 @@ class PWHLGameStatsView(discord.ui.View):
                 fname = p.get('first_name', '')
                 lname = p.get('last_name', '')
                 pos = p.get('position_str', 'F')
-                g = p.get('goals', 0)
-                a = p.get('assists', 0)
+                g = p.get('goals') or 0
+                a = p.get('assists') or 0
                 skater_lines.append(f"#{num} **{fname} {lname}** ({pos}) - {g}G, {a}A")
             
             formatted_skaters = "\n".join(skater_lines[:20])
@@ -85,8 +85,8 @@ class PWHLGameStatsView(discord.ui.View):
                 num = g.get('jersey_number', '00')
                 fname = g.get('first_name', '')
                 lname = g.get('last_name', '')
-                saves = g.get('saves', 0)
-                ga = g.get('goals_against', 0)
+                saves = g.get('saves') or 0
+                ga = g.get('goals_against') or 0
                 time_str = g.get('time', '0:00')
                 goalie_lines.append(f"#{num} **{fname} {lname}** - {saves} SV / {ga} GA ({time_str})")
             
@@ -158,30 +158,28 @@ class PWHL(commands.GroupCog, name="pwhl"):
     # --- DISCORD COMMAND INTERFACES ---
 
     @app_commands.command(name="today", description="Get today's PWHL schedule and scores")
-    @app_commands.describe(date="Override date for testing (YYYY-MM-DD)")
-    async def today_cmd(self, interaction: discord.Interaction, date: str = None):
-        await self.get_today_games(interaction, date_str=date)
+    async def today_cmd(self, interaction: discord.Interaction):
+        await self.get_today_games(interaction, date_str=None)
 
     @app_commands.command(name="yesterday", description="Get yesterday's PWHL scores")
     async def yesterday_cmd(self, interaction: discord.Interaction):
         await self.get_yesterday_games(interaction)
 
     @app_commands.command(name="standings", description="Get the PWHL standings")
-    @app_commands.describe(date="Override date for testing (YYYY-MM-DD)")
-    async def standings_cmd(self, interaction: discord.Interaction, date: str = None):
-        await self.get_standings(interaction, date_str=date)
+    async def standings_cmd(self, interaction: discord.Interaction):
+        await self.get_standings(interaction, date_str=None)
 
     @app_commands.command(name="schedule", description="Get the schedule for a PWHL team")
-    @app_commands.describe(abbreviation="Type or pick a team from the drop-down list", date="Override date/month context if needed")
+    @app_commands.describe(abbreviation="Type or pick a team from the drop-down list")
     @app_commands.autocomplete(abbreviation=pwhl_team_autocomplete)
-    async def schedule_cmd(self, interaction: discord.Interaction, abbreviation: str, date: str = None):
-        await self.get_schedule(interaction, abbreviation, date_str=date)
+    async def schedule_cmd(self, interaction: discord.Interaction, abbreviation: str):
+        await self.get_schedule(interaction, abbreviation, date_str=None)
 
     @app_commands.command(name="game", description="Check live or past game stats for a PWHL team")
-    @app_commands.describe(abbreviation="Type or pick a team from the drop-down list", date="Override date for testing (YYYY-MM-DD)")
+    @app_commands.describe(abbreviation="Type or pick a team from the drop-down list")
     @app_commands.autocomplete(abbreviation=pwhl_team_autocomplete)
-    async def game_cmd(self, interaction: discord.Interaction, abbreviation: str, date: str = None):
-        await self.get_game_info(interaction, abbreviation, date_str=date)
+    async def game_cmd(self, interaction: discord.Interaction, abbreviation: str):
+        await self.get_game_info(interaction, abbreviation, date_str=None)
 
     @app_commands.command(name="player", description="Gets the complete career overview of a PWHL player")
     async def player_cmd(self, interaction: discord.Interaction, name: str):
@@ -245,10 +243,10 @@ class PWHL(commands.GroupCog, name="pwhl"):
                 team_code = record.get("team_code", "UNK")
                 name = record.get("team_name") or record.get("name", team_code)
                 emoji = self.get_team_emoji(team_code)
-                wins = record.get("wins", 0)
-                losses = record.get("losses", 0)
-                ot_losses = record.get("ot_losses", 0)
-                points = record.get("points", 0)
+                wins = record.get("wins") or 0
+                losses = record.get("losses") or 0
+                ot_losses = record.get("ot_losses") or 0
+                points = record.get("points") or 0
                 
                 lines.append(f"{emoji} **{name}** ({wins}-{losses}-{ot_losses}) - **{points}** pts")
 
@@ -356,8 +354,8 @@ class PWHL(commands.GroupCog, name="pwhl"):
                             "game_id": g.get("ID") or g.get("game_id"),
                             "home_team_name": g.get("HomeLongName") or g.get("HomeCity"),
                             "visiting_team_name": g.get("VisitorLongName") or g.get("VisitorCity"),
-                            "home_goal_count": g.get("HomeGoals", 0),
-                            "visiting_goal_count": g.get("VisitorGoals", 0),
+                            "home_goal_count": g.get("HomeGoals") or 0,
+                            "visiting_goal_count": g.get("VisitorGoals") or 0,
                             "status": g.get("GameStatus"),
                             "status_string": g.get("GameStatusStringLong") or g.get("GameStatusString")
                         }
@@ -381,8 +379,8 @@ class PWHL(commands.GroupCog, name="pwhl"):
                                             "game_id": row.get("game_id"),
                                             "home_team_name": row.get("home_team_city"),
                                             "visiting_team_name": row.get("visiting_team_city"),
-                                            "home_goal_count": row.get("home_goal_count", 0),
-                                            "visiting_goal_count": row.get("visiting_goal_count", 0),
+                                            "home_goal_count": row.get("home_goal_count") or 0,
+                                            "visiting_goal_count": row.get("visiting_goal_count") or 0,
                                             "status_string": row.get("game_status")
                                         }
                                         break
@@ -400,8 +398,8 @@ class PWHL(commands.GroupCog, name="pwhl"):
             a_t = target_game.get("visiting_team_name") or parsed_gc.get("visitor", {}).get("name", "Away")
             
             status = target_game.get("status_string") or parsed_gc.get("status_value", "Final")
-            v_score = meta.get("visiting_goal_count") or target_game.get("visiting_goal_count", 0)
-            h_score = meta.get("home_goal_count") or target_game.get("home_goal_count", 0)
+            v_score = meta.get("visiting_goal_count") or target_game.get("visiting_goal_count") or 0
+            h_score = meta.get("home_goal_count") or target_game.get("home_goal_count") or 0
 
             embed = discord.Embed(title=f"{a_t} @ {h_t} ({date_str})", color=config.color)
             embed.add_field(name="Current State", value=status, inline=True)
@@ -434,11 +432,9 @@ class PWHL(commands.GroupCog, name="pwhl"):
             p_data = self.fetch_ht_api(feed="modulekit", view="player", category="profile", player_id=player_id)
             p_site_kit = p_data.get("SiteKit", {})
             
-            # Extract player object safely regardless of capitalization
             player_obj = p_site_kit.get("Player") or p_site_kit.get("player") or {}
             profile = player_obj.get("profile") if isinstance(player_obj.get("profile"), dict) else player_obj
             
-            # Map field fallbacks
             first_name = profile.get("first_name", "")
             last_name = profile.get("last_name", "")
             full_name = profile.get("name") or f"{first_name} {last_name}".strip()
@@ -463,16 +459,19 @@ class PWHL(commands.GroupCog, name="pwhl"):
             embed.add_field(name="Birth Date", value=birth_date)
             embed.add_field(name="Place of Origin", value=origin)
             
-            # Statistics Extraction
             stats_data = self.fetch_ht_api(feed="modulekit", view="player", category="mostrecentseasonstats", player_id=player_id)
             stats_site_kit = stats_data.get("SiteKit", {})
             stats_obj = stats_site_kit.get("Player") or stats_site_kit.get("player") or {}
             stats = stats_obj.get("mostrecentseasonstats") if isinstance(stats_obj.get("mostrecentseasonstats"), dict) else stats_obj
             
             if isinstance(stats, dict) and stats.get("games_played"):
+                gp = stats.get('games_played') or '0'
+                g = stats.get('goals') or '0'
+                a = stats.get('assists') or '0'
+                pts = stats.get('points') or '0'
                 embed.add_field(
                     name=f"Latest Season Statistics ({stats.get('season_name', 'Regular Season')})", 
-                    value=f"`{stats.get('games_played','0')}` GP | `{stats.get('goals','0')}` G | `{stats.get('assists','0')}` A | `{stats.get('points','0')}` PTS", 
+                    value=f"`{gp}` GP | `{g}` G | `{a}` A | `{pts}` PTS", 
                     inline=False
                 )
             
@@ -538,8 +537,8 @@ class PWHL(commands.GroupCog, name="pwhl"):
             h_str = f"{h_name} {h_emoji}".rstrip()
             
             status_code = str(game.get("GameStatus") or game.get("status", "1"))
-            v_goals = game.get("VisitorGoals") or game.get("visiting_goal_count", 0)
-            h_goals = game.get("HomeGoals") or game.get("home_goal_count", 0)
+            v_goals = game.get("VisitorGoals") or game.get("visiting_goal_count") or 0
+            h_goals = game.get("HomeGoals") or game.get("home_goal_count") or 0
             
             if status_code in ("4", "FINAL", "OFF"):
                 status = f"Final: {v_goals} - {h_goals}"
@@ -554,6 +553,6 @@ class PWHL(commands.GroupCog, name="pwhl"):
 
 async def setup(bot):
     cog = PWHL(bot)
-    await bot.add_cog(cog, guilds=[discord.Object(id=config.hockey_discord_server)])
+    await bot.add_cog(cog)
 
 PWHLStrategy = PWHL

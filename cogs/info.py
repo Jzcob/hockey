@@ -47,7 +47,7 @@ class Info(commands.Cog):
             title="🏒 Hockey Bot Information", 
             description=(
                 "**The 2nd largest Hockey bot on Discord!**\n"
-                "Providing NHL stats, live updates, and advanced moderation tools."
+                "Providing stats, live updates, and advanced moderation tools."
             ), 
             color=0x00ff00
         )

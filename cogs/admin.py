@@ -22,6 +22,7 @@ class admin(commands.Cog):
     @commands.Cog.listener()
     async def on_ready(self):
         print(f"LOADED: `admin.py`")
+        
         await self.bot.change_presence(activity=discord.CustomActivity(name="🚨 PWHL! 🚨"))
     
     # --- New Manual Premium Management ---
