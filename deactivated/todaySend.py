@@ -150,7 +150,7 @@ class DailySchedule(commands.Cog):
         await self.bot.wait_until_ready()
 
     # --- ORIGINAL API LOGIC ---
-    async def get_schedule_embed_async(self):
+    """async def get_schedule_embed_async(self):
         try:
             hawaii_tz = pytz.timezone('US/Hawaii')
             today_str = datetime.now(hawaii_tz).strftime('%Y-%m-%d')
@@ -177,6 +177,10 @@ class DailySchedule(commands.Cog):
             for game in games:
                 gs = game["gameState"]
                 home_t, away_t = game["homeTeam"], game["awayTeam"]
+                # I need the time left and which period it is so it is like "1st - 10:23 remaining" instead of just "LIVE" yes
+                time_left = game.get("timeRemaining", "")
+                if time_left and game.get("currentPeriodOrdinal"):
+                    time_left = f"{game['currentPeriodOrdinal']} - {time_left} remaining"
                 
                 h_name = home_t.get("placeName", {}).get("default") or home_t.get("commonName", {}).get("default", "TBD")
                 a_name = away_t.get("placeName", {}).get("default") or away_t.get("commonName", {}).get("default", "TBD")
@@ -198,9 +202,91 @@ class DailySchedule(commands.Cog):
                 elif gs in ("FINAL", "OFF"):
                     embed.add_field(name="Final", value=f"{away_s} @ {home_s}\n{away_t.get('score',0)} - {home_t.get('score',0)}", inline=False)
                 elif gs in ("LIVE", "CRIT"):
-                    embed.add_field(name="🔴 LIVE", value=f"{away_s} @ {home_s}\n{away_t.get('score',0)} - {home_t.get('score',0)}", inline=False)
+                    embed.add_field(name=f"🔴 LIVE {time_left}", value=f"{away_s} @ {home_s}\n{away_t.get('score',0)} - {home_t.get('score',0)}", inline=False)
             
             # Return the embed alongside the tracking data
+            return embed, earliest_start, all_final
+        except Exception:
+            return None, None, True"""
+    
+    # STANLEY CUP FINAL VERSION
+    async def get_schedule_embed_async(self):
+        try:
+            hawaii_tz = pytz.timezone('US/Hawaii')
+            today_str = datetime.now(hawaii_tz).strftime('%Y-%m-%d')
+            url = f"https://api-web.nhle.com/v1/schedule/{today_str}"
+            
+            async with self.http_session.get(url) as r:
+                r.raise_for_status()
+                data = await r.json()
+            
+            # 1. Spruced up "No Games" embed
+            if not data.get("gameWeek") or not data["gameWeek"][0].get("games"):
+                embed = discord.Embed(
+                    title=f"🏆 STANLEY CUP FINAL ({today_str})", 
+                    description="No games scheduled today.", 
+                    color=discord.Color.light_grey()
+                )
+                return embed, None, True 
+
+            games = data["gameWeek"][0]["games"]
+            
+            # 2. Spruced up main embed base
+            embed = discord.Embed(
+                title=f"🏆 STANLEY CUP FINAL 🏆 | {today_str}", 
+                description=("▬" * 20), 
+                color=discord.Color.gold()
+            )
+            embed.set_thumbnail(url="https://www-league.nhlstatic.com/images/logos/league-dark/133-flat.svg")
+            
+            # Optional: Add a wide banner image for the finals (replace URL with your preferred graphic)
+            embed.set_image(url="https://media.nhl.com/site/asset/public/ext/2023-24/2024-SCF-Logo-LightBkgd.jpg")
+            embed.set_footer(text=f"{config.footer}")
+
+            earliest_start = None
+            all_final = True
+
+            for game in games:
+                gs = game["gameState"]
+                home_t, away_t = game["homeTeam"], game["awayTeam"]
+                
+                time_left = game.get("timeRemaining", "")
+                if time_left and game.get("currentPeriodOrdinal"):
+                    time_left = f"{game['currentPeriodOrdinal']} - {time_left} remaining"
+                
+                h_name = home_t.get("placeName", {}).get("default") or home_t.get("commonName", {}).get("default", "TBD")
+                a_name = away_t.get("placeName", {}).get("default") or away_t.get("commonName", {}).get("default", "TBD")
+                
+                away_s, home_s = strings(away_t["abbrev"], home_t["abbrev"], h_name, a_name)
+                utc_start = datetime.strptime(game["startTimeUTC"], '%Y-%m-%dT%H:%M:%SZ').replace(tzinfo=pytz.utc)
+                ts = int(utc_start.timestamp())
+
+                if earliest_start is None or utc_start < earliest_start:
+                    earliest_start = utc_start
+                    
+                if gs not in ("FINAL", "OFF"):
+                    all_final = False
+
+                # 3. Enhanced field formatting for the matchup
+                if gs in ("FUT", "PRE"):
+                    embed.add_field(
+                        name=f"🗓️ Scheduled: <t:{ts}:t>", 
+                        value=f"**{away_s}** \n*@*\n **{home_s}**\n\n*Puck Drop: <t:{ts}:R>*", 
+                        inline=False
+                    )
+                elif gs in ("FINAL", "OFF"):
+                    embed.add_field(
+                        name="🏁 FINAL", 
+                        value=f"**{away_s}**: {away_t.get('score', 0)}\n**{home_s}**: {home_t.get('score', 0)}", 
+                        inline=False
+                    )
+                elif gs in ("LIVE", "CRIT"):
+                    embed.add_field(
+                        name=f"🚨 LIVE | {time_left}", 
+                        value=f"**{away_s}**: {away_t.get('score', 0)}\n**{home_s}**: {home_t.get('score', 0)}", 
+                        inline=False
+                    )
+            
             return embed, earliest_start, all_final
         except Exception:
             return None, None, True
@@ -229,6 +315,82 @@ class DailySchedule(commands.Cog):
                 await cursor.execute(sql, (interaction.guild.id,))
                 await conn.commit()
         await interaction.response.send_message("✅ Daily hockey schedule channel cleared.", ephemeral=True)
+    
+    @app_commands.command(name="force-update-schedule", description="Forces an immediate update of today's schedule to the new layout.")
+    @app_commands.checks.has_permissions(manage_guild=True)
+    async def force_update_schedule(self, interaction: discord.Interaction):
+        # Defer since fetching messages and hitting the API can sometimes cross the 3-second limit
+        await interaction.response.defer(ephemeral=True)
+        if interaction.user.id != config.jacob:
+            await interaction.followup.send("❌ This command can only be used by the bot Developer!", ephemeral=True)
+            return
+        
+        guild_id = interaction.guild.id
+        channel_id = None
+        message_id = None
+        
+        try:
+            async with self.db_pool.acquire() as conn:
+                async with conn.cursor() as cursor:
+                    await cursor.execute(
+                        "SELECT daily_schedule_channel_id, daily_schedule_message_id FROM guild_settings WHERE guild_id = %s", 
+                        (guild_id,)
+                    )
+                    record = await cursor.fetchone()
+                    if record:
+                        channel_id, message_id = record
+        except Exception as e:
+            await interaction.followup.send(f"❌ Database error: {e}", ephemeral=True)
+            return
+
+        if not channel_id:
+            await interaction.followup.send("❌ No schedule channel has been configured for this guild. Use `/set-schedule-channel` first.", ephemeral=True)
+            return
+
+        channel = self.bot.get_channel(channel_id)
+        if not channel:
+            await interaction.followup.send("❌ Configured schedule channel not found or inaccessible.", ephemeral=True)
+            return
+
+        # Generate the fresh Stanley Cup Finals embed
+        schedule_embed, earliest_start, all_final = await self.get_schedule_embed_async()
+        if not schedule_embed:
+            await interaction.followup.send("❌ Failed to pull data or generate the schedule embed.", ephemeral=True)
+            return
+
+        msg = None
+        if message_id:
+            try:
+                msg = await channel.fetch_message(message_id)
+                await msg.edit(embed=schedule_embed)
+                await interaction.followup.send("✅ Successfully updated today's schedule message!", ephemeral=True)
+            except discord.NotFound:
+                # The message was likely deleted, handle by sending a fresh one below
+                msg = None 
+            except Exception as e:
+                await interaction.followup.send(f"❌ Failed to edit the existing message: {e}", ephemeral=True)
+                return
+
+        # If there wasn't a previous message or it was deleted, send a new one
+        if not msg:
+            try:
+                msg = await channel.send(embed=schedule_embed)
+                async with self.db_pool.acquire() as conn:
+                    async with conn.cursor() as cursor:
+                        await cursor.execute(
+                            "UPDATE guild_settings SET daily_schedule_message_id = %s WHERE guild_id = %s",
+                            (msg.id, guild_id)
+                        )
+                        await conn.commit()
+                await interaction.followup.send("✅ Sent a new schedule message and locked it in for live updates!", ephemeral=True)
+            except Exception as e:
+                await interaction.followup.send(f"❌ Failed to send fresh schedule message: {e}", ephemeral=True)
+                return
+
+        # Safety check: if games are live but the task isn't running, wake it up
+        if not all_final and not self.update_live_scores.is_running():
+            print("Games active during manual refresh. Starting live update task loop.")
+            self.update_live_scores.start()
 
 async def setup(bot):
     await bot.add_cog(DailySchedule(bot))

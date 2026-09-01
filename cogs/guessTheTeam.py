@@ -1,3 +1,5 @@
+from email.mime import message
+
 import discord
 from discord.ext import commands
 from discord import app_commands
@@ -41,10 +43,10 @@ class GuessTheTeam(commands.Cog):
                 "Columbus Blue Jackets", "Dallas Stars", "Detroit Red Wings",
                 "Edmonton Oilers", "Florida Panthers", "Los Angeles Kings",
                 "Minnesota Wild", "Montréal Canadiens", "Nashville Predators",
-                "New Jersey Devils", "New York Islanders", "New Rangers",
+                "New Jersey Devils", "New York Islanders", "New York Rangers",
                 "Ottawa Senators", "Philadelphia Flyers", "Pittsburgh Penguins",
                 "Seattle Kraken", "San Jose Sharks", "St. Louis Blues",
-                "Tampa Bay Lightning", "Toronto Maple Leafs", "Utah Hockey Club",
+                "Tampa Bay Lightning", "Toronto Maple Leafs", "Utah Mammoth",
                 "Vancouver Canucks", "Vegas Golden Knights", "Washington Capitals",
                 "Winnipeg Jets"
             ]
@@ -66,7 +68,7 @@ class GuessTheTeam(commands.Cog):
             start_time = datetime.now()
 
             def check(message):
-                return message.channel == interaction.channel and not message.author.bot
+                return message.channel.id == interaction.channel.id and not message.author.bot
 
             while True:
                 elapsed = (datetime.now() - start_time).total_seconds()
@@ -81,19 +83,6 @@ class GuessTheTeam(commands.Cog):
                     user_ans = msg.content.strip().lower()
                     
                     if user_ans == correct_team.lower() or fuzz.ratio(user_ans, correct_team.lower()) >= SIMILARITY_THRESHOLD:
-                        
-                        # --- Point System (Optional: Mirroring your GTP points) ---
-                        try:
-                            async with self.db_pool.acquire() as conn:
-                                async with conn.cursor() as cursor:
-                                    g_id = interaction.guild.id if interaction.guild else 0
-                                    await cursor.execute("""
-                                        INSERT INTO gtt_scores (user_id, guild_id, points) VALUES (%s, %s, 1)
-                                        ON DUPLICATE KEY UPDATE points = points + 1
-                                    """, (msg.author.id, g_id))
-                        except Exception as db_err:
-                            print(f"GTT Point Error: {db_err}")
-
                         await msg.reply(f"🏆 **{msg.author.display_name}** got it! The team was **{correct_team}**!")
                         break
                     else:
@@ -108,6 +97,7 @@ class GuessTheTeam(commands.Cog):
             error_channel = self.bot.get_channel(config.error_channel)
             if error_channel:
                 await error_channel.send(f"<@920797181034778655> Error in `/guess-the-team`:\n```{traceback.format_exc()}```")
+                
             await interaction.followup.send("An error occurred. The issue has been reported.", ephemeral=True)
 
     @guessTheTeam.error
