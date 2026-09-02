@@ -96,7 +96,6 @@ class SetBenchModal(ui.Modal, title="Set Your Bench Teams (Step 2 of 2)"):
                     await cursor.execute(sql, val)
                     await conn.commit()
             
-            # Since the original message contained the button view, we edit the original response to clear it
             await interaction.edit_original_response(
                 content="🎉 **Welcome to the league!** Your full roster is set. Use `/my-roster` to view it.",
                 view=None
@@ -115,30 +114,6 @@ class SetBenchButtonView(ui.View):
         self.db_pool = db_pool
         self.user_id = user_id
 
-    @ui.button(label="Set Bench Teams", style=discord.ButtonStyle.success)
-    async def set_bench(self, interaction: discord.Interaction, button: ui.Button):
-        if interaction.user.id != self.user_id:
-            await interaction.response.send_message("This is not for you!", ephemeral=True)
-            return
-            
-        await interaction.response.defer(ephemeral=True, thinking=True)
-        try:
-            async with self.db_pool.acquire() as conn:
-                async with conn.cursor(aiomysql.DictCursor) as cursor:
-                    await cursor.execute("SELECT team_one, team_two, team_three, team_four, team_five FROM rosters WHERE user_id = %s", (interaction.user.id,))
-                    roster = await cursor.fetchone()
-            
-            if roster:
-                active_teams = list(roster.values())
-                modal = SetBenchModal(self.bot, self.db_pool, active_teams)
-                await interaction.edit_original_response(content="Please fill out the modal below to complete your roster:", view=None)
-                await interaction.client.dispatch("modal_trigger", interaction) # handled natively via send_modal if supported or via response
-                # Note: Discord restricts sending a modal after defer unless using send_modal directly without deferring. 
-                # Let's handle modal correctly by avoiding defer for modals:
-        except Exception:
-            pass # handled below
-
-    # Overriding interaction check to support modal trigger properly without defer timeout conflict
     async def interaction_check(self, interaction: discord.Interaction) -> bool:
         if interaction.user.id != self.user_id:
             await interaction.response.send_message("This is not for you!", ephemeral=True)
@@ -199,9 +174,16 @@ class JoinLeagueModal(ui.Modal, title="Join the League (Step 1 of 2)"):
                 await interaction.followup.send("❌ You cannot select the same active team more than once. Please try again.", ephemeral=True)
                 return
 
-            # --- Database Operation ---
+            # --- Database Operation & Duplicate Check ---
             async with self.db_pool.acquire() as conn:
                 async with conn.cursor() as cursor:
+                    # Check if user already exists first to avoid handling raw DB integrity errors during submit modal response
+                    await cursor.execute("SELECT user_id FROM rosters WHERE user_id = %s", (interaction.user.id,))
+                    existing = await cursor.fetchone()
+                    if existing:
+                        await interaction.followup.send("❌ You are already in the league!", ephemeral=True)
+                        return
+
                     sql = "INSERT INTO rosters (user_id, team_one, team_two, team_three, team_four, team_five) VALUES (%s, %s, %s, %s, %s, %s)"
                     val = (interaction.user.id, *active_teams)
                     await cursor.execute(sql, val)
@@ -218,14 +200,6 @@ class JoinLeagueModal(ui.Modal, title="Join the League (Step 1 of 2)"):
                 ephemeral=True
             )
 
-        except aiomysql.IntegrityError as err:
-            if err.args[0] == 1062:
-                await interaction.followup.send("❌ You are already in the league!", ephemeral=True)
-            else:
-                error_channel = self.bot.get_channel(config.error_channel)
-                if error_channel: await error_channel.send(f"<@920797181034778655>```{traceback.format_exc()}```")
-                if not interaction.is_expired():
-                    await interaction.followup.send(f"❌ A database error occurred. The issue has been reported.", ephemeral=True)
         except Exception:
             error_channel = self.bot.get_channel(config.error_channel)
             if error_channel: await error_channel.send(f"<@920797181034778655>```{traceback.format_exc()}```")
@@ -331,11 +305,7 @@ class userLeague(commands.Cog, name="userLeague"):
     async def join_league(self, interaction: discord.Interaction):
         await self.log_command(interaction)
         try:
-            roster = await self.get_user_roster(interaction.user.id)
-            if roster:
-                await interaction.response.send_message("You are already in the league! Use `/my-roster` to see your teams.", ephemeral=True)
-                return
-            
+            # Send the modal directly without doing a DB query first to prevent 10062 Unknown Interaction timeouts
             modal = JoinLeagueModal(self.bot, self.db_pool)
             await interaction.response.send_modal(modal)
         except Exception:
