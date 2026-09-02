@@ -59,6 +59,20 @@ washington_capitals_emoji = "<:washington_capitals:1271323877888229491>"
 winnipeg_jets_emoji = "<:winnipegg_jets:1271323895177285743>"
 nhl_logo_emoji = "<:nhl:1271324226560725022>"
 
+montreal_victoire_emoji = "<:montreal_victoire:1544502478605647872>"
+new_york_sirens_emoji = "<:new_york_sirens:1544502477548822669>"
+toronto_sceptres_emoji = "<:toronto_sceptres:1544502475808178226>"
+minnesota_frost_emoji = "<:minnesota_frost:1544502474331787376>"
+boston_fleet_emoji = "<:boston_fleet:1544502473060913292>"
+vancouver_goldeneyes_emoji = "<:vancouver_goldeneyes:1544502471706153081>"
+seattle_torrent_emoji = "<:seattle_torrent:1544502470166716506>"
+pwhl_san_jose_emoji = "<:pwhl_san_jose:1544502469038706858>"
+pwhl_las_vegas_emoji = "<:pwhl_las_vegas:1544502467964833832>"
+pwhl_hamilton_emoji = "<:pwhl_hamilton:1544502467184566282>"
+pwhl_detroit_emoji = "<:pwhl_detroit:1544502466127601684>"
+ottawa_charge_emoji = "<:ottawa_charge:1544502464634425395>"
+pwhl_logo_emoji = "<:pwhl_logo:1544502887126794361>"
+
 bruins_servers = [hockey_discord_server, 1220512663998693467, 213656921096454145, 1308631989389230161]
 
 premium_users = []
