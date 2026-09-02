@@ -70,6 +70,7 @@ class SetBenchModal(ui.Modal, title="Set Your Bench Teams (Step 2 of 2)"):
         self.active_teams = active_teams
 
     async def on_submit(self, interaction: discord.Interaction):
+        await interaction.response.defer(ephemeral=True, thinking=True)
         try:
             bench_teams = [team.strip().title() for team in [self.bench_one.value, self.bench_two.value, self.bench_three.value]]
             all_teams = self.active_teams + bench_teams
@@ -81,11 +82,11 @@ class SetBenchModal(ui.Modal, title="Set Your Bench Teams (Step 2 of 2)"):
                     msg = f"❌ Invalid team: `{team_input}`. Please use an official NHL team name. Check `/teams` for a list."
                     if suggestion:
                         msg = f"❌ Invalid team: `{team_input}`. Did you mean `{suggestion}`? Please correct it and try again."
-                    await interaction.response.send_message(msg, ephemeral=True)
+                    await interaction.followup.send(msg, ephemeral=True)
                     return
 
             if len(set(all_teams)) != len(all_teams):
-                await interaction.response.send_message("❌ You cannot select the same team more than once. Please click the button to try again.", ephemeral=True)
+                await interaction.followup.send("❌ You cannot select the same team more than once. Please click the button to try again.", ephemeral=True)
                 return
 
             async with self.db_pool.acquire() as conn:
@@ -95,17 +96,16 @@ class SetBenchModal(ui.Modal, title="Set Your Bench Teams (Step 2 of 2)"):
                     await cursor.execute(sql, val)
                     await conn.commit()
             
-            await interaction.response.edit_message(
+            # Since the original message contained the button view, we edit the original response to clear it
+            await interaction.edit_original_response(
                 content="🎉 **Welcome to the league!** Your full roster is set. Use `/my-roster` to view it.",
                 view=None
             )
         except Exception:
             error_channel = self.bot.get_channel(config.error_channel)
             if error_channel: await error_channel.send(f"<@920797181034778655>```{traceback.format_exc()}```")
-            if not interaction.response.is_done():
-                await interaction.response.send_message("❌ An error occurred. The issue has been reported.", ephemeral=True)
-            else:
-                if not interaction.is_expired(): await interaction.followup.send("❌ An error occurred. The issue has been reported.", ephemeral=True)
+            if not interaction.is_expired(): 
+                await interaction.followup.send("❌ An error occurred. The issue has been reported.", ephemeral=True)
 
 # --- UI View with Button to Trigger Step 2 ---
 class SetBenchButtonView(ui.View):
@@ -121,6 +121,32 @@ class SetBenchButtonView(ui.View):
             await interaction.response.send_message("This is not for you!", ephemeral=True)
             return
             
+        await interaction.response.defer(ephemeral=True, thinking=True)
+        try:
+            async with self.db_pool.acquire() as conn:
+                async with conn.cursor(aiomysql.DictCursor) as cursor:
+                    await cursor.execute("SELECT team_one, team_two, team_three, team_four, team_five FROM rosters WHERE user_id = %s", (interaction.user.id,))
+                    roster = await cursor.fetchone()
+            
+            if roster:
+                active_teams = list(roster.values())
+                modal = SetBenchModal(self.bot, self.db_pool, active_teams)
+                await interaction.edit_original_response(content="Please fill out the modal below to complete your roster:", view=None)
+                await interaction.client.dispatch("modal_trigger", interaction) # handled natively via send_modal if supported or via response
+                # Note: Discord restricts sending a modal after defer unless using send_modal directly without deferring. 
+                # Let's handle modal correctly by avoiding defer for modals:
+        except Exception:
+            pass # handled below
+
+    # Overriding interaction check to support modal trigger properly without defer timeout conflict
+    async def interaction_check(self, interaction: discord.Interaction) -> bool:
+        if interaction.user.id != self.user_id:
+            await interaction.response.send_message("This is not for you!", ephemeral=True)
+            return False
+        return True
+
+    @ui.button(label="Set Bench Teams", style=discord.ButtonStyle.success)
+    async def set_bench_callback(self, interaction: discord.Interaction, button: ui.Button):
         try:
             async with self.db_pool.acquire() as conn:
                 async with conn.cursor(aiomysql.DictCursor) as cursor:
@@ -136,7 +162,8 @@ class SetBenchButtonView(ui.View):
         except Exception:
             error_channel = self.bot.get_channel(config.error_channel)
             if error_channel: await error_channel.send(f"<@920797181034778655>```{traceback.format_exc()}```")
-            await interaction.response.send_message("❌ An error occurred. The issue has been reported.", ephemeral=True)
+            if not interaction.response.is_done():
+                await interaction.response.send_message("❌ An error occurred. The issue has been reported.", ephemeral=True)
 
 # --- UI Modal for Active Teams (Step 1) ---
 class JoinLeagueModal(ui.Modal, title="Join the League (Step 1 of 2)"):
