@@ -19,18 +19,18 @@ load_dotenv()
 DEBUG_MODE = True
 
 PWHL_TEAMS = {
-    "BOS": ("Boston Fleet", config.boston_fleet_emoji if hasattr(config, 'boston_fleet_emoji') else "⚓"),
-    "MIN": ("Minnesota Frost", config.minnesota_frost_emoji if hasattr(config, 'minnesota_frost_emoji') else "❄️"),
-    "MTL": ("Montréal Victoire", config.montreal_victoire_emoji if hasattr(config, 'montreal_victoire_emoji') else "⚜️"),
-    "NY":  ("New York Sirens", config.new_york_sirens_emoji if hasattr(config, 'new_york_sirens_emoji') else "🚨"),
-    "OTT": ("Ottawa Charge", config.ottawa_charge_emoji if hasattr(config, 'ottawa_charge_emoji') else "⚡"),
-    "TOR": ("Toronto Sceptres", config.toronto_sceptres_emoji if hasattr(config, 'toronto_sceptres_emoji') else "👑"),
-    "DET": ("PWHL Detroit", "🏒"),
-    "HAM": ("PWHL Hamilton", "🏒"),
-    "LV":  ("PWHL Las Vegas", "🎲"),
-    "SJ":  ("PWHL San Jose", "🦈"),
-    "SEA": ("Seattle Torrent", "🌊"),
-    "VAN": ("Vancouver Goldeneyes", "🦅"),
+    "BOS": ("Boston Fleet", config.boston_fleet_emoji if hasattr(config, 'boston_fleet_emoji') else "<:boston_fleet:1544502473060913292>"),
+    "MIN": ("Minnesota Frost", config.minnesota_frost_emoji if hasattr(config, 'minnesota_frost_emoji') else "<:minnesota_frost:1544502474331787376>"),
+    "MTL": ("Montréal Victoire", config.montreal_victoire_emoji if hasattr(config, 'montreal_victoire_emoji') else "<:montreal_victoire:1544502478605647872>"),
+    "NY":  ("New York Sirens", config.new_york_sirens_emoji if hasattr(config, 'new_york_sirens_emoji') else "<:new_york_sirens:1544502477548822669>"),
+    "OTT": ("Ottawa Charge", config.ottawa_charge_emoji if hasattr(config, 'ottawa_charge_emoji') else "<:ottawa_charge:1544502464634425395>"),
+    "TOR": ("Toronto Sceptres", config.toronto_sceptres_emoji if hasattr(config, 'toronto_sceptres_emoji') else "<:toronto_sceptres:1544502475808178226>"),
+    "DET": ("PWHL Detroit", config.pwhl_detroit_emoji if hasattr(config, 'pwhl_detroit_emoji') else "<:pwhl_detroit:1544502466127601684>"),
+    "HAM": ("PWHL Hamilton", config.pwhl_hamilton_emoji if hasattr(config, 'pwhl_hamilton_emoji') else "<:pwhl_hamilton:1544502467184566282>"),
+    "LV":  ("PWHL Las Vegas", config.pwhl_las_vegas_emoji if hasattr(config, 'pwhl_las_vegas_emoji') else "<:pwhl_las_vegas:1544502467964833832>"),
+    "SJ":  ("PWHL San Jose", config.pwhl_san_jose_emoji if hasattr(config, 'pwhl_san_jose_emoji') else "<:pwhl_san_jose:1544502469038706858>"),
+    "SEA": ("Seattle Torrent", config.seattle_torrent_emoji if hasattr(config, 'seattle_torrent_emoji') else "<:seattle_torrent:1544502470166716506>"),
+    "VAN": ("Vancouver Goldeneyes", config.vancouver_goldeneyes_emoji if hasattr(config, 'vancouver_goldeneyes_emoji') else "<:vancouver_goldeneyes:1544502471706153081>"),
 }
 
 PWHL_API_KEY = os.getenv("PWHL_API_KEY") 
