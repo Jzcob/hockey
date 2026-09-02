@@ -68,6 +68,16 @@ class HockeyLeagues(commands.Cog):
         if strat:
             await strat.get_today_games(interaction, date_str=None)
 
+    @app_commands.command(name="tomorrow", description="Get tomorrow's schedule")
+    @app_commands.choices(league=[
+        app_commands.Choice(name="NHL", value="nhl"),
+        app_commands.Choice(name="PWHL", value="pwhl")
+    ])
+    async def tomorrow_cmd(self, interaction: discord.Interaction, league: app_commands.Choice[str]):
+        strat = await self.get_strat(interaction, league.value)
+        if strat:
+            await strat.get_tomorrow_games(interaction)
+
     @app_commands.command(name="yesterday", description="Get yesterday's scores")
     @app_commands.choices(league=[
         app_commands.Choice(name="NHL", value="nhl"),

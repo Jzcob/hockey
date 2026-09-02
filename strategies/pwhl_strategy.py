@@ -551,6 +551,19 @@ class PWHL(commands.GroupCog, name="pwhl"):
             
         return embed
 
+    async def get_tomorrow_games(self, interaction: discord.Interaction):
+        if not interaction.response.is_done(): await interaction.response.defer()
+        base_strategy.log_command(self.bot, interaction, "tomorrow")
+        try:
+            hawaii_tz = pytz.timezone('US/Hawaii')
+            t_date = (datetime.now(hawaii_tz) + timedelta(days=1)).strftime('%Y-%m-%d')
+            embed = await self.build_schedule_embed(date_str=t_date)
+            await interaction.followup.send(embed=embed)
+        except Exception:
+            if DEBUG_MODE:
+                traceback.print_exc()
+            await interaction.followup.send("Error processing upcoming schedule.")
+
 async def setup(bot):
     cog = PWHL(bot)
     await bot.add_cog(cog)
