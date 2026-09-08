@@ -348,7 +348,7 @@ class adminLeague(commands.Cog, name="adminLeague"):
                 "👋 **Friendly Reminder!**\n\n"
                 "Your fantasy league registration is incomplete. To finish setting up, please run the `/my-roster` command. \n"
                 "A new button will appear allowing you to set your **3 bench teams** and complete your roster!\n"
-                "There is only <t:1759827600:R> till the league closes for users to add their benched teams.\n"
+                "There is only <t:1790697600:R> till the league closes for users to add their benched teams.\n"
                 "If you do not complete your roster by then, you will be unable to participate in the league this season."
             )
             success_count, fail_count = 0, 0
