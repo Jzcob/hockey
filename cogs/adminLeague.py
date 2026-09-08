@@ -516,7 +516,7 @@ class adminLeague(commands.Cog, name="adminLeague"):
             embed.add_field(name="Incomplete Rosters", value=str(incomplete_rosters), inline=True)
 
             player_summaries = []
-            for r in rows[:10]:
+            for r in rows[:50]:
                 try:
                     user = await self.bot.fetch_user(r['user_id'])
                     name = user.display_name
@@ -528,8 +528,8 @@ class adminLeague(commands.Cog, name="adminLeague"):
                 player_summaries.append(f"• **{name}** — {status} | 🏆 {points} pts")
 
             description_text = "\n".join(player_summaries)
-            if total_players > 10:
-                description_text += f"\n\n*And {total_players - 10} more player(s)...*"
+            if total_players > 50:
+                description_text += f"\n\n*And {total_players - 50} more player(s)...*"
 
             embed.add_field(name="Player List (Preview)", value=description_text, inline=False)
 
