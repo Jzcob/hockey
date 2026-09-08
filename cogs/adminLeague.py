@@ -366,127 +366,182 @@ class adminLeague(commands.Cog, name="adminLeague"):
             if error_channel: await error_channel.send(f"<@920797181034778655>```{traceback.format_exc()}```")
             if not interaction.is_expired(): await interaction.followup.send("An error occurred while sending alerts. The issue has been reported.", ephemeral=True)
 
-    @app_commands.command(name="announce-fantasy-all", description="Broadcast the 2026 Hockey Bot League announcement to all servers")
-    @app_commands.checks.has_permissions(administrator=True)
-    async def announce_fantasy_all(self, interaction: discord.Interaction):
-        if interaction.guild.id != config.hockey_discord_server:
-            if interaction.user.id != config.jacob:
-                await interaction.response.send_message("❌ This command can only be by the bot owner.", ephemeral=True)
-                return
-        import strategies.base_strategy as base_strategy
-        base_strategy.log_command(self.bot, interaction, "admin announce-fantasy-all")
-        
+    #@app_commands.command(name="announce-fantasy-all", description="Broadcast the 2026 Hockey Bot League announcement to all servers")
+    #@app_commands.checks.has_permissions(administrator=True)
+    #async def announce_fantasy_all(self, interaction: discord.Interaction):
+    #    if interaction.guild.id != config.hockey_discord_server:
+    #        if interaction.user.id != config.jacob:
+    #            await interaction.response.send_message("❌ This command can only be by the bot owner.", ephemeral=True)
+    #            return
+#        import strategies.base_strategy as base_strategy
+#        base_strategy.log_command(self.bot, interaction, "admin announce-fantasy-all")
+#        
+#        await interaction.response.defer(ephemeral=True)
+#        
+#        embed = discord.Embed(
+#            title="🏒 2026 HOCKEY BOT LEAGUE! 🏆",
+#            description=(
+#                "The league will be run the same as last year, if you are unfamiliar keep reading!\n\n"
+#                "**📜 How It Works: The Basics**\n"
+#                "The league is simple to join and play. Here’s everything you need to know to build your team and start earning points."
+#            ),
+#            color=config.color
+#        )
+#        
+#        embed.add_field(
+#            name="📋 Build Your Roster (`/join_league`)",
+#            value=(
+#                "Every player will draft a roster of **8 NHL teams**.\n"
+#                "• **5 Active Teams**: Your starters. Only active teams earn points each week.\n"
+#                "• **3 Bench Teams**: Your reserves. No points, but available to swap."
+#           ),
+#            inline=False
+#        )
+# Can you comment out the rest of this command?        
+#        embed.add_field(
+#            name="🔄 Make Strategic Swaps (`/swap-teams`)",
+#            value="You have **10 swaps** to use for the entire season. Swap active and bench teams to adapt to matchups, hot streaks, or injuries.",
+#            inline=False
+#        )
+#        
+        #        embed.add_field(
+        #            name="⭐ Ace Your Pick (`/ace-team`)",
+        #            value="Select one active team each week as your **Aced** team to earn a massive **x3 point multiplier** for all of its games that week! Resets weekly.",
+        #            inline=False
+        #        )
+        #        
+        #        embed.add_field(
+        #            name="📊 The Scoring System",
+        #            value=(
+        #                "Points awarded at the end of each week based on real-world games:\n"
+        #                "• **Win**: +4 Points\n"
+        #                "• **OT/SO Loss**: +2 Points\n"
+        #                "• **Regulation Loss**: -2 Points\n"
+        #                "*(Aced Multipliers: Win +12 | OT/SO +6 | Reg Loss -6)*"
+        #            ),
+        #            inline=False
+        #        )
+        #        
+        #        embed.add_field(
+        #            name="🚀 Essential Commands",
+        #            value=(
+        #                "`/join-league` — Join the fantasy league\n"
+        #                "`/my-roster` — View selections, points, and remaining swaps\n"
+        #                "`/swap-teams` — Use seasonal swaps via dropdowns\n"
+        #                "`/ace-team` — Choose your weekly x3 multiplier team\n"
+        #                "`/leaderboard fantasy` — Check the current standings\n"
+        #                "`/leaderboard fantasy-history` — View past history stats\n"
+        #                "`/mypoints fantasy` — Check your total score"
+        #            ),
+        #            inline=False
+        #        )
+        #        
+        #        embed.add_field(
+        #            name="⚠️ Important Notes",
+        #            value=(
+        #                "• **Registration closes September 29th** for the first game.\n"
+        #                "• **I REPEAT: SET YOUR ROSTERS BEFORE SEPTEMBER 29TH!** You cannot join after the season starts.\n"
+        #                "• Previous season stats have been added to `/leaderboard fantasy-history`!\n"
+        #                "• For any questions, check out the bot's discord server found in `/info`."
+        #            ),
+        #            inline=False
+        #        )
+        #        
+        #        embed.set_footer(text=config.footer)
+        #
+        #        success_count = 0
+        #        fail_count = 0
+        #
+        #        for guild in self.bot.guilds:
+        #            target_channel = None
+        #            
+        #            # 1. Try system channel (default announcement/welcome channel)
+        #            if guild.system_channel and guild.system_channel.permissions_for(guild.me).send_messages:
+        #                target_channel = guild.system_channel
+        #            else:
+        #                # 2. Search for a channel matching common announcement or update names
+        #                for channel in guild.text_channels:
+        #                    if channel.permissions_for(guild.me).send_messages:
+        #                        name_lower = channel.name.lower()
+        #                        if any(keyword in name_lower for keyword in ["announcement", "updates", "general", "bot", "lobby"]):
+        #                            target_channel = channel
+        #                            break
+        #                
+        #                # 3. Fallback to the first writable text channel if no keyword match is found
+        #                if not target_channel:
+        #                    for channel in guild.text_channels:
+        #                        if channel.permissions_for(guild.me).send_messages:
+        #                            target_channel = channel
+        #                            break
+        #
+        #            if target_channel:
+        #                try:
+        #                    await target_channel.send(embed=embed)
+        #                    success_count += 1
+        #                except Exception:
+        #                    fail_count += 1
+        #            else:
+        #                fail_count += 1
+        #
+        #        await interaction.followup.send(
+        #            f"Broadcast complete! Successfully sent to **{success_count}** servers (Failed/Skipped: {fail_count}).", 
+        #            ephemeral=True
+        #        )
+
+    @app_commands.command(name="league_rosters", description="View a summary of all players currently registered in the league.")
+    @app_commands.default_permissions(administrator=True)
+    async def league_rosters(self, interaction: discord.Interaction):
         await interaction.response.defer(ephemeral=True)
-        
-        embed = discord.Embed(
-            title="🏒 2026 HOCKEY BOT LEAGUE! 🏆",
-            description=(
-                "The league will be run the same as last year, if you are unfamiliar keep reading!\n\n"
-                "**📜 How It Works: The Basics**\n"
-                "The league is simple to join and play. Here’s everything you need to know to build your team and start earning points."
-            ),
-            color=config.color
-        )
-        
-        embed.add_field(
-            name="📋 Build Your Roster (`/join_league`)",
-            value=(
-                "Every player will draft a roster of **8 NHL teams**.\n"
-                "• **5 Active Teams**: Your starters. Only active teams earn points each week.\n"
-                "• **3 Bench Teams**: Your reserves. No points, but available to swap."
-            ),
-            inline=False
-        )
-        
-        embed.add_field(
-            name="🔄 Make Strategic Swaps (`/swap-teams`)",
-            value="You have **10 swaps** to use for the entire season. Swap active and bench teams to adapt to matchups, hot streaks, or injuries.",
-            inline=False
-        )
-        
-        embed.add_field(
-            name="⭐ Ace Your Pick (`/ace-team`)",
-            value="Select one active team each week as your **Aced** team to earn a massive **x3 point multiplier** for all of its games that week! Resets weekly.",
-            inline=False
-        )
-        
-        embed.add_field(
-            name="📊 The Scoring System",
-            value=(
-                "Points awarded at the end of each week based on real-world games:\n"
-                "• **Win**: +4 Points\n"
-                "• **OT/SO Loss**: +2 Points\n"
-                "• **Regulation Loss**: -2 Points\n"
-                "*(Aced Multipliers: Win +12 | OT/SO +6 | Reg Loss -6)*"
-            ),
-            inline=False
-        )
-        
-        embed.add_field(
-            name="🚀 Essential Commands",
-            value=(
-                "`/join-league` — Join the fantasy league\n"
-                "`/my-roster` — View selections, points, and remaining swaps\n"
-                "`/swap-teams` — Use seasonal swaps via dropdowns\n"
-                "`/ace-team` — Choose your weekly x3 multiplier team\n"
-                "`/leaderboard fantasy` — Check the current standings\n"
-                "`/leaderboard fantasy-history` — View past history stats\n"
-                "`/mypoints fantasy` — Check your total score"
-            ),
-            inline=False
-        )
-        
-        embed.add_field(
-            name="⚠️ Important Notes",
-            value=(
-                "• **Registration closes September 29th** for the first game.\n"
-                "• **I REPEAT: SET YOUR ROSTERS BEFORE SEPTEMBER 29TH!** You cannot join after the season starts.\n"
-                "• Previous season stats have been added to `/leaderboard fantasy-history`!\n"
-                "• For any questions, check out the bot's discord server found in `/info`."
-            ),
-            inline=False
-        )
-        
-        embed.set_footer(text=config.footer)
+        try:
+            async with self.db_pool.acquire() as conn:
+                async with conn.cursor(aiomysql.DictCursor) as cursor:
+                    await cursor.execute("SELECT * FROM rosters")
+                    rows = await cursor.fetchall()
 
-        success_count = 0
-        fail_count = 0
+            if not rows:
+                if not interaction.is_expired():
+                    await interaction.followup.send("❌ There are currently no players registered in the league.", ephemeral=True)
+                return
 
-        for guild in self.bot.guilds:
-            target_channel = None
-            
-            # 1. Try system channel (default announcement/welcome channel)
-            if guild.system_channel and guild.system_channel.permissions_for(guild.me).send_messages:
-                target_channel = guild.system_channel
-            else:
-                # 2. Search for a channel matching common announcement or update names
-                for channel in guild.text_channels:
-                    if channel.permissions_for(guild.me).send_messages:
-                        name_lower = channel.name.lower()
-                        if any(keyword in name_lower for keyword in ["announcement", "updates", "general", "bot", "lobby"]):
-                            target_channel = channel
-                            break
-                
-                # 3. Fallback to the first writable text channel if no keyword match is found
-                if not target_channel:
-                    for channel in guild.text_channels:
-                        if channel.permissions_for(guild.me).send_messages:
-                            target_channel = channel
-                            break
+            total_players = len(rows)
+            complete_rosters = sum(1 for r in rows if r.get('bench_one'))
+            incomplete_rosters = total_players - complete_rosters
 
-            if target_channel:
+            embed = discord.Embed(
+                title="📊 Global League Roster Overview",
+                color=discord.Color.blue()
+            )
+            embed.add_field(name="Total Players Enrolled", value=str(total_players), inline=True)
+            embed.add_field(name="Complete Rosters", value=str(complete_rosters), inline=True)
+            embed.add_field(name="Incomplete Rosters", value=str(incomplete_rosters), inline=True)
+
+            player_summaries = []
+            for r in rows[:10]:
                 try:
-                    await target_channel.send(embed=embed)
-                    success_count += 1
+                    user = await self.bot.fetch_user(r['user_id'])
+                    name = user.display_name
                 except Exception:
-                    fail_count += 1
-            else:
-                fail_count += 1
+                    name = f"User ID: {r['user_id']}"
 
-        await interaction.followup.send(
-            f"Broadcast complete! Successfully sent to **{success_count}** servers (Failed/Skipped: {fail_count}).", 
-            ephemeral=True
-        )
+                status = "✅ Complete" if r.get('bench_one') else "⚠️ Incomplete"
+                points = r.get('points', 0)
+                player_summaries.append(f"• **{name}** — {status} | 🏆 {points} pts")
+
+            description_text = "\n".join(player_summaries)
+            if total_players > 10:
+                description_text += f"\n\n*And {total_players - 10} more player(s)...*"
+
+            embed.add_field(name="Player List (Preview)", value=description_text, inline=False)
+
+            if not interaction.is_expired():
+                await interaction.followup.send(embed=embed, ephemeral=True)
+
+        except Exception:
+            error_channel = self.bot.get_channel(config.error_channel)
+            if error_channel:
+                await error_channel.send(f"<@920797181034778655>```{traceback.format_exc()}```")
+            if not interaction.is_expired():
+                await interaction.followup.send("An error occurred while fetching the league rosters.", ephemeral=True)
 
 async def setup(bot):
     await bot.add_cog(adminLeague(bot), guilds=[discord.Object(id=config.hockey_discord_server)])
