@@ -16,7 +16,7 @@ from dotenv import load_dotenv
 load_dotenv()
 
 # Toggleable Debug Mode: Set to True to enable console logging, False to disable
-DEBUG_MODE = True
+DEBUG_MODE = False
 
 PWHL_TEAMS = {
     "BOS": ("Boston Fleet", config.boston_fleet_emoji if hasattr(config, 'boston_fleet_emoji') else "<:boston_fleet:1544502473060913292>"),
@@ -502,53 +502,72 @@ class PWHL(commands.GroupCog, name="pwhl"):
         if not date_str:
             hawaii = pytz.timezone('US/Hawaii')
             date_str = datetime.now(hawaii).strftime('%Y-%m-%d')
-            
+
         scorebar_data = self.fetch_ht_api(feed="modulekit", view="scorebar", numberofdaysback=30, numberofdaysahead=30)
         site_kit = scorebar_data.get("SiteKit", {})
         scorebar_games = site_kit.get("Scorebar") or site_kit.get("scorebar") or []
-        
         games = [g for g in scorebar_games if g.get("Date") == date_str or date_str in str(g.get("GameDateISO8601", ""))]
-        
+
         if not games:
             gpd_data = self.fetch_ht_api(feed="modulekit", view="gamesperday", start_date=date_str, end_date=date_str)
-            site_kit_gpd = gpd_data.get("SiteKit", {})
-            raw_gpd = site_kit_gpd.get("gamesperday") or site_kit_gpd.get("Gamesperday") or []
-            
-            if isinstance(raw_gpd, list) and len(raw_gpd) > 0 and "home_team_code" in raw_gpd[0]:
+            raw_gpd = gpd_data.get("SiteKit", {}).get("gamesperday") or gpd_data.get("SiteKit", {}).get("Gamesperday") or []
+            if isinstance(raw_gpd, list) and raw_gpd and "home_team_code" in raw_gpd[0]:
                 games = raw_gpd
             elif isinstance(raw_gpd, dict):
                 games = raw_gpd.get(date_str, [])
 
-        if not games:
-            return discord.Embed(title=f"PWHL Schedule Overview ({date_str})", description="No games scheduled for specified tracking metrics.", color=config.color)
+        embed = discord.Embed(
+            title="Today's Games",
+            description=f"Total games today: {len(games)}",
+            color=config.color
+        )
+        embed.set_footer(text=config.footer)
 
-        embed = discord.Embed(title=f"PWHL Game Logs ({date_str})", color=config.color)
-        embed.set_thumbnail(url="https://www.thepwhl.com/wp-content/uploads/sites/2/2023/10/PWHL_Logo_Color_RGB.png")
+        if not games:
+            embed.add_field(name="No games scheduled", value="There are no PWHL games scheduled for today.", inline=False)
+            return embed
 
         for game in games:
-            h_code = game.get("HomeCode") or game.get("home_team_code")
-            a_code = game.get("VisitorCode") or game.get("visiting_team_code")
-            
-            h_name = game.get("HomeLongName") or self.get_team_name(h_code)
-            a_name = game.get("VisitorLongName") or self.get_team_name(a_code)
-            h_emoji, a_emoji = self.get_team_emoji(h_code), self.get_team_emoji(a_code)
-            
-            a_str = f"{a_emoji} {a_name}".lstrip()
-            h_str = f"{h_name} {h_emoji}".rstrip()
-            
-            status_code = str(game.get("GameStatus") or game.get("status", "1"))
-            v_goals = game.get("VisitorGoals") or game.get("visiting_goal_count") or 0
-            h_goals = game.get("HomeGoals") or game.get("home_goal_count") or 0
-            
+            h_code = game.get("HomeCode") or game.get("home_team_code") or ""
+            a_code = game.get("VisitorCode") or game.get("visiting_team_code") or ""
+            h_name = game.get("HomeLongName") or game.get("home_team_name") or self.get_team_name(h_code)
+            a_name = game.get("VisitorLongName") or game.get("visiting_team_name") or self.get_team_name(a_code)
+            away_s = f"{self.get_team_emoji(a_code)} {a_name}".strip()
+            home_s = f"{h_name} {self.get_team_emoji(h_code)}".strip()
+
+            status_code = str(game.get("GameStatus") or game.get("status") or "1").upper()
+            v_goals = game.get("VisitorGoals")
+            if v_goals is None: v_goals = game.get("visiting_goal_count", 0)
+            h_goals = game.get("HomeGoals")
+            if h_goals is None: h_goals = game.get("home_goal_count", 0)
+
             if status_code in ("4", "FINAL", "OFF"):
-                status = f"Final: {v_goals} - {h_goals}"
+                field_name = "Final"
+                field_value = f"{away_s} @ {home_s}\n**{v_goals} - {h_goals}**"
             elif status_code in ("2", "3", "LIVE", "CRIT"):
-                status = f"🔴 LIVE ({game.get('GameClock', '')}): {v_goals} - {h_goals}"
+                period = game.get("Period") or game.get("period") or game.get("PeriodNumber") or game.get("period_number")
+                try:
+                    n = int(period)
+                    suffix = "th" if 10 <= n % 100 <= 20 else {1:"st", 2:"nd", 3:"rd"}.get(n % 10, "th")
+                    period_text = f"{n}{suffix}"
+                except (TypeError, ValueError):
+                    period_text = str(period) if period else "LIVE"
+                clock = game.get("GameClock") or game.get("game_clock") or game.get("Clock") or ""
+                field_name = f"🔴 LIVE - {period_text}" + (f" - {clock} remaining" if clock else "")
+                field_value = f"{away_s} @ {home_s}\n**{v_goals} - {h_goals}**"
             else:
-                status = f"Scheduled ({game.get('ScheduledFormattedTime', 'TBD')})"
-                
-            embed.add_field(name=status, value=f"{a_str} @ {h_str}", inline=False)
-            
+                timestamp = None
+                iso_time = game.get("GameDateISO8601") or game.get("game_date_iso_8601")
+                if iso_time:
+                    try:
+                        timestamp = int(datetime.fromisoformat(str(iso_time).replace("Z", "+00:00")).timestamp())
+                    except (TypeError, ValueError):
+                        pass
+                field_name = f"<t:{timestamp}:t>" if timestamp else str(game.get("ScheduledFormattedTime") or "TBD")
+                field_value = f"{away_s} @ {home_s}\nGame is scheduled!"
+
+            embed.add_field(name=field_name, value=field_value, inline=False)
+
         return embed
 
     async def get_tomorrow_games(self, interaction: discord.Interaction):

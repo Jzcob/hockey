@@ -303,22 +303,65 @@ class NHL(commands.GroupCog, name="nhl"):
         if not date_str:
             hawaii = pytz.timezone('US/Hawaii')
             date_str = datetime.now(hawaii).strftime('%Y-%m-%d')
-        data = requests.get(f"https://api-web.nhle.com/v1/schedule/{date_str}").json()
-        
-        if not data.get("gameWeek") or not data["gameWeek"][0].get("games"):
-            return discord.Embed(title=f"NHL Schedule Overview ({date_str})", description="No games scheduled for specified tracking metrics.", color=config.color)
 
-        games = data["gameWeek"][0]["games"]
-        embed = discord.Embed(title=f"NHL Game Logs ({date_str})", color=config.color)
-        embed.set_thumbnail(url="https://www-league.nhlstatic.com/images/logos/league-dark/133-flat.svg")
+        data = requests.get(f"https://api-web.nhle.com/v1/schedule/{date_str}", timeout=15).json()
+
+        games = []
+        for day in data.get("gameWeek", []):
+            if day.get("date") == date_str:
+                games = day.get("games", [])
+                break
+
+        embed = discord.Embed(
+            title="Today's Games",
+            description=f"Total games today: {len(games)}",
+            color=config.color
+        )
+        embed.set_footer(text=config.footer)
+
+        if not games:
+            embed.add_field(name="No games scheduled", value="There are no NHL games scheduled for today.", inline=False)
+            return embed
 
         for game in games:
-            h_t, a_t = game["homeTeam"], game["awayTeam"]
-            a_str, h_str = self.format_team_strings(a_t["abbrev"], h_t["abbrev"], h_t.get("commonName",{}).get("default","TBD"), a_t.get("commonName",{}).get("default","TBD"))
-            away_score = a_t.get('score') or 0
-            home_score = h_t.get('score') or 0
-            status = f"Final: {away_score} - {home_score}" if game["gameState"] in ("FINAL", "OFF") else f"🔴 LIVE: {away_score} - {home_score}" if game["gameState"] in ("LIVE", "CRIT") else "Scheduled"
-            embed.add_field(name=status, value=f"{a_str} @ {h_str}", inline=False)
+            home_t, away_t = game.get("homeTeam", {}), game.get("awayTeam", {})
+            home_name = home_t.get("placeName", {}).get("default") or home_t.get("commonName", {}).get("default", "TBD")
+            away_name = away_t.get("placeName", {}).get("default") or away_t.get("commonName", {}).get("default", "TBD")
+            away_s, home_s = self.format_team_strings(
+                away_t.get("abbrev", ""), home_t.get("abbrev", ""), home_name, away_name
+            )
+
+            state = str(game.get("gameState", "FUT")).upper()
+            away_score, home_score = away_t.get("score") or 0, home_t.get("score") or 0
+
+            timestamp = None
+            if game.get("startTimeUTC"):
+                try:
+                    start_dt = datetime.strptime(game["startTimeUTC"], '%Y-%m-%dT%H:%M:%SZ').replace(tzinfo=pytz.utc)
+                    timestamp = int(start_dt.timestamp())
+                except (TypeError, ValueError):
+                    pass
+
+            if state in ("LIVE", "CRIT"):
+                period = game.get("periodDescriptor", {}).get("number") or game.get("currentPeriod")
+                if period:
+                    suffix = "th" if 10 <= period % 100 <= 20 else {1:"st", 2:"nd", 3:"rd"}.get(period % 10, "th")
+                    period_text = f"{period}{suffix}"
+                else:
+                    period_text = "LIVE"
+                clock = game.get("clock", {})
+                remaining = clock.get("timeRemaining") if isinstance(clock, dict) else game.get("timeRemaining")
+                field_name = f"🔴 LIVE - {period_text}" + (f" - {remaining} remaining" if remaining else "")
+                field_value = f"{away_s} @ {home_s}\n**{away_score} - {home_score}**"
+            elif state in ("FINAL", "OFF"):
+                field_name = "Final"
+                field_value = f"{away_s} @ {home_s}\n**{away_score} - {home_score}**"
+            else:
+                field_name = f"<t:{timestamp}:t>" if timestamp else "Scheduled"
+                field_value = f"{away_s} @ {home_s}\nGame is scheduled!"
+
+            embed.add_field(name=field_name, value=field_value, inline=False)
+
         return embed
 
     async def get_tomorrow_games(self, interaction: discord.Interaction):
