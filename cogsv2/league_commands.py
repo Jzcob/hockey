@@ -141,6 +141,82 @@ class HockeyLeagues(commands.Cog):
         strat = await self.get_strat(interaction, league.value)
         if strat:
             await strat.get_all_teams(interaction)
+    
+    @app_commands.command(
+        name="set-schedule-channel",
+        description="Set the daily schedule channel for the NHL or PWHL."
+    )
+    @app_commands.choices(league=[
+        app_commands.Choice(name="NHL", value="nhl"),
+        app_commands.Choice(name="PWHL", value="pwhl"),
+    ])
+    @app_commands.checks.has_permissions(manage_guild=True)
+    @app_commands.guild_only()
+    async def set_schedule_channel(
+        self,
+        interaction: discord.Interaction,
+        league: app_commands.Choice[str],
+        channel: discord.TextChannel,
+    ):
+        column = "nhl_schedule_channel_id" if league.value == "nhl" else "pwhl_schedule_channel_id"
+        message_column = "nhl_schedule_message_id" if league.value == "nhl" else "pwhl_schedule_message_id"
+
+        async with self.bot.db_pool.acquire() as conn:
+            await conn.ping(reconnect=True)
+            async with conn.cursor() as cursor:
+                sql = f"""
+                    INSERT INTO guild_settings (guild_id, {column}, {message_column})
+                    VALUES (%s, %s, NULL)
+                    ON DUPLICATE KEY UPDATE
+                        {column} = VALUES({column}),
+                        {message_column} = NULL
+                """
+                await cursor.execute(sql, (interaction.guild_id, channel.id))
+                await conn.commit()
+
+        await interaction.response.send_message(
+            f"✅ {league.name} daily schedule will now be sent to {channel.mention}.",
+            ephemeral=True,
+        )
+
+    @app_commands.command(
+        name="clear-schedule-channel",
+        description="Remove the daily schedule channel for the NHL or PWHL."
+    )
+    @app_commands.choices(league=[
+        app_commands.Choice(name="NHL", value="nhl"),
+        app_commands.Choice(name="PWHL", value="pwhl"),
+    ])
+    @app_commands.checks.has_permissions(manage_guild=True)
+    @app_commands.guild_only()
+    async def clear_schedule_channel(
+        self,
+        interaction: discord.Interaction,
+        league: app_commands.Choice[str],
+    ):
+        if league.value == "nhl":
+            channel_column = "nhl_schedule_channel_id"
+            message_column = "nhl_schedule_message_id"
+        else:
+            channel_column = "pwhl_schedule_channel_id"
+            message_column = "pwhl_schedule_message_id"
+
+        async with self.bot.db_pool.acquire() as conn:
+            await conn.ping(reconnect=True)
+            async with conn.cursor() as cursor:
+                sql = f"""
+                    UPDATE guild_settings
+                    SET {channel_column} = NULL,
+                        {message_column} = NULL
+                    WHERE guild_id = %s
+                """
+                await cursor.execute(sql, (interaction.guild_id,))
+                await conn.commit()
+
+        await interaction.response.send_message(
+            f"✅ {league.name} daily schedule channel has been cleared.",
+            ephemeral=True,
+        )
 
 async def setup(bot):
     await bot.add_cog(HockeyLeagues(bot))
