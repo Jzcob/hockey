@@ -143,7 +143,6 @@ class joinLeave(commands.Cog):
             await error_channel.send(f"<@920797181034778655>```{string}```")
 
     @app_commands.command(name="add-hockey-league-role", description="Adds the Hockey League role to users registered in the rosters table.")
-    @app_commands.checks.has_any_role(config.owner)
     async def add_hockey_league_role_command(self, interaction: discord.Interaction):
         if interaction.user.id not in config.bot_authors:
             return await interaction.response.send_message("You cannot add the Hockey League role to a member!", ephemeral=True)
