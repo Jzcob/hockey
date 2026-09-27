@@ -13,6 +13,8 @@ logs = 1168944556927103067
 ticketLog = 1193387303381516319
 premium_logs = 1479370183092207727
 
+hockey_bot_league = 1553910675493888131
+
 released = True
 
 dev_mode = False
