@@ -144,13 +144,19 @@ class joinLeave(commands.Cog):
 
     @app_commands.command(name="add-hockey-league-role", description="Adds the Hockey League role to users registered in the rosters table.")
     async def add_hockey_league_role_command(self, interaction: discord.Interaction):
-        if interaction.user.id not in config.bot_authors:
-            return await interaction.response.send_message("You cannot add the Hockey League role to a member!", ephemeral=True)
-        else:
-            members = interaction.guild.members
-            for member in members:
-                await self.add_hockey_league_role(member)
-            await interaction.response.send_message("Hockey League role added to registered members!", ephemeral=True)
+        try:
+            await interaction.response.defer(ephemeral=True)
+            if interaction.user.id not in config.bot_authors:
+                return await interaction.response.send_message("You cannot add the Hockey League role to a member!", ephemeral=True)
+            else:
+                members = interaction.guild.members
+                for member in members:
+                    await self.add_hockey_league_role(member)
+                await interaction.response.send_message("Hockey League role added to registered members!", ephemeral=True)
+        except:
+            error_channel = self.bot.get_channel(config.error_channel)
+            string = f"{traceback.format_exc()}"
+            await error_channel.send(f"<@920797181034778655>```{string}```")
 
 async def setup(bot):
     await bot.add_cog(joinLeave(bot), guilds=[discord.Object(id=config.hockey_discord_server)])
