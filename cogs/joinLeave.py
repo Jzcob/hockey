@@ -90,10 +90,10 @@ class joinLeave(commands.Cog):
         embed = discord.Embed(
             title="Welcome to the Hockey Discord Server!",
             description=(
-                f"Welcome to the Hockey Discord Server, {member.mention}!\\n\\n"
-                f":mega: Please read the rules in <#1165854571340513292>\\n"
+                f"Welcome to the Hockey Discord Server, {member.mention}!\n\n"
+                f":mega: Please read the rules in <#1165854571340513292>\n"
                 f":mega: If you have any questions please ask them in "
-                f"<#1165873655931219968>\\n"
+                f"<#1165873655931219968>\n"
                 f":mega: Have fun in the server!"
             ),
             color=config.color
@@ -115,14 +115,6 @@ class joinLeave(commands.Cog):
                 await welcome_channel.send(content=member.mention, embed=embed)
             except Exception:
                 await self.report_error()
-
-        try:
-            await member.send(embed=embed)
-        except discord.Forbidden:
-            # Closed DMs are normal and do not need an error report.
-            pass
-        except Exception:
-            await self.report_error()
 
     @commands.Cog.listener()
     async def on_member_remove(self, member: discord.Member):
@@ -214,11 +206,11 @@ class joinLeave(commands.Cog):
                     failed += 1
 
             await interaction.followup.send(
-                "✅ **Hockey League role sync complete.**\\n\\n"
-                f"Members checked: **{checked:,}**\\n"
-                f"Registered league members in server: **{registered:,}**\\n"
-                f"Roles added: **{added:,}**\\n"
-                f"Already had role: **{already_had:,}**\\n"
+                "✅ **Hockey League role sync complete.**\n\n"
+                f"Members checked: **{checked:,}**\n"
+                f"Registered league members in server: **{registered:,}**\n"
+                f"Roles added: **{added:,}**\n"
+                f"Already had role: **{already_had:,}**\n"
                 f"Failed: **{failed:,}**",
                 ephemeral=True
             )
