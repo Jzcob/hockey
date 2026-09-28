@@ -8,11 +8,11 @@ import traceback
 import config
 from datetime import datetime, timedelta
 import requests
-
 # Load environment variables from .env file
 load_dotenv()
-
 # --- Helper function for team names ---
+
+
 def get_nhl_teams():
     """Returns a list of all official NHL team names."""
     return [
@@ -27,68 +27,58 @@ def get_nhl_teams():
         "Tampa Bay Lightning", "Toronto Maple Leafs", "Utah Mammoth",
         "Vancouver Canucks", "Vegas Golden Knights", "Washington Capitals", "Winnipeg Jets"
     ]
-
 # --- Real NHL API Function ---
+
+
 def fetch_game_results(start_date_str: str, end_date_str: str):
     """
     Fetches game results from the NHL API for a given date range.
     Returns a dict like: {'Team Name': ['win', 'loss', 'ot_loss', ...]}
     """
     print(f"API: Fetching game results from {start_date_str} to {end_date_str}...")
-    
     results = {}
     start_date = datetime.strptime(start_date_str, '%Y-%m-%d')
     end_date = datetime.strptime(end_date_str, '%Y-%m-%d')
-    
     current_date = start_date
     while current_date <= end_date:
         date_str = current_date.strftime('%Y-%m-%d')
-        url = f"https://api-web.nhle.com/v1/schedule/{date_str}"
-        
+        url = f"https\://api-web.nhle.com/v1/schedule/{date_str}"
         try:
             response = requests.get(url)
             response.raise_for_status()
             data = response.json()
-
             for day in data.get("gameWeek", []):
                 for game in day.get("games", []):
                     if game.get("gameState") not in ["OFF", "FINAL"]:
                         continue
-
                     home_team_data = game.get("homeTeam", {})
                     away_team_data = game.get("awayTeam", {})
-                    
                     home_name = f"{home_team_data.get('placeName', {}).get('default')} {home_team_data.get('commonName', {}).get('default')}"
                     away_name = f"{away_team_data.get('placeName', {}).get('default')} {away_team_data.get('commonName', {}).get('default')}"
-                    
                     home_score = home_team_data.get("score", 0)
                     away_score = away_team_data.get("score", 0)
-                    
                     last_period_type = game.get("gameOutcome", {}).get("lastPeriodType")
-
                     results.setdefault(home_name, [])
                     results.setdefault(away_name, [])
-
                     if home_score > away_score:
                         results[home_name].append('win')
                         results[away_name].append('ot_loss' if last_period_type in ["OT", "SO"] else 'loss')
                     else:
                         results[away_name].append('win')
                         results[home_name].append('ot_loss' if last_period_type in ["OT", "SO"] else 'loss')
-
         except requests.exceptions.RequestException as e:
             print(f"API Error fetching data for {date_str}: {e}")
-        
         current_date += timedelta(days=1)
-        
     print(f"API: Fetched {sum(len(v) for v in results.values())} total game results.")
     return results
-
 # --- Admin Cog ---
+
+
 class adminLeague(commands.Cog, name="adminLeague"):
+
     def __init__(self, bot: commands.Bot):
         self.bot = bot
-        # Note: aiomysql pool initialization is typically handled in main.py, 
+        # Note: aiomysql pool initialization is typically handled in main.py,
         # but if this setup manages it asynchronously, ensure bot.db_pool is set.
         self.db_pool = getattr(bot, "db_pool", None)
         print("Grabbing a Dunkin' iced coffee for the admin... ☕")
@@ -117,7 +107,7 @@ class adminLeague(commands.Cog, name="adminLeague"):
                     print("Admin Cog: Rosters table is ready.")
         except Exception as err:
             print(f"Admin Cog: Failed to create table: {err}")
-    
+
     async def log_command(self, interaction: discord.Interaction):
         pass
 
@@ -132,7 +122,6 @@ class adminLeague(commands.Cog, name="adminLeague"):
                     await cursor.execute("DELETE FROM rosters WHERE user_id = %s", (user.id,))
                     await conn.commit()
                     rowcount = cursor.rowcount
-
             if rowcount > 0:
                 await interaction.followup.send(f"✅ Successfully removed **{user.display_name}** from the league.", ephemeral=True)
             else:
@@ -148,16 +137,15 @@ class adminLeague(commands.Cog, name="adminLeague"):
         start_date="The start date for the calculation period (Format: YYYY-MM-DD).",
         end_date="The end date for the calculation period (Format: YYYY-MM-DD)."
     )
+
     async def calculate_points(self, interaction: discord.Interaction, start_date: str, end_date: str):
         await interaction.response.defer(ephemeral=True)
-        
         # --- 1. BACKUP DATABASE ---
         try:
             async with self.db_pool.acquire() as conn:
                 async with conn.cursor(aiomysql.DictCursor) as cursor_backup:
                     await cursor_backup.execute("SELECT * FROM rosters")
                     all_rosters_backup = await cursor_backup.fetchall()
-                    
             if all_rosters_backup:
                 timestamp = datetime.now().strftime("%Y-%m-%d_%H-%M-%S")
                 backup_filename = f"rosters_backup_{timestamp}.sql"
@@ -168,7 +156,6 @@ class adminLeague(commands.Cog, name="adminLeague"):
                         columns = ", ".join([f"`{col}`" for col in row.keys()])
                         values_str = ", ".join(values)
                         f.write(f"INSERT INTO rosters ({columns}) VALUES ({values_str});\n")
-                
                 if not interaction.is_expired(): await interaction.followup.send(f"✅ Database backup created successfully.", file=discord.File(backup_filename), ephemeral=True)
                 os.remove(backup_filename)
             else:
@@ -178,7 +165,6 @@ class adminLeague(commands.Cog, name="adminLeague"):
             error_channel = self.bot.get_channel(config.error_channel)
             if error_channel: await error_channel.send(f"<@920797181034778655>```{traceback.format_exc()}```")
             return
-
         # --- 2. PROCEED WITH POINT CALCULATION ---
         try:
             try:
@@ -187,23 +173,18 @@ class adminLeague(commands.Cog, name="adminLeague"):
             except ValueError:
                 if not interaction.is_expired(): await interaction.followup.send("❌ Invalid date format. Please use `YYYY-MM-DD` for both start and end dates.", ephemeral=True)
                 return
-
             WIN_POINTS, OT_LOSS_POINTS, LOSS_POINTS, ACE_MULTIPLIER = 4, 2, -2, 3
             game_results = fetch_game_results(start_date, end_date)
-            
             if not game_results:
                 if not interaction.is_expired(): await interaction.followup.send(f"No completed game results found for the period `{start_date}` to `{end_date}`.", ephemeral=True)
                 return
-
             async with self.db_pool.acquire() as conn:
                 async with conn.cursor(aiomysql.DictCursor) as cursor_calc:
                     await cursor_calc.execute("SELECT * FROM rosters")
                     all_rosters = await cursor_calc.fetchall()
-
                     if not all_rosters:
                         if not interaction.is_expired(): await interaction.followup.send("No rosters found to calculate points for.", ephemeral=True)
                         return
-
                     total_points_awarded, players_updated = 0, 0
                     for roster in all_rosters:
                         period_points = 0
@@ -216,14 +197,11 @@ class adminLeague(commands.Cog, name="adminLeague"):
                                     if roster.get('aced_team_slot') == slot:
                                         points_for_game *= ACE_MULTIPLIER
                                     period_points += points_for_game
-                        
                         if period_points != 0:
                             await cursor_calc.execute("UPDATE rosters SET points = points + %s WHERE user_id = %s", (period_points, roster['user_id']))
                             total_points_awarded += period_points
                             players_updated += 1
-                    
                     await conn.commit()
-            
             view = ui.View(timeout=180)
             reset_aces_button = ui.Button(label="Reset Weekly Aces", style=discord.ButtonStyle.primary, emoji="✨")
             async def reset_aces_callback(callback_interaction: discord.Interaction):
@@ -235,10 +213,8 @@ class adminLeague(commands.Cog, name="adminLeague"):
                     await callback_interaction.response.send_message("✅ All player aces have been reset.", ephemeral=True)
                 except Exception:
                     await callback_interaction.response.send_message("❌ A database error occurred. The issue has been reported.", ephemeral=True)
-            
             reset_aces_button.callback = reset_aces_callback
             view.add_item(reset_aces_button)
-
             embed = discord.Embed(title=f"✅ Point Calculation Complete for {start_date} to {end_date}", color=discord.Color.green())
             embed.add_field(name="Players Updated", value=str(players_updated))
             embed.add_field(name="Net Points Awarded", value=str(total_points_awarded))
@@ -255,7 +231,6 @@ class adminLeague(commands.Cog, name="adminLeague"):
         await interaction.response.defer(ephemeral=True)
         try:
             view = ui.View(timeout=180)
-
             reset_aces_button = ui.Button(label="Reset Weekly Aces", style=discord.ButtonStyle.primary, emoji="✨")
             async def reset_aces_callback(callback_interaction: discord.Interaction):
                 try:
@@ -266,10 +241,8 @@ class adminLeague(commands.Cog, name="adminLeague"):
                     await callback_interaction.response.send_message("✅ All player aces have been reset.", ephemeral=True)
                 except Exception:
                     await callback_interaction.response.send_message("❌ A database error occurred. The issue has been reported.", ephemeral=True)
-            
             reset_aces_button.callback = reset_aces_callback
             view.add_item(reset_aces_button)
-
             stats_button = ui.Button(label="League Stats", style=discord.ButtonStyle.secondary, emoji="📊")
             async def stats_callback(callback_interaction: discord.Interaction):
                 try:
@@ -278,22 +251,18 @@ class adminLeague(commands.Cog, name="adminLeague"):
                             await cursor.execute("SELECT COUNT(user_id) AS count FROM rosters")
                             res = await cursor.fetchone()
                             player_count = res['count'] if res else 0
-                    
                     embed = discord.Embed(title="🏒 Global League Stats", color=discord.Color.blue())
                     embed.add_field(name="Total Players", value=str(player_count))
                     await callback_interaction.response.send_message(embed=embed, ephemeral=True)
                 except Exception:
                     await callback_interaction.response.send_message("❌ A database error occurred. The issue has been reported.", ephemeral=True)
-            
             stats_button.callback = stats_callback
             view.add_item(stats_button)
-
             await interaction.followup.send("League Admin Panel:", view=view, ephemeral=True)
         except Exception:
             error_channel = self.bot.get_channel(config.error_channel)
             if error_channel: await error_channel.send(f"<@920797181034778655>```{traceback.format_exc()}```")
             if not interaction.is_expired(): await interaction.followup.send("An error occurred. The issue has been reported.", ephemeral=True)
-    
     alert = app_commands.Group(name="alert", description="Send alerts to league members.")
 
     @alert.command(name="custom", description="Sends a custom message to all league members.")
@@ -308,11 +277,9 @@ class adminLeague(commands.Cog, name="adminLeague"):
                     await cursor.execute("SELECT user_id FROM rosters")
                     rows = await cursor.fetchall()
                     user_ids = [row['user_id'] for row in rows]
-
             if not user_ids:
                 if not interaction.is_expired(): await interaction.followup.send("There are no users in the league to alert.", ephemeral=True)
                 return
-
             success_count, fail_count = 0, 0
             for user_id in user_ids:
                 try:
@@ -321,7 +288,6 @@ class adminLeague(commands.Cog, name="adminLeague"):
                     success_count += 1
                 except (discord.errors.NotFound, discord.errors.Forbidden):
                     fail_count += 1
-            
             if not interaction.is_expired(): await interaction.followup.send(f"✅ Alert sent to **{success_count}** users.\n❌ Failed to send to **{fail_count}** users.", ephemeral=True)
         except Exception:
             error_channel = self.bot.get_channel(config.error_channel)
@@ -339,11 +305,9 @@ class adminLeague(commands.Cog, name="adminLeague"):
                     await cursor.execute("SELECT user_id FROM rosters WHERE bench_one IS NULL")
                     rows = await cursor.fetchall()
                     user_ids = [row['user_id'] for row in rows]
-
             if not user_ids:
                 if not interaction.is_expired(): await interaction.followup.send("No users found with incomplete rosters.", ephemeral=True)
                 return
-            
             message = (
                 "#👋 **Friendly Reminder!**\n\n"
                 "Your fantasy league registration is incomplete. To finish setting up, please run the `/my-roster` command. \n"
@@ -359,13 +323,11 @@ class adminLeague(commands.Cog, name="adminLeague"):
                     success_count += 1
                 except (discord.errors.NotFound, discord.errors.Forbidden):
                     fail_count += 1
-            
             if not interaction.is_expired(): await interaction.followup.send(f"✅ Incomplete roster alert sent to **{success_count}** users.\n❌ Failed to send to **{fail_count}** users.", ephemeral=True)
         except Exception:
             error_channel = self.bot.get_channel(config.error_channel)
             if error_channel: await error_channel.send(f"<@920797181034778655>```{traceback.format_exc()}```")
             if not interaction.is_expired(): await interaction.followup.send("An error occurred while sending alerts. The issue has been reported.", ephemeral=True)
-
     #@app_commands.command(name="announce-fantasy-all", description="Broadcast the 2026 Hockey Bot League announcement to all servers")
     #@app_commands.checks.has_permissions(administrator=True)
     #async def announce_fantasy_all(self, interaction: discord.Interaction):
@@ -375,9 +337,9 @@ class adminLeague(commands.Cog, name="adminLeague"):
     #            return
 #        import strategies.base_strategy as base_strategy
 #        base_strategy.log_command(self.bot, interaction, "admin announce-fantasy-all")
-#        
+#
 #        await interaction.response.defer(ephemeral=True)
-#        
+#
 #        embed = discord.Embed(
 #            title="🏒 2026 HOCKEY BOT LEAGUE! 🏆",
 #            description=(
@@ -387,7 +349,7 @@ class adminLeague(commands.Cog, name="adminLeague"):
 #            ),
 #            color=config.color
 #        )
-#        
+#
 #        embed.add_field(
 #            name="📋 Build Your Roster (`/join_league`)",
 #            value=(
@@ -397,19 +359,19 @@ class adminLeague(commands.Cog, name="adminLeague"):
 #           ),
 #            inline=False
 #        )
-# Can you comment out the rest of this command?        
+# Can you comment out the rest of this command?
 #        embed.add_field(
 #            name="🔄 Make Strategic Swaps (`/swap-teams`)",
 #            value="You have **10 swaps** to use for the entire season. Swap active and bench teams to adapt to matchups, hot streaks, or injuries.",
 #            inline=False
 #        )
-#        
+#
         #        embed.add_field(
         #            name="⭐ Ace Your Pick (`/ace-team`)",
         #            value="Select one active team each week as your **Aced** team to earn a massive **x3 point multiplier** for all of its games that week! Resets weekly.",
         #            inline=False
         #        )
-        #        
+        #
         #        embed.add_field(
         #            name="📊 The Scoring System",
         #            value=(
@@ -421,7 +383,7 @@ class adminLeague(commands.Cog, name="adminLeague"):
         #            ),
         #            inline=False
         #        )
-        #        
+        #
         #        embed.add_field(
         #            name="🚀 Essential Commands",
         #            value=(
@@ -435,7 +397,7 @@ class adminLeague(commands.Cog, name="adminLeague"):
         #            ),
         #            inline=False
         #        )
-        #        
+        #
         #        embed.add_field(
         #            name="⚠️ Important Notes",
         #            value=(
@@ -446,7 +408,7 @@ class adminLeague(commands.Cog, name="adminLeague"):
         #            ),
         #            inline=False
         #        )
-        #        
+        #
         #        embed.set_footer(text=config.footer)
         #
         #        success_count = 0
@@ -454,7 +416,7 @@ class adminLeague(commands.Cog, name="adminLeague"):
         #
         #        for guild in self.bot.guilds:
         #            target_channel = None
-        #            
+        #
         #            # 1. Try system channel (default announcement/welcome channel)
         #            if guild.system_channel and guild.system_channel.permissions_for(guild.me).send_messages:
         #                target_channel = guild.system_channel
@@ -466,7 +428,7 @@ class adminLeague(commands.Cog, name="adminLeague"):
         #                        if any(keyword in name_lower for keyword in ["announcement", "updates", "general", "bot", "lobby"]):
         #                            target_channel = channel
         #                            break
-        #                
+        #
         #                # 3. Fallback to the first writable text channel if no keyword match is found
         #                if not target_channel:
         #                    for channel in guild.text_channels:
@@ -484,64 +446,290 @@ class adminLeague(commands.Cog, name="adminLeague"):
         #                fail_count += 1
         #
         #        await interaction.followup.send(
-        #            f"Broadcast complete! Successfully sent to **{success_count}** servers (Failed/Skipped: {fail_count}).", 
+        #            f"Broadcast complete! Successfully sent to **{success_count}** servers (Failed/Skipped: {fail_count}).",
         #            ephemeral=True
         #        )
 
-    @app_commands.command(name="league_rosters", description="View a summary of all players currently registered in the league.")
+    @app_commands.command(
+        name="remove-incomplete-rosters",
+        description="Remove all league registrations that do not have all 3 bench teams."
+    )
+    @app_commands.default_permissions(administrator=True)
+    async def remove_incomplete_rosters(self, interaction: discord.Interaction):
+        await interaction.response.defer(ephemeral=True)
+        try:
+            async with self.db_pool.acquire() as conn:
+                await conn.ping(reconnect=True)
+                async with conn.cursor(aiomysql.DictCursor) as cursor:
+                    await cursor.execute("""
+                        SELECT user_id, bench_one, bench_two, bench_three
+                        FROM rosters
+                        WHERE COALESCE(TRIM(bench_one), '') = ''
+                           OR COALESCE(TRIM(bench_two), '') = ''
+                           OR COALESCE(TRIM(bench_three), '') = ''
+                    """)
+                    incomplete = await cursor.fetchall()
+            if not incomplete:
+                await interaction.followup.send(
+                    "✅ There are no incomplete rosters to remove.",
+                    ephemeral=True
+                )
+                return
+            user_ids = [int(row["user_id"]) for row in incomplete]
+            preview_names = []
+            for user_id in user_ids[:20]:
+                member = interaction.guild.get_member(user_id) if interaction.guild else None
+                if member:
+                    preview_names.append(f"• {member.display_name} (`{user_id}`)")
+                else:
+                    try:
+                        user = await self.bot.fetch_user(user_id)
+                        preview_names.append(f"• {user.display_name} (`{user_id}`)")
+                    except Exception:
+                        preview_names.append(f"• User ID `{user_id}`")
+            preview = "\n".join(preview_names)
+            if len(user_ids) > 20:
+                preview += f"\n• ...and {len(user_ids) - 20} more"
+            view = ui.View(timeout=120)
+            confirm_button = ui.Button(
+                label=f"Remove {len(user_ids)} Incomplete Roster(s)",
+                style=discord.ButtonStyle.danger,
+                emoji="🗑️"
+            )
+            cancel_button = ui.Button(
+                label="Cancel",
+                style=discord.ButtonStyle.secondary
+            )
+            async def confirm_callback(button_interaction: discord.Interaction):
+                if button_interaction.user.id != interaction.user.id:
+                    await button_interaction.response.send_message(
+                        "Only the administrator who started this command can confirm it.",
+                        ephemeral=True
+                    )
+                    return
+                await button_interaction.response.defer(ephemeral=True)
+                try:
+                    # Re-run the condition at confirmation time so a user who
+                    # completed their bench after the preview is not deleted.
+                    async with self.db_pool.acquire() as conn:
+                        await conn.ping(reconnect=True)
+                        async with conn.cursor(aiomysql.DictCursor) as cursor:
+                            await cursor.execute("""
+                                SELECT user_id
+                                FROM rosters
+                                WHERE COALESCE(TRIM(bench_one), '') = ''
+                                   OR COALESCE(TRIM(bench_two), '') = ''
+                                   OR COALESCE(TRIM(bench_three), '') = ''
+                            """)
+                            current_incomplete = await cursor.fetchall()
+                            removed_ids = [int(row["user_id"]) for row in current_incomplete]
+                            if removed_ids:
+                                await cursor.execute("""
+                                    DELETE FROM rosters
+                                    WHERE COALESCE(TRIM(bench_one), '') = ''
+                                       OR COALESCE(TRIM(bench_two), '') = ''
+                                       OR COALESCE(TRIM(bench_three), '') = ''
+                                """)
+                                deleted_count = cursor.rowcount
+                                await conn.commit()
+                            else:
+                                deleted_count = 0
+                    role_removed = 0
+                    role_failed = 0
+                    league_role = (
+                        interaction.guild.get_role(config.hockey_bot_league)
+                        if interaction.guild and hasattr(config, "hockey_bot_league")
+                        else None
+                    )
+                    if league_role:
+                        for user_id in removed_ids:
+                            member = interaction.guild.get_member(user_id)
+                            if member and league_role in member.roles:
+                                try:
+                                    await member.remove_roles(
+                                        league_role,
+                                        reason="Incomplete Hockey League roster removed"
+                                    )
+                                    role_removed += 1
+                                except (discord.Forbidden, discord.HTTPException):
+                                    role_failed += 1
+                    for item in view.children:
+                        item.disabled = True
+                    try:
+                        await button_interaction.edit_original_response(view=view)
+                    except Exception:
+                        pass
+                    await button_interaction.followup.send(
+                        "✅ **Incomplete roster cleanup complete.**\n\n"
+                        f"Roster entries removed: **{deleted_count}**\n"
+                        f"League roles removed: **{role_removed}**\n"
+                        f"Role removals failed: **{role_failed}**",
+                        ephemeral=True
+                    )
+                except Exception:
+                    error_channel = self.bot.get_channel(config.error_channel)
+                    if error_channel:
+                        await error_channel.send(
+                            f"<@920797181034778655>```{traceback.format_exc()}```"
+                        )
+                    await button_interaction.followup.send(
+                        "❌ An error occurred while removing incomplete rosters. "
+                        "The issue has been reported.",
+                        ephemeral=True
+                    )
+            async def cancel_callback(button_interaction: discord.Interaction):
+                if button_interaction.user.id != interaction.user.id:
+                    await button_interaction.response.send_message(
+                        "Only the administrator who started this command can cancel it.",
+                        ephemeral=True
+                    )
+                    return
+                for item in view.children:
+                    item.disabled = True
+                await button_interaction.response.edit_message(
+                    content="❎ Incomplete roster cleanup cancelled.",
+                    embed=None,
+                    view=view
+                )
+            confirm_button.callback = confirm_callback
+            cancel_button.callback = cancel_callback
+            view.add_item(confirm_button)
+            view.add_item(cancel_button)
+            embed = discord.Embed(
+                title="⚠️ Remove Incomplete Rosters?",
+                description=(
+                    f"Found **{len(user_ids)}** roster(s) missing at least one bench team.\n\n"
+                    "This will permanently delete those roster entries. If the Hockey League "
+                    "role is configured, it will also be removed from affected members still "
+                    "in this Discord server.\n\n"
+                    f"**Preview:**\n{preview}"
+                ),
+                color=discord.Color.orange()
+            )
+            embed.set_footer(text="This confirmation expires in 2 minutes.")
+            await interaction.followup.send(embed=embed, view=view, ephemeral=True)
+        except Exception:
+            error_channel = self.bot.get_channel(config.error_channel)
+            if error_channel:
+                await error_channel.send(
+                    f"<@920797181034778655>```{traceback.format_exc()}```"
+                )
+            if not interaction.is_expired():
+                await interaction.followup.send(
+                    "❌ An error occurred while checking incomplete rosters. "
+                    "The issue has been reported.",
+                    ephemeral=True
+                )
+
+    @app_commands.command(
+        name="league_rosters",
+        description="View a summary of all players currently registered in the league."
+    )
     @app_commands.default_permissions(administrator=True)
     async def league_rosters(self, interaction: discord.Interaction):
         await interaction.response.defer(ephemeral=True)
         try:
             async with self.db_pool.acquire() as conn:
+                await conn.ping(reconnect=True)
                 async with conn.cursor(aiomysql.DictCursor) as cursor:
-                    await cursor.execute("SELECT * FROM rosters")
+                    await cursor.execute("SELECT * FROM rosters ORDER BY points DESC")
                     rows = await cursor.fetchall()
-
             if not rows:
-                if not interaction.is_expired():
-                    await interaction.followup.send("❌ There are currently no players registered in the league.", ephemeral=True)
+                await interaction.followup.send(
+                    "❌ There are currently no players registered in the league.",
+                    ephemeral=True
+                )
                 return
-
+            def roster_complete(roster):
+                return all(
+                    roster.get(slot)
+                    for slot in ("bench_one", "bench_two", "bench_three")
+                )
             total_players = len(rows)
-            complete_rosters = sum(1 for r in rows if r.get('bench_one'))
+            complete_rosters = sum(1 for r in rows if roster_complete(r))
             incomplete_rosters = total_players - complete_rosters
-
             embed = discord.Embed(
                 title="📊 Global League Roster Overview",
+                description="Players are listed in points order.",
                 color=discord.Color.blue()
             )
-            embed.add_field(name="Total Players Enrolled", value=str(total_players), inline=True)
-            embed.add_field(name="Complete Rosters", value=str(complete_rosters), inline=True)
-            embed.add_field(name="Incomplete Rosters", value=str(incomplete_rosters), inline=True)
-
+            embed.add_field(
+                name="Total Players Enrolled",
+                value=str(total_players),
+                inline=True
+            )
+            embed.add_field(
+                name="Complete Rosters",
+                value=str(complete_rosters),
+                inline=True
+            )
+            embed.add_field(
+                name="Incomplete Rosters",
+                value=str(incomplete_rosters),
+                inline=True
+            )
             player_summaries = []
-            for r in rows[:50]:
-                try:
-                    user = await self.bot.fetch_user(r['user_id'])
-                    name = user.display_name
-                except Exception:
-                    name = f"User ID: {r['user_id']}"
-
-                status = "✅ Complete" if r.get('bench_one') else "⚠️ Incomplete"
-                points = r.get('points', 0)
-                player_summaries.append(f"• **{name}** — {status} | 🏆 {points} pts")
-
-            description_text = "\n".join(player_summaries)
-            if total_players > 10:
-                description_text += f"\n\n*And {total_players - 10} more player(s)...*"
-
-            embed.add_field(name="Player List (Preview)", value=description_text, inline=False)
-
-            if not interaction.is_expired():
-                await interaction.followup.send(embed=embed, ephemeral=True)
-
+            preview_limit = 50
+            for r in rows[:preview_limit]:
+                user_id = int(r["user_id"])
+                member = interaction.guild.get_member(user_id) if interaction.guild else None
+                if member:
+                    name = member.display_name
+                else:
+                    try:
+                        user = await self.bot.fetch_user(user_id)
+                        name = user.display_name
+                    except Exception:
+                        name = f"User ID: {user_id}"
+                status = "✅ Complete" if roster_complete(r) else "⚠️ Incomplete"
+                points = r.get("points") or 0
+                player_summaries.append(
+                    f"• **{name}** — {status} | 🏆 {points} pts"
+                )
+            # Discord embed field values are limited to 1,024 characters.
+            # Split the player list across multiple fields safely.
+            chunks = []
+            current_chunk = ""
+            for line in player_summaries:
+                candidate = f"{current_chunk}\n{line}" if current_chunk else line
+                if len(candidate) > 1000:
+                    if current_chunk:
+                        chunks.append(current_chunk)
+                    current_chunk = line
+                else:
+                    current_chunk = candidate
+            if current_chunk:
+                chunks.append(current_chunk)
+            for index, chunk in enumerate(chunks, start=1):
+                field_name = (
+                    "Player List"
+                    if len(chunks) == 1
+                    else f"Player List ({index}/{len(chunks)})"
+                )
+                embed.add_field(
+                    name=field_name,
+                    value=chunk,
+                    inline=False
+                )
+            if total_players > preview_limit:
+                embed.add_field(
+                    name="Additional Players",
+                    value=f"*And {total_players - preview_limit} more player(s)...*",
+                    inline=False
+                )
+            await interaction.followup.send(embed=embed, ephemeral=True)
         except Exception:
             error_channel = self.bot.get_channel(config.error_channel)
             if error_channel:
-                await error_channel.send(f"<@920797181034778655>```{traceback.format_exc()}```")
+                await error_channel.send(
+                    f"<@920797181034778655>```{traceback.format_exc()}```"
+                )
             if not interaction.is_expired():
-                await interaction.followup.send("An error occurred while fetching the league rosters.", ephemeral=True)
+                await interaction.followup.send(
+                    "An error occurred while fetching the league rosters.",
+                    ephemeral=True
+                )
+
 
 async def setup(bot):
     await bot.add_cog(adminLeague(bot), guilds=[discord.Object(id=config.hockey_discord_server)])
