@@ -42,7 +42,7 @@ def fetch_game_results(start_date_str: str, end_date_str: str):
     current_date = start_date
     while current_date <= end_date:
         date_str = current_date.strftime('%Y-%m-%d')
-        url = f"https\://api-web.nhle.com/v1/schedule/{date_str}"
+        url = f"https://api-web.nhle.com/v1/schedule/{date_str}"
         try:
             response = requests.get(url)
             response.raise_for_status()
