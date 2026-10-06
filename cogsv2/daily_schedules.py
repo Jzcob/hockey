@@ -14,7 +14,21 @@ class DailySchedules(commands.Cog):
             "nhl": NHL(bot),
             "pwhl": PWHLStrategy(bot),
         }
+
         self.eastern = pytz.timezone("US/Eastern")
+
+        # Stores the date associated with each schedule message.
+        #
+        # Key:
+        # (league, guild_id)
+        #
+        # Value:
+        # YYYY-MM-DD
+        #
+        # This prevents yesterday's message from being replaced with
+        # today's schedule when the live updater runs after midnight.
+        self.schedule_dates = {}
+
         self.post_morning_schedule.start()
         self.live_update_loop.start()
 
@@ -24,27 +38,48 @@ class DailySchedules(commands.Cog):
 
     @commands.Cog.listener()
     async def on_ready(self):
-        print("LOADED: `daily_schedules.py` (NHL + PWHL database scheduling)")
+        print(
+            "LOADED: `daily_schedules.py` "
+            "(NHL + PWHL database scheduling)"
+        )
 
     def _is_offseason(self) -> bool:
         # Temporary 2026 NHL gate.
-        # Remove this method/check once you no longer need it.
-        return datetime.now(self.eastern).date() < datetime(2026, 9, 20).date()
+        return (
+            datetime.now(self.eastern).date()
+            < datetime(2026, 9, 20).date()
+        )
 
     def _league_is_active(self, league: str) -> bool:
         today = datetime.now(self.eastern).date()
 
+        # PWHL automatic schedules begin December 6, 2026.
         if league == "pwhl":
             return today >= datetime(2026, 12, 6).date()
 
         return True
 
+    def _today_string(self) -> str:
+        """
+        Returns today's date in Eastern Time.
+
+        Example:
+        2026-10-06
+        """
+        return datetime.now(self.eastern).strftime("%Y-%m-%d")
+
     @staticmethod
     def _columns(league: str):
         if league == "nhl":
-            return "nhl_schedule_channel_id", "nhl_schedule_message_id"
+            return (
+                "nhl_schedule_channel_id",
+                "nhl_schedule_message_id",
+            )
 
-        return "pwhl_schedule_channel_id", "pwhl_schedule_message_id"
+        return (
+            "pwhl_schedule_channel_id",
+            "pwhl_schedule_message_id",
+        )
 
     async def _get_channel(self, channel_id: int):
         channel = self.bot.get_channel(channel_id)
@@ -54,13 +89,18 @@ class DailySchedules(commands.Cog):
 
         try:
             return await self.bot.fetch_channel(channel_id)
-        except (discord.NotFound, discord.Forbidden, discord.HTTPException):
+
+        except (
+            discord.NotFound,
+            discord.Forbidden,
+            discord.HTTPException,
+        ):
             return None
 
     async def _configured_targets(
         self,
         league: str,
-        require_message: bool = False
+        require_message: bool = False,
     ):
         channel_col, message_col = self._columns(league)
 
@@ -85,7 +125,7 @@ class DailySchedules(commands.Cog):
         self,
         league: str,
         guild_id: int,
-        message_id
+        message_id,
     ):
         _, message_col = self._columns(league)
 
@@ -106,24 +146,32 @@ class DailySchedules(commands.Cog):
         time=time(
             hour=5,
             minute=30,
-            tzinfo=pytz.timezone("US/Eastern")
+            tzinfo=pytz.timezone("US/Eastern"),
         )
     )
     async def post_morning_schedule(self):
         if self._is_offseason():
             return
 
-        print("Running NHL/PWHL morning schedule post...")
+        today = self._today_string()
+
+        print(
+            f"Running NHL/PWHL morning schedule post "
+            f"for {today}..."
+        )
 
         for league, strategy in self.strategies.items():
 
-            # PWHL will be skipped completely until December 6, 2026.
+            # PWHL stays disabled until December 6, 2026.
             if not self._league_is_active(league):
                 continue
 
             try:
+                # IMPORTANT:
+                # Explicitly build today's schedule instead of relying
+                # on date_str=None.
                 embed = await strategy.build_schedule_embed(
-                    date_str=None
+                    date_str=today
                 )
 
                 targets = await self._configured_targets(league)
@@ -145,12 +193,24 @@ class DailySchedules(commands.Cog):
                         await self._save_message_id(
                             league,
                             guild_id,
-                            msg.id
+                            msg.id,
+                        )
+
+                        # Remember which date this particular schedule
+                        # message belongs to.
+                        self.schedule_dates[
+                            (league, guild_id)
+                        ] = today
+
+                        print(
+                            f"{league.upper()}: "
+                            f"posted {today} schedule "
+                            f"in guild {guild_id}"
                         )
 
                     except (
                         discord.Forbidden,
-                        discord.HTTPException
+                        discord.HTTPException,
                     ) as exc:
                         print(
                             f"{league.upper()}: "
@@ -170,32 +230,103 @@ class DailySchedules(commands.Cog):
         if self._is_offseason():
             return
 
+        today = self._today_string()
+
         for league, strategy in self.strategies.items():
 
-            # Prevent PWHL live updates/API calls until December 6, 2026.
+            # No automatic PWHL updates before December 6, 2026.
             if not self._league_is_active(league):
                 continue
 
             try:
                 targets = await self._configured_targets(
                     league,
-                    require_message=True
+                    require_message=True,
                 )
 
                 if not targets:
                     continue
 
-                embed = await strategy.build_schedule_embed(
-                    date_str=None
-                )
-
                 for guild_id, channel_id, message_id in targets:
+
                     channel = await self._get_channel(channel_id)
 
                     if channel is None:
                         continue
 
+                    # Find the date belonging to this message.
+                    schedule_date = self.schedule_dates.get(
+                        (league, guild_id)
+                    )
+
+                    # If the bot restarted, schedule_dates will be empty.
+                    #
+                    # Try to recover the date from the existing embed
+                    # title before editing the message.
+                    if schedule_date is None:
+                        try:
+                            existing_msg = await channel.fetch_message(
+                                message_id
+                            )
+
+                            if existing_msg.embeds:
+                                existing_embed = existing_msg.embeds[0]
+
+                                title = existing_embed.title or ""
+
+                                # Expected old format:
+                                # Today's Games (2026-03-26)
+                                if "(" in title and ")" in title:
+                                    possible_date = (
+                                        title
+                                        .split("(")[-1]
+                                        .split(")")[0]
+                                        .strip()
+                                    )
+
+                                    try:
+                                        datetime.strptime(
+                                            possible_date,
+                                            "%Y-%m-%d",
+                                        )
+
+                                        schedule_date = possible_date
+
+                                    except ValueError:
+                                        pass
+
+                        except (
+                            discord.NotFound,
+                            discord.Forbidden,
+                            discord.HTTPException,
+                        ):
+                            pass
+
+                    # If we still cannot determine the original date,
+                    # only assume today for a currently active message.
+                    if schedule_date is None:
+                        schedule_date = today
+
+                    self.schedule_dates[
+                        (league, guild_id)
+                    ] = schedule_date
+
                     try:
+                        # CRITICAL CHANGE:
+                        #
+                        # Build the embed for the date this message
+                        # originally belonged to.
+                        #
+                        # We no longer use:
+                        #
+                        # date_str=None
+                        #
+                        # because that can cause yesterday's message
+                        # to become today's schedule.
+                        embed = await strategy.build_schedule_embed(
+                            date_str=schedule_date
+                        )
+
                         msg = await channel.fetch_message(
                             message_id
                         )
@@ -206,12 +337,17 @@ class DailySchedules(commands.Cog):
                         await self._save_message_id(
                             league,
                             guild_id,
-                            None
+                            None,
+                        )
+
+                        self.schedule_dates.pop(
+                            (league, guild_id),
+                            None,
                         )
 
                     except (
                         discord.Forbidden,
-                        discord.HTTPException
+                        discord.HTTPException,
                     ) as exc:
                         print(
                             f"{league.upper()}: "
