@@ -1,34 +1,20 @@
+import re
+import traceback
+from datetime import datetime, time, timezone
+from zoneinfo import ZoneInfo
+
 import discord
 from discord.ext import commands, tasks
 from strategies.nhl_strategy import NHL
 from strategies.pwhl_strategy import PWHLStrategy
-from datetime import datetime, time
-import pytz
-import traceback
 
 
 class DailySchedules(commands.Cog):
     def __init__(self, bot):
         self.bot = bot
-        self.strategies = {
-            "nhl": NHL(bot),
-            "pwhl": PWHLStrategy(bot),
-        }
-
-        self.eastern = pytz.timezone("US/Eastern")
-
-        # Stores the date associated with each schedule message.
-        #
-        # Key:
-        # (league, guild_id)
-        #
-        # Value:
-        # YYYY-MM-DD
-        #
-        # This prevents yesterday's message from being replaced with
-        # today's schedule when the live updater runs after midnight.
-        self.schedule_dates = {}
-
+        self.strategies = {"nhl": NHL(bot), "pwhl": PWHLStrategy(bot)}
+        self.eastern = ZoneInfo("America/New_York")
+        self.next_updates = {}
         self.post_morning_schedule.start()
         self.live_update_loop.start()
 
@@ -38,329 +24,168 @@ class DailySchedules(commands.Cog):
 
     @commands.Cog.listener()
     async def on_ready(self):
-        print(
-            "LOADED: `daily_schedules.py` "
-            "(NHL + PWHL database scheduling)"
-        )
+        print("LOADED: daily_schedules.py (game-start-aware updates)")
 
-    def _is_offseason(self) -> bool:
-        # Temporary 2026 NHL gate.
-        return (
-            datetime.now(self.eastern).date()
-            < datetime(2026, 9, 20).date()
-        )
+    def _is_offseason(self):
+        return datetime.now(self.eastern).date() < datetime(2026, 9, 20).date()
 
-    def _league_is_active(self, league: str) -> bool:
-        today = datetime.now(self.eastern).date()
-
-        # PWHL automatic schedules begin December 6, 2026.
-        if league == "pwhl":
-            return today >= datetime(2026, 12, 6).date()
-
-        return True
-
-    def _today_string(self) -> str:
-        """
-        Returns today's date in Eastern Time.
-
-        Example:
-        2026-10-06
-        """
-        return datetime.now(self.eastern).strftime("%Y-%m-%d")
+    def _league_is_active(self, league):
+        return league != "pwhl" or datetime.now(self.eastern).date() >= datetime(2026, 12, 6).date()
 
     @staticmethod
-    def _columns(league: str):
-        if league == "nhl":
-            return (
-                "nhl_schedule_channel_id",
-                "nhl_schedule_message_id",
-            )
+    def _columns(league):
+        prefix = "nhl" if league == "nhl" else "pwhl"
+        return f"{prefix}_schedule_channel_id", f"{prefix}_schedule_message_id"
 
-        return (
-            "pwhl_schedule_channel_id",
-            "pwhl_schedule_message_id",
-        )
-
-    async def _get_channel(self, channel_id: int):
+    async def _get_channel(self, channel_id):
         channel = self.bot.get_channel(channel_id)
-
         if channel is not None:
             return channel
-
         try:
             return await self.bot.fetch_channel(channel_id)
-
-        except (
-            discord.NotFound,
-            discord.Forbidden,
-            discord.HTTPException,
-        ):
+        except (discord.NotFound, discord.Forbidden, discord.HTTPException):
             return None
 
-    async def _configured_targets(
-        self,
-        league: str,
-        require_message: bool = False,
-    ):
+    async def _configured_targets(self, league, require_message=False):
         channel_col, message_col = self._columns(league)
-
         where = f"{channel_col} IS NOT NULL"
-
         if require_message:
             where += f" AND {message_col} IS NOT NULL"
-
-        sql = (
-            f"SELECT guild_id, {channel_col}, {message_col} "
-            f"FROM guild_settings WHERE {where}"
-        )
-
+        sql = f"SELECT guild_id, {channel_col}, {message_col} FROM guild_settings WHERE {where}"
         async with self.bot.db_pool.acquire() as conn:
             await conn.ping(reconnect=True)
-
             async with conn.cursor() as cursor:
                 await cursor.execute(sql)
                 return await cursor.fetchall()
 
-    async def _save_message_id(
-        self,
-        league: str,
-        guild_id: int,
-        message_id,
-    ):
+    async def _save_message_id(self, league, guild_id, message_id):
         _, message_col = self._columns(league)
-
         async with self.bot.db_pool.acquire() as conn:
             await conn.ping(reconnect=True)
-
             async with conn.cursor() as cursor:
                 await cursor.execute(
-                    f"UPDATE guild_settings "
-                    f"SET {message_col} = %s "
-                    f"WHERE guild_id = %s",
+                    f"UPDATE guild_settings SET {message_col} = %s WHERE guild_id = %s",
                     (message_id, guild_id),
                 )
-
                 await conn.commit()
 
-    @tasks.loop(
-        time=time(
-            hour=5,
-            minute=30,
-            tzinfo=pytz.timezone("US/Eastern"),
+    @staticmethod
+    def _all_games_final(embed):
+        return bool(embed and embed.fields) and all(
+            field.name.strip().lower() == "final" for field in embed.fields
         )
-    )
+
+    @staticmethod
+    def _score_count(embed):
+        if not embed:
+            return 0
+        return sum(
+            "final" in field.name.lower() or "live" in field.name.lower()
+            for field in embed.fields
+        )
+
+    @staticmethod
+    def _first_start_timestamp(embed):
+        """Read scheduled UTC timestamps already included in both strategy embeds."""
+        if not embed:
+            return None
+        starts = []
+        for field in embed.fields:
+            match = re.search(r"<t:(\d+):[tTfFdDR]>", field.name)
+            if match:
+                starts.append(int(match.group(1)))
+        return min(starts) if starts else None
+
+    @tasks.loop(time=time(hour=5, minute=30, tzinfo=ZoneInfo("America/New_York")))
     async def post_morning_schedule(self):
         if self._is_offseason():
             return
-
-        today = self._today_string()
-
-        print(
-            f"Running NHL/PWHL morning schedule post "
-            f"for {today}..."
-        )
-
+        today = datetime.now(self.eastern).date().isoformat()
         for league, strategy in self.strategies.items():
-
-            # PWHL stays disabled until December 6, 2026.
             if not self._league_is_active(league):
                 continue
-
             try:
-                # IMPORTANT:
-                # Explicitly build today's schedule instead of relying
-                # on date_str=None.
-                embed = await strategy.build_schedule_embed(
-                    date_str=today
-                )
-
                 targets = await self._configured_targets(league)
-
-                for guild_id, channel_id, _ in targets:
-                    channel = await self._get_channel(channel_id)
-
-                    if channel is None:
-                        print(
-                            f"{league.upper()}: "
-                            f"channel {channel_id} unavailable "
-                            f"for guild {guild_id}"
-                        )
-                        continue
-
-                    try:
-                        msg = await channel.send(embed=embed)
-
-                        await self._save_message_id(
-                            league,
-                            guild_id,
-                            msg.id,
-                        )
-
-                        # Remember which date this particular schedule
-                        # message belongs to.
-                        self.schedule_dates[
-                            (league, guild_id)
-                        ] = today
-
-                        print(
-                            f"{league.upper()}: "
-                            f"posted {today} schedule "
-                            f"in guild {guild_id}"
-                        )
-
-                    except (
-                        discord.Forbidden,
-                        discord.HTTPException,
-                    ) as exc:
-                        print(
-                            f"{league.upper()}: "
-                            f"failed posting in guild "
-                            f"{guild_id}: {exc}"
-                        )
-
-            except Exception:
-                print(
-                    f"Error posting "
-                    f"{league.upper()} morning schedule:\n"
-                    f"{traceback.format_exc()}"
-                )
-
-    @tasks.loop(minutes=5)
-    async def live_update_loop(self):
-        if self._is_offseason():
-            return
-
-        today = self._today_string()
-
-        for league, strategy in self.strategies.items():
-
-            # No automatic PWHL updates before December 6, 2026.
-            if not self._league_is_active(league):
-                continue
-
-            try:
-                targets = await self._configured_targets(
-                    league,
-                    require_message=True,
-                )
-
                 if not targets:
                     continue
-
-                for guild_id, channel_id, message_id in targets:
-
+                embed = await strategy.build_schedule_embed(date_str=today)
+                embed.title = f"Today's Games ({today})"
+                for guild_id, channel_id, _ in targets:
                     channel = await self._get_channel(channel_id)
-
                     if channel is None:
                         continue
+                    try:
+                        message = await channel.send(embed=embed)
+                        await self._save_message_id(league, guild_id, message.id)
+                        self.next_updates.pop((league, guild_id, message.id), None)
+                    except (discord.Forbidden, discord.HTTPException) as exc:
+                        print(f"{league.upper()} posting failed for guild {guild_id}: {exc}")
+            except Exception:
+                print(f"{league.upper()} morning posting error:\n{traceback.format_exc()}")
 
-                    # Find the date belonging to this message.
-                    schedule_date = self.schedule_dates.get(
-                        (league, guild_id)
-                    )
+    @tasks.loop(minutes=1)
+    async def live_update_loop(self):
+        """Lightweight timer; no schedule API calls until the first game's start."""
+        if self._is_offseason():
+            return
+        now = datetime.now(timezone.utc)
+        today = now.astimezone(self.eastern).date()
+        for league, strategy in self.strategies.items():
+            if not self._league_is_active(league):
+                continue
+            try:
+                targets = await self._configured_targets(league, require_message=True)
+                for guild_id, channel_id, message_id in targets:
+                    channel = await self._get_channel(channel_id)
+                    if channel is None:
+                        continue
+                    try:
+                        message = await channel.fetch_message(message_id)
+                    except discord.NotFound:
+                        await self._save_message_id(league, guild_id, None)
+                        continue
+                    except (discord.Forbidden, discord.HTTPException):
+                        continue
 
-                    # If the bot restarted, schedule_dates will be empty.
-                    #
-                    # Try to recover the date from the existing embed
-                    # title before editing the message.
-                    if schedule_date is None:
-                        try:
-                            existing_msg = await channel.fetch_message(
-                                message_id
-                            )
+                    # Preserve older messages, including across restarts.
+                    posted_date = message.created_at.astimezone(self.eastern).date()
+                    if posted_date != today:
+                        continue
+                    old_embed = message.embeds[0] if message.embeds else None
+                    if self._all_games_final(old_embed):
+                        continue
+                    first_start = self._first_start_timestamp(old_embed)
+                    if first_start is None:
+                        # No timestamp available: do not guess a game start.
+                        # For unknown/TBD start times, fall back to a 5-minute
+                        # refresh only if the existing embed already shows live results.
+                        if self._score_count(old_embed) == 0:
+                            continue
+                        first_start = 0
+                    if now.timestamp() < first_start:
+                        continue
 
-                            if existing_msg.embeds:
-                                existing_embed = existing_msg.embeds[0]
-
-                                title = existing_embed.title or ""
-
-                                # Expected old format:
-                                # Today's Games (2026-03-26)
-                                if "(" in title and ")" in title:
-                                    possible_date = (
-                                        title
-                                        .split("(")[-1]
-                                        .split(")")[0]
-                                        .strip()
-                                    )
-
-                                    try:
-                                        datetime.strptime(
-                                            possible_date,
-                                            "%Y-%m-%d",
-                                        )
-
-                                        schedule_date = possible_date
-
-                                    except ValueError:
-                                        pass
-
-                        except (
-                            discord.NotFound,
-                            discord.Forbidden,
-                            discord.HTTPException,
-                        ):
-                            pass
-
-                    # If we still cannot determine the original date,
-                    # only assume today for a currently active message.
-                    if schedule_date is None:
-                        schedule_date = today
-
-                    self.schedule_dates[
-                        (league, guild_id)
-                    ] = schedule_date
+                    key = (league, guild_id, message_id)
+                    next_due = self.next_updates.get(key, 0)
+                    if now.timestamp() < next_due:
+                        continue
+                    self.next_updates[key] = now.timestamp() + 300
 
                     try:
-                        # CRITICAL CHANGE:
-                        #
-                        # Build the embed for the date this message
-                        # originally belonged to.
-                        #
-                        # We no longer use:
-                        #
-                        # date_str=None
-                        #
-                        # because that can cause yesterday's message
-                        # to become today's schedule.
-                        embed = await strategy.build_schedule_embed(
-                            date_str=schedule_date
-                        )
-
-                        msg = await channel.fetch_message(
-                            message_id
-                        )
-
-                        await msg.edit(embed=embed)
-
-                    except discord.NotFound:
-                        await self._save_message_id(
-                            league,
-                            guild_id,
-                            None,
-                        )
-
-                        self.schedule_dates.pop(
-                            (league, guild_id),
-                            None,
-                        )
-
-                    except (
-                        discord.Forbidden,
-                        discord.HTTPException,
-                    ) as exc:
-                        print(
-                            f"{league.upper()}: "
-                            f"failed live update in guild "
-                            f"{guild_id}: {exc}"
-                        )
-
+                        embed = await strategy.build_schedule_embed(date_str=posted_date.isoformat())
+                        embed.title = f"Today's Games ({posted_date.isoformat()})"
+                        if self._score_count(old_embed) > 0 and self._score_count(embed) == 0:
+                            print(f"{league.upper()}: ignored regressed scores for {posted_date}")
+                            continue
+                        if old_embed and old_embed.to_dict() == embed.to_dict():
+                            continue
+                        await message.edit(embed=embed)
+                    except (discord.Forbidden, discord.HTTPException) as exc:
+                        print(f"{league.upper()} update failed for guild {guild_id}: {exc}")
+                    except Exception:
+                        print(f"{league.upper()} live update error:\n{traceback.format_exc()}")
             except Exception:
-                print(
-                    f"Error in "
-                    f"{league.upper()} live update:\n"
-                    f"{traceback.format_exc()}"
-                )
+                print(f"{league.upper()} live loop error:\n{traceback.format_exc()}")
 
     @post_morning_schedule.before_loop
     @live_update_loop.before_loop
