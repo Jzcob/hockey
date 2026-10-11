@@ -59,8 +59,11 @@ class GameStatsView(discord.ui.View):
             def fmt(p): return f"#{p['sweaterNumber']} {p['name']['default']} ({(p.get('goals') or 0)}G, {(p.get('assists') or 0)}A)"
             fwd = "\n".join([fmt(p) for p in stats_data.get('forwards', [])])
             dfe = "\n".join([fmt(p) for p in stats_data.get('defense', [])])
+            def goalies_fmt(p): return f"#{p['sweaterNumber']} {p['name']['default']} (GAA: {(p.get('gaa') or 'N/A')}, SV%: {(p.get('savePercentage') or 'N/A')})"
+            goalies = "\n".join([goalies_fmt(p) for p in stats_data.get('goalies', [])])
             embed.add_field(name="Forwards", value=fwd[:1024] if fwd else "N/A", inline=False)
             embed.add_field(name="Defense", value=dfe[:1024] if dfe else "N/A", inline=False)
+            embed.add_field(name="Goalies", value=goalies[:1024] if goalies else "N/A", inline=False)
         except Exception: 
             embed.description = "Stats temporarily unavailable."
         return embed
