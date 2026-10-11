@@ -292,7 +292,13 @@ class NHL(commands.GroupCog, name="nhl"):
             g = c_stats.get('goals') or 'N/A'
             a = c_stats.get('assists') or 'N/A'
             pts = c_stats.get('points') or 'N/A'
+            s_stats = p_data.get("featuredStats", {}).get("regularSeason", {}).get("subSeason", {})
+            s_gp = s_stats.get('gamesPlayed') or 'N/A'
+            s_g = s_stats.get('goals') or 'N/A'
+            s_a = s_stats.get('assists') or 'N/A'
+            s_pts = s_stats.get('points') or 'N/A'
             embed.add_field(name="Career Summary (GP/G/A/PTS)", value=f"`{gp}` GP | `{g}` G | `{a}` A | `{pts}` PTS", inline=False)
+            embed.add_field(name="Season Summary (GP/G/A/PTS)", value=f"`{s_gp}` GP | `{s_g}` G | `{s_a}` A | `{s_pts}` PTS", inline=False)
             await interaction.followup.send(embed=embed)
         except Exception:
             await interaction.followup.send("Roster parser error.")
