@@ -222,8 +222,15 @@ class NHL(commands.GroupCog, name="nhl"):
             # New data:
             # Venue, TV Broadcasts, gameOutcome
             venue = game_data.get('venue', {}).get('default', 'Unknown Venue') if game_data else 'Unknown Venue'
-            tv_broadcasts = game_data.get('broadcasts', []) if game_data else []
-            tv_networks = ', '.join(b.get('network', {}).get('default', '') for b in tv_broadcasts) if tv_broadcasts else 'No Broadcast Info'
+            tv_broadcasts = game_data.get('tvBroadcasts', []) if game_data else []
+            tv_networks = (
+                ', '.join(
+                    b.get('network', '')
+                    for b in tv_broadcasts
+                    if b.get('network')
+                )
+                or 'No Broadcast Info'
+            )
             game_outcome = game_data.get('gameOutcome', {}).get('lastPeriodType', 'Unknown') if game_data else 'Unknown'
             
             if not game_data:
