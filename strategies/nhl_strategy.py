@@ -218,6 +218,13 @@ class NHL(commands.GroupCog, name="nhl"):
             
             data = requests.get(f'https://api-web.nhle.com/v1/club-schedule/{abbrev}/week/{date_str}').json()
             game_data = next((g for g in data.get('games', []) if g.get('gameDate') == date_str), None)
+
+            # New data:
+            # Venue, TV Broadcasts, gameOutcome
+            venue = game_data.get('venue', {}).get('default', 'Unknown Venue') if game_data else 'Unknown Venue'
+            tv_broadcasts = game_data.get('broadcasts', []) if game_data else []
+            tv_networks = ', '.join(b.get('network', {}).get('default', '') for b in tv_broadcasts) if tv_broadcasts else 'No Broadcast Info'
+            game_outcome = game_data.get('gameOutcome', {}).get('lastPeriodType', 'Unknown') if game_data else 'Unknown'
             
             if not game_data:
                 return await interaction.followup.send(f"Selected team specified (`{abbrev}`) has no matches slated for `{date_str}`.")
@@ -234,6 +241,9 @@ class NHL(commands.GroupCog, name="nhl"):
             away_score = a_t.get('score') or 0
             home_score = h_t.get('score') or 0
             embed.add_field(name="Scoreboard Status", value=f"{away_score} - {home_score}", inline=True)
+            embed.add_field(name="Venue", value=venue, inline=True)
+            embed.add_field(name="TV Broadcasts", value=tv_networks, inline=True)
+            embed.add_field(name="Game Outcome", value=game_outcome, inline=True)
             
             view = GameStatsView(b_data, embed)
             await interaction.followup.send(embed=embed, view=view)
