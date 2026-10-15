@@ -22,7 +22,7 @@ class Help(commands.Cog):
         app_commands.Choice(name="nhl", value="nhl"),
         app_commands.Choice(name="pwhl", value="pwhl"),
         app_commands.Choice(name="games", value="games"),
-        app_commands.Choice(name="hockey-bot-league", value="hockey-bot-league"),
+        app_commands.Choice(name="fantasy-league", value="fantasy-league"),
         app_commands.Choice(name="moderation", value="moderation")
     ])
     async def help(self, interaction: discord.Interaction, menu: app_commands.Choice[str]):
