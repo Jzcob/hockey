@@ -77,8 +77,8 @@ class Help(commands.Cog):
                 embed.add_field(name="`/leaderboard <subcommand>`", value="View leaderboards (`trivia`, `gtp`, `fantasy`, `fantasy-history`) or manage your visibility (`trivia-status`, `gtp-status`).", inline=False)
                 embed.add_field(name="`/mypoints <subcommand>`", value="Check your points for a specific game (`trivia`, `gtp`, `fantasy`).", inline=False)
                 embed.add_field(name="`/suggest-trivia <question> <answer>`", value="Suggest a trivia question!", inline=False)
-            elif menu.value == "hockey-bot-league":
-                embed.add_field(name="`/join fantasy` ACTIVE UNTIL SEPTEMBER 29TH", value="Join the fantasy league!", inline=False)
+            elif menu.value == "fantasy-league":
+                embed.add_field(name="Hockey League Information", value="**:bar_chart: The Scoring System**\nPoints are awarded at the end of each week based on how your 5 active teams perform in their real-world games.\n\n* **Win**: `+4 Points`\n* **Overtime / Shootout Loss**: `+2 Points`\n* **Regulation Loss**: `-2 Points`\n\n**Aced Team Multiplier:**\n* **Aced Win**: `+12 Points` (4 x 3)\n* **Aced OT / SO Loss**: `+6 Points` (2 x 3)\n* **Aced Regulation Loss**: `-6 Points` (-2 x 3)", inline=False)
                 embed.add_field(name="`/my-roster`", value="View your current team selections, total points, and remaining swaps.", inline=False)
                 embed.add_field(name="`/swap-teams`", value="Use one of your 10 seasonal swaps via interactive dropdowns.", inline=False)
                 embed.add_field(name="`/ace-team`", value="Choose your weekly x3 points multiplier team.", inline=False)
