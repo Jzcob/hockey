@@ -129,7 +129,6 @@ class DailySchedules(commands.Cog):
         if self._is_offseason():
             return
         now = datetime.now(timezone.utc)
-        today = now.astimezone(self.eastern).date()
         for league, strategy in self.strategies.items():
             if not self._league_is_active(league):
                 continue
@@ -147,9 +146,16 @@ class DailySchedules(commands.Cog):
                     except (discord.Forbidden, discord.HTTPException):
                         continue
 
-                    # Preserve older messages, including across restarts.
+                    # The stored message is the active scoreboard until the next
+                    # morning post replaces its ID, even when games run past midnight.
                     posted_date = message.created_at.astimezone(self.eastern).date()
-                    if posted_date != today:
+                    eastern_now = now.astimezone(self.eastern)
+                    age_days = (eastern_now.date() - posted_date).days
+                    if age_days < 0 or age_days > 1:
+                        continue
+                    # Do not resume a previous day's unfinished scoreboard after
+                    # the next morning's posting window has passed.
+                    if age_days == 1 and eastern_now.time() >= time(5, 30):
                         continue
                     old_embed = message.embeds[0] if message.embeds else None
                     if self._all_games_final(old_embed):
@@ -174,7 +180,28 @@ class DailySchedules(commands.Cog):
                     try:
                         embed = await strategy.build_schedule_embed(date_str=posted_date.isoformat())
                         embed.title = f"Today's Games ({posted_date.isoformat()})"
-                        if self._score_count(old_embed) > 0 and self._score_count(embed) == 0:
+                        # Keep already-final games final if a feed briefly returns
+                        # stale scheduled/live data. Fields retain game order.
+                        if old_embed and len(old_embed.fields) == len(embed.fields):
+                            for index, old_field in enumerate(old_embed.fields):
+                                new_field = embed.fields[index]
+                                old_state = old_field.name.strip().lower()
+                                new_state = new_field.name.strip().lower()
+                                if old_state == "final" and new_state != "final":
+                                    embed.set_field_at(
+                                        index, name=old_field.name,
+                                        value=old_field.value,
+                                        inline=old_field.inline,
+                                    )
+                                elif ("live" in old_state or old_state == "final") and (
+                                    "live" not in new_state and new_state != "final"
+                                ):
+                                    embed.set_field_at(
+                                        index, name=old_field.name,
+                                        value=old_field.value,
+                                        inline=old_field.inline,
+                                    )
+                        elif self._score_count(old_embed) > 0 and self._score_count(embed) == 0:
                             print(f"{league.upper()}: ignored regressed scores for {posted_date}")
                             continue
                         if old_embed and old_embed.to_dict() == embed.to_dict():
