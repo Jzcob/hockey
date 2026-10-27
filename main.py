@@ -28,59 +28,27 @@ class MyBot(commands.Bot):
 
     async def setup_hook(self):
         print("Creating database connection pool...")
-        import socket
-
-        db_host = os.getenv("db_host", "").strip()
-        db_port = int(os.getenv("db_port", "3306"))
-
-        print(f"Testing MySQL connectivity: {db_host}:{db_port}")
 
         try:
-            addresses = await asyncio.to_thread(
-                socket.getaddrinfo,
-                db_host,
-                db_port,
-                type=socket.SOCK_STREAM
+            self.db_pool = await aiomysql.create_pool(
+                host=os.getenv("db_host", "").strip(),
+                port=int(os.getenv("db_port", "3306")),
+                user=os.getenv("db_user"),
+                password=os.getenv("db_password"),
+                db=os.getenv("db_name"),
+                autocommit=True,
+                connect_timeout=15,
+                minsize=1,
+                maxsize=10,
+                pool_recycle=3600
             )
-            print(f"DNS resolution successful: {addresses[0][4][0]}")
-
-            def test_connection():
-                with socket.create_connection(
-                    (db_host, db_port),
-                    timeout=10
-                ):
-                    return True
-
-            await asyncio.to_thread(test_connection)
-            print("MySQL network connection successful!")
-
-        except socket.gaierror as e:
-            print(f"DNS resolution failed: {e}")
-
-        except (TimeoutError, OSError) as e:
-            print(f"MySQL network connection failed: {type(e).__name__}: {e}")
-            traceback.print_exc()
-            try:
-                self.db_pool = await aiomysql.create_pool(
-                    host=os.getenv("db_host"),
-                    port=int(os.getenv("db_port", "3306")),
-                    user=os.getenv("db_user"),
-                    password=os.getenv("db_password"),
-                    db=os.getenv("db_name"),
-                    autocommit=True,
-                    loop=asyncio.get_event_loop(),
-                    pool_recycle=3600
-                )
-            except Exception as e:
-                print(f"❌ FAILED to create database connection pool: {e}")
-                await self.close()
-                return
 
             print("✅ Successfully created database connection pool.")
+
         except Exception as e:
             print(f"❌ FAILED to create database connection pool: {e}")
-            await self.close()
-            return
+            traceback.print_exc()
+            raise
 
         print("--- Loading Cogs ---")
         # Define the directories you want to load from
