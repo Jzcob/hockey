@@ -90,6 +90,172 @@ class admin(commands.Cog):
             error_channel = self.bot.get_channel(config.error_channel)
             await error_channel.send(f"```{traceback.format_exc()}```")
 
+    
+    @app_commands.command(
+        name="notify-schedule-reset",
+        description="Notify affected servers to reconfigure NHL schedules (Owner Only)."
+    )
+    @is_owner()
+    async def notify_schedule_reset(self, interaction: discord.Interaction):
+        affected_guild_ids = [
+            569193705198583822,
+            1145653383789826078,
+            1163978665294561340,
+            1212550746696978432,
+            1384313393699225641,
+            1430618489860919388,
+            1440878107132428351,
+            1484375959091023903,
+            1550252472142921790,
+        ]
+
+        embed = discord.Embed(
+            title="NHL Daily Schedule Configuration Required",
+            description=(
+                "Hockey's NHL daily schedule notifications were disabled "
+                "in this server because the bot could not send messages "
+                "to the previously configured channel.\n\n"
+                "**A server administrator must reconfigure the channel.**\n\n"
+                "Use `/set-schedule-channel` and select **NHL** "
+                "and your preferred channel.\n\n"
+                "Please ensure Hockey has the following permissions:\n"
+                "• View Channel\n"
+                "• Send Messages\n"
+                "• Embed Links\n\n"
+                "Hockey now tests channel access before saving "
+                "the configuration."
+            ),
+            color=discord.Color.orange()
+        )
+        embed.set_footer(text="Hockey Bot | Configuration Notice")
+
+        class ConfirmView(discord.ui.View):
+            def __init__(self, bot, owner_id):
+                super().__init__(timeout=60)
+                self.bot = bot
+                self.owner_id = owner_id
+
+            async def interaction_check(self, button_interaction):
+                if button_interaction.user.id != self.owner_id:
+                    await button_interaction.response.send_message(
+                        "Only the command requester can confirm.",
+                        ephemeral=True
+                    )
+                    return False
+                return True
+
+            @discord.ui.button(
+                label="Send Notifications",
+                style=discord.ButtonStyle.danger
+            )
+            async def confirm(self, button_interaction, button):
+                await button_interaction.response.defer(ephemeral=True)
+
+                for item in self.children:
+                    item.disabled = True
+                await button_interaction.edit_original_response(view=self)
+
+                sent = []
+                failed = []
+
+                for guild_id in affected_guild_ids:
+                    guild = self.bot.get_guild(guild_id)
+
+                    if guild is None:
+                        failed.append(f"`{guild_id}` - Guild not found")
+                        continue
+
+                    channel = guild.system_channel
+
+                    if channel is None:
+                        failed.append(
+                            f"{guild.name} (`{guild_id}`) - No system channel"
+                        )
+                        continue
+
+                    try:
+                        await channel.send(embed=embed)
+                        sent.append(f"{guild.name} (`{guild_id}`)")
+                        print(
+                            f"[Schedule Notice] Sent to {guild.name} "
+                            f"({guild_id}) in #{channel.name}"
+                        )
+
+                    except discord.Forbidden:
+                        failed.append(
+                            f"{guild.name} (`{guild_id}`) - Missing access"
+                        )
+
+                    except discord.HTTPException as exc:
+                        failed.append(
+                            f"{guild.name} (`{guild_id}`) - HTTP {exc.status}"
+                        )
+
+                report = discord.Embed(
+                    title="Schedule Notification Results",
+                    color=(
+                        discord.Color.green()
+                        if not failed else discord.Color.orange()
+                    )
+                )
+
+                report.add_field(
+                    name="Successfully Sent",
+                    value=f"{len(sent)}/{len(affected_guild_ids)}",
+                    inline=True
+                )
+                report.add_field(
+                    name="Failed / Skipped",
+                    value=str(len(failed)),
+                    inline=True
+                )
+
+                if sent:
+                    report.add_field(
+                        name="Successful Servers",
+                        value="\n".join(sent)[:1024],
+                        inline=False
+                    )
+
+                if failed:
+                    report.add_field(
+                        name="Failed Servers",
+                        value="\n".join(failed)[:1024],
+                        inline=False
+                    )
+
+                await button_interaction.followup.send(
+                    embed=report,
+                    ephemeral=True
+                )
+
+            @discord.ui.button(
+                label="Cancel",
+                style=discord.ButtonStyle.secondary
+            )
+            async def cancel(self, button_interaction, button):
+                for item in self.children:
+                    item.disabled = True
+
+                await button_interaction.response.edit_message(
+                    content="Notification cancelled.",
+                    embed=None,
+                    view=self
+                )
+
+        await interaction.response.send_message(
+            content=(
+                f"You're about to notify **{len(affected_guild_ids)} "
+                "servers** about their NHL schedule configuration.\n\n"
+                "Messages will be sent to each server's configured "
+                "System Messages Channel.\n\n"
+                "**Do you want to continue?**"
+            ),
+            view=ConfirmView(self.bot, interaction.user.id),
+            ephemeral=True
+        )
+
+
     @app_commands.command(name="debug", description="Run a deep diagnostic audit for a specific server or channel (Owner Only).")
     @is_owner()
     @app_commands.describe(
