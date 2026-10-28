@@ -165,7 +165,10 @@ class NHL(commands.GroupCog, name="nhl"):
             for record in data.get("standings", []):
                 div = record.get("divisionName")
                 if div in divisions:
-                    emoji_name = self.get_division_string(record['teamName']['default'])
+                    team_name = record["teamName"]["default"]
+                    team_abbrev = record.get("teamAbbrev", {}).get("default", "").upper()
+                    team_emoji = TEAM_EMOJIS.get(team_abbrev, "")
+                    emoji_name = f"{team_emoji} {team_name}".strip()
                     wildcard = "🃏" if record.get("wildcardSequence") in [1, 2] else ""
                     wins = record.get('wins') or 0
                     losses = record.get('losses') or 0
@@ -312,8 +315,7 @@ class NHL(commands.GroupCog, name="nhl"):
             
             lines = []
             for abbr, name in teams_data.items():
-                attr_name = f"{name.lower().replace(' ', '_')}_emoji"
-                emoji = getattr(config, attr_name, "")
+                emoji = TEAM_EMOJIS.get(abbr.upper(), "")
                 lines.append(f"**{abbr}** - {name} {emoji}")
                 
             embed = discord.Embed(
