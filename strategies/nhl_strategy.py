@@ -51,7 +51,7 @@ class GameStatsView(discord.ui.View):
         team_data = self.boxscore_data['awayTeam'] if team_type == 'away' else self.boxscore_data['homeTeam']
         stats_data = self.boxscore_data.get('playerByGameStats', {}).get(f'{team_type}Team', {})
         display_name = team_data.get('commonName', {}).get('default') or team_data.get('placeName', {}).get('default', 'Team')
-        
+
         embed = discord.Embed(title=f"{display_name} Roster Stats", color=self.original_embed.color)
         embed.set_thumbnail(url=team_data.get('logo'))
 
@@ -160,7 +160,7 @@ class NHL(commands.GroupCog, name="nhl"):
                 hawaii = pytz.timezone('US/Hawaii')
                 date_str = datetime.now(hawaii).strftime('%Y-%m-%d')
             data = requests.get(f"https://api-web.nhle.com/v1/standings/{date_str}").json()
-            
+
             divisions = {"Atlantic": [], "Metropolitan": [], "Central": [], "Pacific": []}
             for record in data.get("standings", []):
                 div = record.get("divisionName")
@@ -197,7 +197,7 @@ class NHL(commands.GroupCog, name="nhl"):
             endpoint = f'https://api-web.nhle.com/v1/club-schedule/{abbrev}/week/{date_str}' if date_str else f'https://api-web.nhle.com/v1/club-schedule/{abbrev}/week/now'
             data = requests.get(endpoint).json()
             embed = discord.Embed(title=f"{teams[abbrev]} Weekly Outlook", color=config.color)
-            
+
             for game in data.get('games', []):
                 b_data = requests.get(f"https://api-web.nhle.com/v1/gamecenter/{game['id']}/boxscore").json()
                 home = b_data["homeTeam"]["commonName"]["default"]
@@ -218,43 +218,109 @@ class NHL(commands.GroupCog, name="nhl"):
             if not date_str:
                 hawaii = pytz.timezone('US/Hawaii')
                 date_str = datetime.now(hawaii).strftime('%Y-%m-%d')
-            
+
             data = requests.get(f'https://api-web.nhle.com/v1/club-schedule/{abbrev}/week/{date_str}').json()
             game_data = next((g for g in data.get('games', []) if g.get('gameDate') == date_str), None)
 
-            # New data:
-            # Venue, TV Broadcasts, gameOutcome
-            venue = game_data.get('venue', {}).get('default', 'Unknown Venue') if game_data else 'Unknown Venue'
-            tv_broadcasts = game_data.get('tvBroadcasts', []) if game_data else []
-            tv_networks = (
-                ', '.join(
-                    b.get('network', '')
-                    for b in tv_broadcasts
-                    if b.get('network')
-                )
-                or 'No Broadcast Info'
-            )
-            game_outcome = game_data.get('gameOutcome', {}).get('lastPeriodType', 'Unknown') if game_data else 'Unknown'
-            
             if not game_data:
-                return await interaction.followup.send(f"Selected team specified (`{abbrev}`) has no matches slated for `{date_str}`.")
-
-            g_id = game_data['id']
-            b_data = requests.get(f"https://api-web.nhle.com/v1/gamecenter/{g_id}/boxscore").json()
-            
-            h_t, a_t = b_data['homeTeam'], b_data['awayTeam']
-            h_n = h_t.get('commonName', {}).get('default') or 'Home'
-            a_n = a_t.get('commonName', {}).get('default') or 'Away'
-
-            embed = discord.Embed(title=f"{a_n} @ {h_n} ({date_str})", color=config.color)
-            embed.add_field(name="Current State", value=b_data.get('gameState', 'FUT'), inline=True)
-            away_score = a_t.get('score') or 0
-            home_score = h_t.get('score') or 0
-            embed.add_field(name="Scoreboard Status", value=f"{away_score} - {home_score}", inline=True)
-            embed.add_field(name="Venue", value=venue, inline=True)
-            embed.add_field(name="TV Broadcasts", value=tv_networks, inline=True)
-            embed.add_field(name="Game Outcome", value=game_outcome, inline=True)
-            
+                return await interaction.followup.send(
+                    f"Selected team specified (`{abbrev}`) has no matches slated for `{date_str}`."
+                )
+            game_id = game_data['id']
+            b_data = requests.get(
+                f"https://api-web.nhle.com/v1/gamecenter/{game_id}/boxscore", timeout=15
+            ).json()
+            away, home = b_data['awayTeam'], b_data['homeTeam']
+            away_abbr = away.get('abbrev', 'AWAY').upper()
+            home_abbr = home.get('abbrev', 'HOME').upper()
+            away_name = away.get('commonName', {}).get('default') or away_abbr
+            home_name = home.get('commonName', {}).get('default') or home_abbr
+            away_label = f"{TEAM_EMOJIS.get(away_abbr, '')} {away_name}".strip()
+            home_label = f"{TEAM_EMOJIS.get(home_abbr, '')} {home_name}".strip()
+            state = str(b_data.get('gameState') or game_data.get('gameState') or 'FUT').upper()
+            finished = state in ('OFF', 'FINAL')
+            scheduled = state in ('FUT', 'PRE')
+            live = not (finished or scheduled)
+            period = b_data.get('periodDescriptor') or {}
+            period_type = str(period.get('periodType') or '').upper()
+            period_number = period.get('number')
+            if finished:
+                status = 'Final / Shootout' if period_type == 'SO' else ('Final / OT' if period_type == 'OT' else 'Final')
+            elif scheduled:
+                status = 'Scheduled'
+            else:
+                status = f"Live • {'OT' if period_type == 'OT' else ('SO' if period_type == 'SO' else f'Period {period_number}' if period_number else 'In progress')}"
+                clock = b_data.get('clock') or {}
+                if isinstance(clock, dict) and clock.get('timeRemaining'):
+                    status += f" • {clock['timeRemaining']} remaining"
+            away_score = away.get('score') or 0
+            home_score = home.get('score') or 0
+            embed = discord.Embed(
+                title=f"{away_label} @ {home_label}",
+                description=f"**{date_str}**\n**{status}**",
+                color=config.color
+            )
+            embed.add_field(
+                name='🏒 Scoreboard',
+                value=(f"**{away_label}: {away_score}**\n**{home_label}: {home_score}**"
+                       if not scheduled else f"{away_label} vs. {home_label}\nPuck drop pending"),
+                inline=False
+            )
+            # NHL gamecenter landing supplies scoring events grouped by period.
+            # A missing scoring feed is shown as unavailable, never as a fabricated 0.
+            scoring = []
+            if not scheduled:
+                try:
+                    landing = requests.get(
+                        f"https://api-web.nhle.com/v1/gamecenter/{game_id}/landing", timeout=15
+                    ).json()
+                    scoring = (landing.get('summary') or {}).get('scoring') or []
+                except (requests.RequestException, ValueError):
+                    pass
+            if scoring and isinstance(scoring, list):
+                columns = []
+                rows = {away_abbr: [], home_abbr: []}
+                for group in scoring:
+                    desc = group.get('periodDescriptor') or {}
+                    number = desc.get('number')
+                    ptype = str(desc.get('periodType') or '').upper()
+                    label = 'SO' if ptype == 'SO' else 'OT' if ptype == 'OT' else str(number or '?')
+                    columns.append(label)
+                    goals = group.get('goals') or []
+                    for ab in rows:
+                        rows[ab].append(sum(1 for goal in goals if str(goal.get('teamAbbrev') or '').upper() == ab))
+                if columns:
+                    header = f"{'Team':<5}" + ''.join(f"{col:>4}" for col in columns) + f"{'T':>5}"
+                    line_a = f"{away_abbr:<5}" + ''.join(f"{v:>4}" for v in rows[away_abbr]) + f"{away_score:>5}"
+                    line_h = f"{home_abbr:<5}" + ''.join(f"{v:>4}" for v in rows[home_abbr]) + f"{home_score:>5}"
+                    embed.add_field(name='📊 Scoring by Period', value=f"```{header}\n{line_a}\n{line_h}```", inline=False)
+            elif not scheduled:
+                embed.add_field(name='📊 Scoring by Period', value='Period scoring is not available yet.', inline=False)
+            if finished:
+                if away_score == home_score:
+                    result = 'Final result pending confirmation'
+                else:
+                    winner = away_name if away_score > home_score else home_name
+                    suffix = ' in a shootout' if period_type == 'SO' else ' in overtime' if period_type == 'OT' else ''
+                    result = f"{winner} win{suffix}"
+            elif live:
+                result = 'Game in progress'
+            else:
+                result = 'Awaiting puck drop'
+            embed.add_field(name='🏆 Result', value=result, inline=True)
+            embed.add_field(name='📋 Game State', value=status, inline=True)
+            venue = game_data.get('venue') or {}
+            venue = venue.get('default', 'Not announced') if isinstance(venue, dict) else str(venue)
+            embed.add_field(name='🏟️ Venue', value=venue or 'Not announced', inline=True)
+            broadcasts = [b.get('network') for b in game_data.get('tvBroadcasts', []) if b.get('network')]
+            embed.add_field(name='📺 TV Broadcasts', value=', '.join(dict.fromkeys(broadcasts)) or 'Not announced', inline=False)
+            start_utc = game_data.get('startTimeUTC')
+            if start_utc and scheduled:
+                try:
+                    stamp = datetime.strptime(start_utc, '%Y-%m-%dT%H:%M:%SZ').replace(tzinfo=pytz.utc)
+                    embed.add_field(name='🕒 Puck Drop', value=f"<t:{int(stamp.timestamp())}:F>", inline=False)
+                except ValueError:
+                    pass
             view = GameStatsView(b_data, embed)
             await interaction.followup.send(embed=embed, view=view)
         except Exception:
@@ -266,7 +332,7 @@ class NHL(commands.GroupCog, name="nhl"):
         try:
             with open("teams.json", "r") as f: teams = json.load(f)
             found_player = None
-            
+
             for team_abbr in teams.keys():
                 roster = requests.get(f"https://api-web.nhle.com/v1/roster/{team_abbr}/current").json()
                 for group in ["forwards", "defensemen", "goalies"]:
@@ -284,12 +350,12 @@ class NHL(commands.GroupCog, name="nhl"):
 
             p_data = requests.get(f"https://api-web.nhle.com/v1/player/{found_player[0]}/landing").json()
             pos_map = {"G": "Goalie", "D": "Defenseman", "C": "Center", "L": "Left Wing", "R": "Right Wing"}
-            
+
             embed = discord.Embed(title=player_name, description=f"{pos_map.get(p_data.get('position'), 'Skater')} for the {found_player[1]} #{p_data.get('sweaterNumber', 'N/A')}", color=config.color)
             embed.set_thumbnail(url=p_data.get("headshot"))
             embed.add_field(name="Birth Date", value=p_data.get("birthDate", "Unknown"))
             embed.add_field(name="Place of Origin", value=f"{p_data.get('birthCity', {}).get('default', 'Unknown')}, {p_data.get('birthCountry', '')}")
-            
+
             c_stats = p_data.get("featuredStats", {}).get("regularSeason", {}).get("career", {})
             gp = c_stats.get('gamesPlayed') or 'N/A'
             g = c_stats.get('goals') or 'N/A'
@@ -312,12 +378,12 @@ class NHL(commands.GroupCog, name="nhl"):
         try:
             with open("teams.json", "r", encoding="utf-8") as f: 
                 teams_data = json.load(f)
-            
+
             lines = []
             for abbr, name in teams_data.items():
                 emoji = TEAM_EMOJIS.get(abbr.upper(), "")
                 lines.append(f"**{abbr}** - {name} {emoji}")
-                
+
             embed = discord.Embed(
                 title="Registered NHL Configurations", 
                 description="\n".join(lines), 
