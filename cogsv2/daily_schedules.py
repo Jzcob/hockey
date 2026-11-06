@@ -168,7 +168,7 @@ class DailySchedules(commands.Cog):
                         if self._score_count(old_embed) == 0:
                             continue
                         first_start = 0
-                    if now.timestamp() < first_start:
+                    if now.timestamp() < first_start and self._score_count(old_embed) == 0:
                         continue
 
                     key = (league, guild_id, message_id)
