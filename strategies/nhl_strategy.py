@@ -251,7 +251,9 @@ class NHL(commands.GroupCog, name="nhl"):
             else:
                 status = f"Live • {'OT' if period_type == 'OT' else ('SO' if period_type == 'SO' else f'Period {period_number}' if period_number else 'In progress')}"
                 clock = b_data.get('clock') or {}
-                if isinstance(clock, dict) and clock.get('timeRemaining'):
+                if isinstance(clock, dict) and clock.get('inIntermission'):
+                    status = f"Intermission • After Period {period_number}" if period_number else 'Intermission'
+                elif isinstance(clock, dict) and clock.get('timeRemaining'):
                     status += f" • {clock['timeRemaining']} remaining"
             away_score = away.get('score') or 0
             home_score = home.get('score') or 0
@@ -288,7 +290,7 @@ class NHL(commands.GroupCog, name="nhl"):
                     columns.append(label)
                     goals = group.get('goals') or []
                     for ab in rows:
-                        rows[ab].append(sum(1 for goal in goals if str(goal.get('teamAbbrev') or '').upper() == ab))
+                        rows[ab].append(sum(1 for goal in goals if str((goal.get('teamAbbrev') or {}).get('default', '') if isinstance(goal.get('teamAbbrev'), dict) else (goal.get('teamAbbrev') or '')).upper() == ab))
                 if columns:
                     header = f"{'Team':<5}" + ''.join(f"{col:>4}" for col in columns) + f"{'T':>5}"
                     line_a = f"{away_abbr:<5}" + ''.join(f"{v:>4}" for v in rows[away_abbr]) + f"{away_score:>5}"
@@ -315,6 +317,8 @@ class NHL(commands.GroupCog, name="nhl"):
             broadcasts = [b.get('network') for b in game_data.get('tvBroadcasts', []) if b.get('network')]
             embed.add_field(name='📺 TV Broadcasts', value=', '.join(dict.fromkeys(broadcasts)) or 'Not announced', inline=False)
             start_utc = game_data.get('startTimeUTC')
+            embed.add_field(name="🆔 Game ID", value=f"`{game_id}`", inline=True)
+            embed.set_footer(text=config.footer)
             if start_utc and scheduled:
                 try:
                     stamp = datetime.strptime(start_utc, '%Y-%m-%dT%H:%M:%SZ').replace(tzinfo=pytz.utc)
