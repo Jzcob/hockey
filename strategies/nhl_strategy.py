@@ -59,7 +59,24 @@ class GameStatsView(discord.ui.View):
             def fmt(p): return f"#{p['sweaterNumber']} {p['name']['default']} ({(p.get('goals') or 0)}G, {(p.get('assists') or 0)}A)"
             fwd = "\n".join([fmt(p) for p in stats_data.get('forwards', [])])
             dfe = "\n".join([fmt(p) for p in stats_data.get('defense', [])])
-            def goalies_fmt(p): return f"#{p['sweaterNumber']} {p['name']['default']} (GAA: {(p.get('gaa') or 'N/A')}, SV%: {(p.get('savePercentage') or 'N/A')})"
+            def goalies_fmt(p):
+                name = p.get('name', {}).get('default', 'Unknown')
+                number = p.get('sweaterNumber', '?')
+                toi = p.get('toi', '00:00')
+                try:
+                    minutes, seconds = map(int, toi.split(':'))
+                    total_seconds = minutes * 60 + seconds
+                except (ValueError, TypeError, AttributeError):
+                    total_seconds = 0
+                if total_seconds > 0:
+                    goals_against = p.get('goalsAgainst', 0)
+                    gaa = f"{goals_against * 3600 / total_seconds:.2f}"
+                    save_pct = p.get('savePctg')
+                    sv_pct = f"{save_pct:.3f}" if save_pct is not None else 'N/A'
+                    saves = p.get('saves', 'N/A')
+                    shots = p.get('shotsAgainst', 'N/A')
+                    return f"#{number} {name} (GAA: {gaa}, SV%: {sv_pct}, Saves: {saves}/{shots})"
+                return f"#{number} {name} (GAA: N/A, SV%: N/A, Saves: N/A)"
             goalies = "\n".join([goalies_fmt(p) for p in stats_data.get('goalies', [])])
             embed.add_field(name="Forwards", value=fwd[:1024] if fwd else "N/A", inline=False)
             embed.add_field(name="Defense", value=dfe[:1024] if dfe else "N/A", inline=False)
